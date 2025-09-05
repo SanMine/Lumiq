@@ -1,22 +1,19 @@
 import { Sequelize } from "sequelize";
 
+const ssl =
+  process.env.DB_SSL === "true"
+    ? { ssl: { require: true, rejectUnauthorized: false } }
+    : {};
+
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
     dialect: process.env.DB_DIALECT || "mysql",
-    logging: false
+    logging: false,
+    dialectOptions: ssl
   }
 );
-
-export async function connectDb() {
-  try {
-    await sequelize.authenticate();
-    console.log("✅ DB connection OK");
-  } catch (err) {
-    console.error("❌ DB connection failed:", err.message);
-    throw err;
-  }
-}
