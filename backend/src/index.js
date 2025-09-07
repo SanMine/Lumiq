@@ -1,8 +1,15 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: join(__dirname, "../.env") });
+
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { connectDb, sequelize } from "./db/sequelize.js";
+import { sequelize } from "../sequelize.js";
 import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
 import { errorHandler } from "./middlewares/error.js";
@@ -15,7 +22,17 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") || true }));
 
+// Debug middleware
+app.use((req, res, next) => {
+  console.log(`📝 ${req.method} ${req.path}`);
+  next();
+});
+
 // routes
+app.get("/test", (req, res) => {
+  res.json({ message: "Server is working!" });
+});
+
 app.use("/api", health);
 app.use("/api/users", users);
 
@@ -25,8 +42,16 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 (async () => {
-  await connectDb();
-  // Dev only: auto-create tables. For production, switch to migrations.
-  await sequelize.sync({ alter: true });
-  app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Database connected successfully");
+    
+    // Dev only: auto-create tables. For production, switch to migrations.
+    await sequelize.sync({ alter: true });
+    
+    app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
+  } catch (error) {
+    console.error("❌ Database connection failed:", error);
+    process.exit(1);
+  }
 })();
