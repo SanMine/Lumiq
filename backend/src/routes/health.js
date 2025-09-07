@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sequelize } from "../db/sequelize.js";
+import { sequelize } from "../../sequelize.js";
 
 export const health = Router();
 
