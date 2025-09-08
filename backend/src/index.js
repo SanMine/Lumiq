@@ -12,8 +12,10 @@ import morgan from "morgan";
 import { sequelize } from "../sequelize.js";
 import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
+import { dorms } from "./routes/dorms.js";
 import { errorHandler } from "./middlewares/error.js";
 import { User } from "./models/User.js";
+import { Dorm } from "./models/Dorm.js";
 
 const app = express();
 
@@ -35,6 +37,7 @@ app.get("/test", (req, res) => {
 
 app.use("/api", health);
 app.use("/api/users", users);
+app.use("/api/dorms", dorms);
 
 // Error handler (last)
 app.use(errorHandler);

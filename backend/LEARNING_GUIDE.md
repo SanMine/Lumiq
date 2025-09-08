@@ -615,6 +615,9 @@ Role.belongsToMany(User, { through: 'UserRoles' });
 }
 ```
 
+
+_______________________________________________________________________________
+
 ## 🚀 **Testing Your API**
 
 ### **Using curl commands:**
@@ -662,3 +665,10 @@ curl -X DELETE http://localhost:3001/api/users/1
 7. **Deployment** (Docker, cloud platforms)
 
 This guide covers the fundamentals you need to build a solid Node.js + Express + MySQL backend! 🎉
+
+
+
+## File	Purpose	What It Does
+1. models/	Create database tables	Product.js = products table
+2. routes/	Database logic + API paths	products.js = GET/POST/ PUT/DELETE + /products paths
+3. index.js	Connect everything	Mounts routes so frontend can access them
