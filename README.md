@@ -72,16 +72,3 @@ cd backend
 - ✅ Use `.env.example` as template
 - ✅ Never commit sensitive credentials
 
-## 🤝 Team Workflow
-
-1. **Database:** Shared Railway MySQL (all team members)
-2. **Backend:** Local development (port 3001)
-3. **Frontend:** Local development (port 5173)
-4. **Testing:** Use provided scripts for API testing
-
-## 📞 Need Help?
-
-Contact your team lead for:
-- Railway database credentials
-- Setup assistance
-- Development questions
