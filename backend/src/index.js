@@ -14,8 +14,9 @@ import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
 import { dorms } from "./routes/dorms.js";
 import { errorHandler } from "./middlewares/error.js";
-import { User } from "./models/User.js";
-import { Dorm } from "./models/Dorm.js";
+
+// Import models and associations
+import "./models/Association.js";
 
 const app = express();
 
@@ -42,7 +43,6 @@ app.use("/api/dorms", dorms);
 // Error handler (last)
 app.use(errorHandler);
 
-// **IMPORTANT: Listen on Railway's PORT or fallback to 5000 locally**
 const PORT = process.env.PORT || 5000;
 
 (async () => {
@@ -50,8 +50,8 @@ const PORT = process.env.PORT || 5000;
     await sequelize.authenticate();
     console.log("✅ Database connected successfully");
     
-    // Dev only: auto-create tables. For production, switch to migrations.
-    await sequelize.sync({ alter: true });
+        // Dev only: auto-create tables. For production, switch to migrations.
+    await sequelize.sync({ force: false });
     
     app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
   } catch (error) {
