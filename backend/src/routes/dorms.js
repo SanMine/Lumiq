@@ -3,37 +3,20 @@ import { Dorm } from "../models/Dorm.js";
 import { Rating } from "../models/Rating.js";
 import { User } from "../models/User.js";
 import { sequelize } from "../../sequelize.js";
+import { RatingService } from "../services/ratingService.js";
 
 export const dorms = Router();
 
 // Get all dorms with calculated average ratings
 dorms.get("/", async (req, res) => {
   try {
-    // First, get all dorms
+    // Get all dorms
     const allDorms = await Dorm.findAll({
       order: [["id", "ASC"]]
     });
 
-    // Then, calculate ratings for each dorm
-    const dormsWithRatings = await Promise.all(
-      allDorms.map(async (dorm) => {
-        const ratings = await Rating.findAll({
-          where: { dormId: dorm.id },
-          attributes: ['rating']
-        });
-
-        const totalRatings = ratings.length;
-        const averageRating = totalRatings > 0 
-          ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
-          : (dorm.rating || 0);
-
-        return {
-          ...dorm.toJSON(),
-          average_rating: parseFloat(averageRating).toFixed(1),
-          total_ratings: totalRatings
-        };
-      })
-    );
+    // Calculate ratings using the service
+    const dormsWithRatings = await RatingService.calculateMultipleDormRatings(allDorms);
 
     res.json(dormsWithRatings);
   } catch (error) {
@@ -45,38 +28,22 @@ dorms.get("/", async (req, res) => {
 // Get specific dorm with ratings
 dorms.get("/:id", async (req, res) => {
   try {
-    const dorm = await Dorm.findByPk(req.params.id, {
-      attributes: [
-        '*',
-        [
-          sequelize.fn('AVG', sequelize.col('Ratings.rating')),
-          'calculated_avg_rating'
-        ],
-        [
-          sequelize.fn('COUNT', sequelize.col('Ratings.rating')),
-          'calculated_total_ratings'
-        ]
-      ],
-      include: [{
-        model: Rating,
-        attributes: [],
-        include: [{
-          model: User,
-          attributes: ['name']
-        }]
-      }],
-      group: ['Dorm.id']
-    });
-
+    // Get the dorm
+    const dorm = await Dorm.findByPk(req.params.id);
+    
     if (!dorm) {
       return res.status(404).json({ error: "Dorm not found" });
     }
 
-    const plain = dorm.get({ plain: true });
+    // Calculate detailed rating statistics
+    const ratingStats = await RatingService.getDormRatingStatistics(req.params.id);
+    
     const result = {
-      ...plain,
-      average_rating: plain.calculated_avg_rating ? parseFloat(plain.calculated_avg_rating).toFixed(1) : plain.rating,
-      total_ratings: parseInt(plain.calculated_total_ratings) || 0
+      ...dorm.toJSON(),
+      average_rating: ratingStats.average_rating,
+      total_ratings: ratingStats.total_ratings,
+      min_rating: ratingStats.min_rating,
+      max_rating: ratingStats.max_rating
     };
 
     res.json(result);
@@ -103,11 +70,6 @@ dorms.post("/:id/rate", async (req, res) => {
     const { rating, userId } = req.body;
     const dormId = req.params.id;
 
-    // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
-    }
-
     // Check if dorm exists
     const dorm = await Dorm.findByPk(dormId);
     if (!dorm) {
@@ -120,54 +82,42 @@ dorms.post("/:id/rate", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Use upsert to handle update or create
-    const [ratingRecord, created] = await Rating.upsert({
-      rating,
-      userId,
-      dormId
-    }, {
-      returning: true
-    });
-
-    // Calculate new average rating
-    const avgResult = await Rating.findOne({
-      where: { dormId },
-      attributes: [
-        [sequelize.fn('AVG', sequelize.col('rating')), 'avg_rating'],
-        [sequelize.fn('COUNT', sequelize.col('rating')), 'total_ratings']
-      ],
-      raw: true
-    });
+    // Use rating service to handle the rating logic
+    const result = await RatingService.addOrUpdateRating(dormId, userId, rating);
 
     res.json({
-      message: created ? "Rating added successfully" : "Rating updated successfully",
-      rating: ratingRecord,
-      average_rating: parseFloat(avgResult.avg_rating).toFixed(1),
-      total_ratings: parseInt(avgResult.total_ratings)
+      message: result.message,
+      rating: result.rating,
+      average_rating: result.statistics.average_rating,
+      total_ratings: result.statistics.total_ratings
     });
 
   } catch (error) {
     console.error("Error rating dorm:", error);
-    res.status(500).json({ error: "Failed to rate dorm" });
+    const statusCode = error.message.includes("must be between") ? 400 : 500;
+    res.status(statusCode).json({ error: error.message || "Failed to rate dorm" });
   }
 });
 
 // Get ratings for a specific dorm
 dorms.get("/:id/ratings", async (req, res) => {
   try {
-    const ratings = await Rating.findAll({
-      where: { dormId: req.params.id },
-      include: [{
-        model: User,
-        attributes: ['name', 'email']
-      }],
-      order: [['createdAt', 'DESC']]
-    });
-
+    const ratings = await RatingService.getDormRatings(req.params.id);
     res.json(ratings);
   } catch (error) {
     console.error("Error fetching ratings:", error);
     res.status(500).json({ error: "Failed to fetch ratings" });
+  }
+});
+
+// Get rating distribution for a specific dorm
+dorms.get("/:id/rating-distribution", async (req, res) => {
+  try {
+    const distribution = await RatingService.getRatingDistribution(req.params.id);
+    res.json(distribution);
+  } catch (error) {
+    console.error("Error fetching rating distribution:", error);
+    res.status(500).json({ error: "Failed to fetch rating distribution" });
   }
 });
 

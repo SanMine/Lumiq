@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../sequelize.js";
+import { Room } from "./Room.js";
 
 export const Dorm = sequelize.define("Dorm", {
   id: {
@@ -60,6 +61,18 @@ export const Dorm = sequelize.define("Dorm", {
     type: DataTypes.VIRTUAL,
     get() {
       return this.getDataValue('calculated_total_ratings') || 0;
+    }
+  },
+  rooms: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('rooms') || [];
+    }
+  },
+  rooms_count: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('rooms_count') || 0;
     }
   }
 }, {

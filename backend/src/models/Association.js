@@ -9,4 +9,7 @@ Rating.belongsTo(Dorm, { foreignKey: 'dormId' });
 User.hasMany(Rating, { foreignKey: 'userId' });
 Dorm.hasMany(Rating, { foreignKey: 'dormId' });
 
-export { User, Dorm, Rating };
+Room.belongsTo(Dorm, { foreignKey: 'dormId' });
+Dorm.hasMany(Room, { foreignKey: 'dormId' });
+
+export { User, Dorm, Rating, Room };
