@@ -45,6 +45,7 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ email: "", name: "" });
   const [dorms, setDorms] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [userRatings, setUserRatings] = useState({}); // Track user's pending ratings
   const [ratingMessages, setRatingMessages] = useState({}); // Track rating submission messages
   const [dormForm, setDormForm] = useState({ 
@@ -57,7 +58,25 @@ export default function App() {
     facilities: "",
     insurance_policy: 0,
     Water_fee: 0,
-    Electricity_fee: 0
+    Electricity_fee: 0,
+    room_count: 0
+  });
+  const [room, setRoom] = useState([]); // To store the currently selected room
+  const [selectedDormForRooms, setSelectedDormForRooms] = useState(null); // Track which dorm's rooms to show
+  const [roomForm, setRoomForm] = useState({
+    dormId: "",
+    room_number: "",
+    room_type: "Single",
+    capacity: 1,
+    price_per_month: 0,
+    floor: 1,
+    description: "",
+    amenities: "",
+    images: "",
+    status: "Available",
+    current_resident_id: null,
+    expected_move_in_date: "",
+    expected_available_date: ""
   });
 
   useEffect(() => {
@@ -72,6 +91,10 @@ export default function App() {
     api.get("/dorms")
       .then(r => setDorms(r.data))
       .catch(() => setDorms([]));
+
+    api.get("/rooms")
+      .then(r => setRooms(r.data))
+      .catch(() => setRooms([]));
   }, []);
 
   const submit = async (e) => {
@@ -99,13 +122,73 @@ export default function App() {
         facilities: "",
         insurance_policy: 0,
         Water_fee: 0,
-        Electricity_fee: 0
+        Electricity_fee: 0,
+        room_count: 0
       });
       const { data } = await api.get("/dorms");
       setDorms(data);
     } catch (error) {
       console.error("Failed to create dorm:", error);
       alert("Failed to create dorm. Please check the console for details.");
+    }
+  };
+
+  const roomSubmit = async (e) => {
+    e.preventDefault();
+    if (!roomForm.dormId || !roomForm.room_number || !roomForm.price_per_month) return;
+    
+    try {
+      // Convert images from comma-separated string to array
+      const imagesArray = roomForm.images ? roomForm.images.split(',').map(img => img.trim()) : [];
+      await api.post("/rooms", { ...roomForm, images: imagesArray });
+      setRoomForm({
+        dormId: "",
+        room_number: "",
+        room_type: "Single",
+        capacity: 1,
+        price_per_month: 0,
+        floor: 1,
+        description: "",
+        amenities: "",
+        images: "",
+        status: "Available",
+        current_resident_id: null,
+        expected_move_in_date: "",
+        expected_available_date: ""
+      });
+      const { data } = await api.get("/rooms");
+      setRooms(data);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      alert("Failed to create room. Please check the console for details.");
+    }
+  };
+
+  // Load rooms for a specific dorm
+  const loadDormRooms = async (dormId) => {
+    try {
+      const response = await api.get(`/rooms?dormId=${dormId}`);
+      setSelectedDormForRooms(dormId);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to load dorm rooms:", error);
+      return [];
+    }
+  };
+
+  // Get status emoji and color
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'Available':
+        return { emoji: '✅', color: 'text-green-600', bg: 'bg-green-50' };
+      case 'Occupied':
+        return { emoji: '🏠', color: 'text-red-600', bg: 'bg-red-50' };
+      case 'Reserved':
+        return { emoji: '📝', color: 'text-yellow-600', bg: 'bg-yellow-50' };
+      case 'Maintenance':
+        return { emoji: '🔧', color: 'text-gray-600', bg: 'bg-gray-50' };
+      default:
+        return { emoji: '❓', color: 'text-gray-600', bg: 'bg-gray-50' };
     }
   };
 
@@ -293,6 +376,137 @@ export default function App() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Create Room</h2>
+        <form onSubmit={roomSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={roomForm.dormId}
+            onChange={e => setRoomForm({ ...roomForm, dormId: e.target.value })}
+            required
+          >
+            <option value="">Select Dorm</option>
+            {dorms.map(dorm => (
+              <option key={dorm.id} value={dorm.id}>{dorm.name}</option>
+            ))}
+          </select>
+          
+          <input
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Room Number (e.g., 101, A-205)"
+            value={roomForm.room_number}
+            onChange={e => setRoomForm({ ...roomForm, room_number: e.target.value })}
+            required
+          />
+          
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={roomForm.room_type}
+            onChange={e => setRoomForm({ ...roomForm, room_type: e.target.value })}
+          >
+            <option value="Single">Single Room</option>
+            <option value="Double">Double Room</option>
+            <option value="Triple">Triple Room</option>
+          </select>
+          
+          <input
+            type="number"
+            min="1"
+            max="3"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Capacity"
+            value={roomForm.capacity}
+            onChange={e => setRoomForm({ ...roomForm, capacity: parseInt(e.target.value) })}
+          />
+          
+          <input
+            type="number"
+            step="0.01"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Price per Month ($)"
+            value={roomForm.price_per_month}
+            onChange={e => setRoomForm({ ...roomForm, price_per_month: parseFloat(e.target.value) })}
+            required
+          />
+          
+          <input
+            type="number"
+            min="1"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Floor"
+            value={roomForm.floor}
+            onChange={e => setRoomForm({ ...roomForm, floor: parseInt(e.target.value) })}
+          />
+          
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={roomForm.status}
+            onChange={e => setRoomForm({ ...roomForm, status: e.target.value })}
+          >
+            <option value="Available">Available</option>
+            <option value="Reserved">Reserved</option>
+            <option value="Occupied">Occupied</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+          
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={roomForm.current_resident_id || ""}
+            onChange={e => setRoomForm({ ...roomForm, current_resident_id: e.target.value ? parseInt(e.target.value) : null })}
+          >
+            <option value="">No Current Resident</option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>{user.name}</option>
+            ))}
+          </select>
+          
+          <input
+            type="date"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Expected Move-in Date"
+            value={roomForm.expected_move_in_date}
+            onChange={e => setRoomForm({ ...roomForm, expected_move_in_date: e.target.value })}
+          />
+          
+          <input
+            type="date"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Expected Available Date"
+            value={roomForm.expected_available_date}
+            onChange={e => setRoomForm({ ...roomForm, expected_available_date: e.target.value })}
+          />
+          
+          <input
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Amenities (e.g., AC, WiFi, Desk)"
+            value={roomForm.amenities}
+            onChange={e => setRoomForm({ ...roomForm, amenities: e.target.value })}
+          />
+          
+          <input
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Image URLs (comma-separated)"
+            value={roomForm.images}
+            onChange={e => setRoomForm({ ...roomForm, images: e.target.value })}
+          />
+          
+          <textarea
+            className="md:col-span-2 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Room Description"
+            value={roomForm.description}
+            onChange={e => setRoomForm({ ...roomForm, description: e.target.value })}
+            rows="3"
+          />
+          
+          <button 
+            type="submit"
+            className="md:col-span-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+          >
+            Add Room
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Users</h2>
         {users.length === 0 ? (
           <p className="text-gray-500 text-center py-4">No users found</p>
@@ -375,7 +589,78 @@ export default function App() {
                       <p>💰 Insurance Policy: ${d.insurance_policy}</p>
                       <p>💧 Water Fee: ${d.Water_fee}</p>
                       <p>⚡ Electricity Fee: ${d.Electricity_fee}</p>
+                      <p>🏠 Total Rooms: {rooms.filter(r => r.dormId === d.id).length}</p>
+                      <p>✅ Available Rooms: {rooms.filter(r => r.dormId === d.id && r.status === 'Available').length}</p>
                     </div>
+
+                    {/* Show Rooms Button */}
+                    <button
+                      onClick={async () => {
+                        if (selectedDormForRooms === d.id) {
+                          setSelectedDormForRooms(null);
+                        } else {
+                          await loadDormRooms(d.id);
+                        }
+                      }}
+                      className="mt-3 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm font-medium"
+                    >
+                      {selectedDormForRooms === d.id ? 'Hide Rooms' : 'Show Rooms'}
+                    </button>
+
+                    {/* Display Rooms for this Dorm */}
+                    {selectedDormForRooms === d.id && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-md">
+                        <h4 className="font-medium text-gray-800 mb-3">Rooms in {d.name}</h4>
+                        {rooms.filter(r => r.dormId === d.id).length === 0 ? (
+                          <p className="text-gray-500 text-sm">No rooms available in this dorm yet.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {rooms.filter(r => r.dormId === d.id).map(room => {
+                              const statusDisplay = getStatusDisplay(room.status);
+                              return (
+                                <div key={room.id} className={`p-3 rounded-md border ${statusDisplay.bg} border-gray-200`}>
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <h5 className="font-medium text-gray-800">
+                                        {statusDisplay.emoji} Room {room.room_number}
+                                      </h5>
+                                      <p className="text-sm text-gray-600">{room.room_type} • Floor {room.floor}</p>
+                                      <p className="text-sm font-medium text-green-600">${room.price_per_month}/month</p>
+                                      <p className={`text-sm font-medium ${statusDisplay.color}`}>
+                                        {room.status}
+                                      </p>
+                                      
+                                      {room.CurrentResident && (
+                                        <p className="text-sm text-gray-600">
+                                          👤 Current: {room.CurrentResident.name}
+                                        </p>
+                                      )}
+                                      
+                                      {room.expected_available_date && (
+                                        <p className="text-sm text-orange-600">
+                                          📅 Available: {new Date(room.expected_available_date).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                      
+                                      {room.expected_move_in_date && (
+                                        <p className="text-sm text-blue-600">
+                                          📅 Move-in: {new Date(room.expected_move_in_date).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                      
+                                      {room.amenities && (
+                                        <p className="text-xs text-gray-500 mt-1">🛎️ {room.amenities}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   </div>
                   {d.image_url && (
                     <div className="ml-4">
@@ -386,6 +671,107 @@ export default function App() {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">All Rooms</h2>
+        {rooms.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No rooms found</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rooms.map(room => {
+              const statusDisplay = getStatusDisplay(room.status);
+              const dorm = dorms.find(d => d.id === room.dormId);
+              
+              return (
+                <div key={room.id} className={`p-4 rounded-lg border-2 ${statusDisplay.bg} border-gray-200 hover:shadow-md transition-shadow`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-gray-800">
+                      {statusDisplay.emoji} Room {room.room_number}
+                    </h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.color} bg-white`}>
+                      {room.status}
+                    </span>
+                  </div>
+                  
+                  {dorm && (
+                    <p className="text-sm text-gray-600 mb-2">🏢 {dorm.name} - {dorm.location}</p>
+                  )}
+                  
+                  <div className="space-y-1 text-sm">
+                    <p className="text-gray-600">🛏️ {room.room_type} • Capacity: {room.capacity}</p>
+                    <p className="text-gray-600">🏢 Floor {room.floor}</p>
+                    <p className="font-medium text-green-600">💰 ${room.price_per_month}/month</p>
+                    
+                    {room.CurrentResident && (
+                      <p className="text-gray-700 font-medium">
+                        👤 {room.CurrentResident.name}
+                      </p>
+                    )}
+                    
+                    {room.expected_available_date && (
+                      <p className="text-orange-600 font-medium">
+                        📅 Available: {new Date(room.expected_available_date).toLocaleDateString()}
+                        <span className="text-gray-500">
+                          {' '}({Math.ceil((new Date(room.expected_available_date) - new Date()) / (1000 * 60 * 60 * 24))} days)
+                        </span>
+                      </p>
+                    )}
+                    
+                    {room.expected_move_in_date && (
+                      <p className="text-blue-600">
+                        📅 Move-in: {new Date(room.expected_move_in_date).toLocaleDateString()}
+                      </p>
+                    )}
+                    
+                    {room.amenities && (
+                      <p className="text-gray-600">🛎️ {room.amenities}</p>
+                    )}
+                    
+                    {room.description && (
+                      <p className="text-gray-500 text-xs mt-2">{room.description}</p>
+                    )}
+                  </div>
+                  
+                  {/* Availability Message */}
+                  <div className="mt-3 p-2 bg-white rounded-md">
+                    <p className="text-xs">
+                      {room.status === 'Available' && '✅ Available now! Ready to book.'}
+                      {room.status === 'Occupied' && room.expected_available_date && 
+                        `🏠 Occupied until ${new Date(room.expected_available_date).toLocaleDateString()}`}
+                      {room.status === 'Occupied' && !room.expected_available_date && 
+                        '🏠 Currently occupied - no move-out date set'}
+                      {room.status === 'Reserved' && room.expected_move_in_date && 
+                        `📝 Reserved until ${new Date(room.expected_move_in_date).toLocaleDateString()}`}
+                      {room.status === 'Reserved' && !room.expected_move_in_date && 
+                        '📝 Currently reserved'}
+                      {room.status === 'Maintenance' && '🔧 Under maintenance - check back later'}
+                    </p>
+                  </div>
+                  
+                  {/* Room Images */}
+                  {room.image_urls && room.image_urls.length > 0 && (
+                    <div className="mt-3 flex space-x-2 overflow-x-auto">
+                      {room.image_urls.slice(0, 3).map((img, index) => (
+                        <img 
+                          key={index}
+                          src={img} 
+                          alt={`Room ${room.room_number}`} 
+                          className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                        />
+                      ))}
+                      {room.image_urls.length > 3 && (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-600">
+                          +{room.image_urls.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </main>

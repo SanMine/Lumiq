@@ -1,7 +1,5 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../sequelize.js";
-import { Dorm } from "./Dorm.js";
-import { dorms } from "../routes/dorms.js";
 
 export const Room = sequelize.define("Room", 
     {
@@ -14,10 +12,9 @@ export const Room = sequelize.define("Room",
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-                model: 'dorms',  // Updated to match actual table name
+                model: 'dorms',
                 key: 'id'
             },
-        
         },
         room_number: {
             type: DataTypes.STRING,
@@ -55,24 +52,72 @@ export const Room = sequelize.define("Room",
             allowNull: true,
         },
         images: {
-            type: DataTypes.ARRAY(DataTypes.STRING),
+            type: DataTypes.JSON,
             allowNull: true,
+            comment: 'Array of image URLs stored as JSON'
         },
         status: {
-            type: DataTypes.ENUM('Available', 'Occupied', 'Maintenance'),
+            type: DataTypes.ENUM('Available', 'Reserved', 'Occupied', 'Maintenance'),
             allowNull: false,
             defaultValue: 'Available',
+        },
+        current_resident_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true, // Can be null when room is empty
+            references: {
+                model: 'users',
+                key: 'id'
+            },
+        },
+        expected_move_in_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Expected date when new tenant will move in'
+        },
+        expected_available_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Expected date when room will become available (move out date)'
+        },
+        // Virtual fields for easier access
+        image_urls: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const images = this.getDataValue('images');
+                return images ? (Array.isArray(images) ? images : []) : [];
+            }
+        },
+        current_resident_name: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const user = this.getDataValue('CurrentResident');
+                return user ? user.name : null;
+            }
+        },
+        display_status: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const status = this.getDataValue('status');
+                const expectedDate = this.getDataValue('expected_available_date');
+                
+                if (status === 'Available') {
+                    return 'Available Now';
+                } else if ((status === 'Occupied' || status === 'Reserved') && expectedDate) {
+                    return `${status} until ${expectedDate.toLocaleDateString()}`;
+                } else {
+                    return status;
+                }
+            }
         }
     },
     {
         timestamps: true,
-        tableName: 'rooms',  // Set explicit table name
+        tableName: 'rooms',
         indexes: [
             {
                 unique: true,
                 fields: ['room_number', 'dormId'],
-
-            },]
-            
+            },
+        ]
     }
 )

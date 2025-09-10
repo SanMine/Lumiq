@@ -13,6 +13,7 @@ import { sequelize } from "../sequelize.js";
 import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
 import { dorms } from "./routes/dorms.js";
+import { rooms } from "./routes/rooms.js";
 import { errorHandler } from "./middlewares/error.js";
 
 // Import models and associations
@@ -39,6 +40,7 @@ app.get("/test", (req, res) => {
 app.use("/api", health);
 app.use("/api/users", users);
 app.use("/api/dorms", dorms);
+app.use("/api/rooms", rooms);
 
 // Error handler (last)
 app.use(errorHandler);
@@ -50,8 +52,9 @@ const PORT = process.env.PORT || 5000;
     await sequelize.authenticate();
     console.log("✅ Database connected successfully");
     
-        // Dev only: auto-create tables. For production, switch to migrations.
-    await sequelize.sync({ force: false });
+    // Dev only: auto-create tables. For production, switch to migrations.
+    await sequelize.sync({ force: false, alter: true });
+    console.log("✅ Database tables synced successfully");
     
     app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
   } catch (error) {
