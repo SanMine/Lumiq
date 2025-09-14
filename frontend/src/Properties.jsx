@@ -9,7 +9,31 @@ export const useProperties = () => {
   // Users
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ email: "", name: "" });
-  
+
+  // Personalities
+  const [personalities, setPersonalities] = useState([]);
+  const [personalityForm, setPersonalityForm] = useState({
+    userId: "",
+    nickname: "",
+    age: "",
+    gender: "",
+    description: "",
+    contact: "",
+    sleep_schedule: "",
+    lifestyle: [],
+    sleep_type: "",
+    study_habits: "",
+    cleanliness: "",
+    social: "",
+    MBTI: "",
+    going_out: "",
+    smoking: false,
+    drinking: "",
+    pets: "",
+    noise_tolerance: "",
+    temperature: ""
+  });
+
   // Dorms
   const [dorms, setDorms] = useState([]);
   const [dormForm, setDormForm] = useState({ 
@@ -61,6 +85,11 @@ export const useProperties = () => {
       .then(r => setUsers(r.data))
       .catch(() => setUsers([]));
 
+    // Load personalities
+    api.get("/personalities")
+      .then(r => setPersonalities(r.data))
+      .catch(() => setPersonalities([]));
+
     // Load dorms
     api.get("/dorms")
       .then(r => setDorms(r.data))
@@ -80,6 +109,35 @@ export const useProperties = () => {
     setForm({ email: "", name: "" });
     const { data } = await api.get("/users");
     setUsers(data);
+  };
+
+  const submitPersonality = async (e) => {
+    e.preventDefault();
+    if (!personalityForm.userId) return;
+    await api.post("/personalities", personalityForm);
+    setPersonalityForm({
+      userId: "",
+      nickname: "",
+      age: "",
+      gender: "",
+      description: "",
+      contact: "",
+      sleep_schedule: "",
+      lifestyle: [],
+      sleep_type: "",
+      study_habits: "",
+      cleanliness: "",
+      social: "",
+      MBTI: "",
+      going_out: "",
+      smoking: false,
+      drinking: "",
+      pets: "",
+      noise_tolerance: "",
+      temperature: ""
+    });
+    const { data } = await api.get("/personalities");
+    setPersonalities(data);
   };
 
   const submitDorm = async (e) => {
@@ -219,6 +277,12 @@ export const useProperties = () => {
     setForm,
     submitUser,
     
+    // Personalities
+    personalities,
+    personalityForm,
+    setPersonalityForm,
+    submitPersonality,
+
     // Dorms
     dorms,
     dormForm,
