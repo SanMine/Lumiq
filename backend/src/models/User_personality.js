@@ -29,6 +29,10 @@ export const User_personality = sequelize.define("User_personality", {
         allowNull: false,
         defaultValue: 'Prefer Not to Say',
     },
+    nationality: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
     description: {
         type: DataTypes.TEXT,
         allowNull: true
@@ -58,9 +62,9 @@ export const User_personality = sequelize.define("User_personality", {
         defaultValue: 'flexible'
     },
     cleanliness: {
-        type: DataTypes.ENUM('Neat Freak', 'Average', 'Messy'),
+        type: DataTypes.ENUM('Tidy', 'Moderate', 'Messy'),
         allowNull: false,
-        defaultValue: 'Average'
+        defaultValue: 'Moderate'
     },
     social: {
         type: DataTypes.ENUM('Quiet', 'Social', 'Moderate'),

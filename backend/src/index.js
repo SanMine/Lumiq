@@ -17,6 +17,7 @@ import { rooms } from "./routes/rooms.js";
 import { auth } from "./routes/auth.js";  // 🔐 Import our new authentication routes
 import { errorHandler } from "./middlewares/error.js";
 import { personalities } from "./routes/personalities.js"; // Import personalities routes
+import { preferred_roommate } from "./routes/preferred_roommate.js";
 
 // Import models and associations
 import "./models/Association.js";
@@ -45,6 +46,7 @@ app.use("/api/dorms", dorms);
 app.use("/api/rooms", rooms);
 app.use("/api/personalities", personalities);
 app.use("/api/auth", auth);  // 🔐 Mount authentication routes at /api/auth
+app.use("/api/preferred_roommate", preferred_roommate);
 
 // Error handler (last)
 app.use(errorHandler);
