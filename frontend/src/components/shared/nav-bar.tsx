@@ -45,7 +45,7 @@ export default function Navbar() {
                             <ModeToggle />
                             <AuthDropdown />
                         </> : <>
-                                <Button onClick={() => setAuth(true)} variant='outline' className='rounded-full cursor-pointer w-fit min-h-[40px] font-semibold'>Log In</Button>
+                            <Button onClick={() => setAuth(true)} variant='outline' className='rounded-full cursor-pointer w-fit min-h-[40px] font-semibold'>Log In</Button>
                             <Button
                                 onClick={() => setAuth(true)}
                                 className="rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 font-semibold hover:from-pink-500 hover:via-purple-500 hover:to-blue-400 transition-colors duration-300 w-fit min-h-[40px] text-white cursor-pointer">
