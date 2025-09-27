@@ -19,11 +19,11 @@ export default function Footer() {
                         <p className="mb-6 max-w-xs">
                             Your gateway to dorm life. Discover, explore, and share your campus living experience.
                         </p>
-                        <div className="flex items-center gap-2">
-                            <a target="_blank" className="flex items-center justify-center w-10 h-10 rounded-full hover:text-blue-600" href={'https://www.facebook.com/share/12K662nTcjn/?mibextid=wwXIfr'}><FaFacebookF className="size-5" /></a>
-                            <a target="_blank" className="flex items-center justify-center w-10 h-10 rounded-full hover:text-pink-500" href={'https://www.instagram.com/fisheeeshhh/'}><FaInstagram className="size-5" /></a>
-                            <a target="_blank" className="flex items-center justify-center w-10 h-10 rounded-full hover:text-blue-500" href={'https://www.linkedin.com/in/syp-dev'}><FaLinkedin className="size-5" /></a>
-                            <a target="_blank" className="flex items-center justify-center w-10 h-10 rounded-full hover:text-black" href={'https://github.com/fisheeesh'}><FaXTwitter className="size-5" /></a>
+                        <div className="flex items-center gap-4">
+                            <a target="_blank" className="flex items-center justify-center hover:text-blue-600" href={'https://www.facebook.com/share/12K662nTcjn/?mibextid=wwXIfr'}><FaFacebookF className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-pink-500" href={'https://www.instagram.com/fisheeeshhh/'}><FaInstagram className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-blue-500" href={'https://www.linkedin.com/in/syp-dev'}><FaLinkedin className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-black" href={'https://github.com/fisheeesh'}><FaXTwitter className="size-5" /></a>
                         </div>
                     </section>
                     <section className="grid grid-cols-2 gap-10">
@@ -40,7 +40,7 @@ export default function Footer() {
                                                         el.scrollIntoView({ behavior: 'smooth' });
                                                     }
                                                 }}
-                                                className={`hover:underline cursor-pointer hover:decoration-dashed`}>{link.title}</span>
+                                                className={`text-muted-foreground hover:text-black transition-colors duration-300 cursor-pointer`}>{link.title}</span>
                                         </li>
                                     ))}
                                 </ul>

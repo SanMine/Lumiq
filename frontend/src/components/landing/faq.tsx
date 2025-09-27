@@ -17,7 +17,7 @@ export default function FAQ() {
                 {faqs.map((faq, index) => (
                     <div
                         key={index}
-                        className="border">
+                        className="border rounded-md">
                         <button
                             onClick={() => toggle(index)}
                             className="w-full flex cursor-pointer justify-between items-center p-4 font-medium text-left"

@@ -23,7 +23,7 @@ export default function FeatureDormLists() {
           ))
         }
       </div>
-      <Link to="/dorms" aria-label="See All Dorms" className='flex items-center gap-3 justify-center font-medium'>
+      <Link to="/dorms" aria-label="See All Dorms" className='flex items-center gap-3 justify-center font-medium text-muted-foreground hover:text-primary transition-colors duration-300'>
         <AiOutlineArrowRight className='animate-point' size="1.2rem" aria-hidden="true" />
         See All Dorms
       </Link>

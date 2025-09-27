@@ -35,7 +35,7 @@ export default function Testimonials() {
                         <CarouselItem
                             key={item.id}
                             className="pl-4 lg:basis-1/3">
-                            <div className="p-4 flex lg:px-4 gap-4 flex-col items-center border rounded-md h-full text-center">
+                            <div className="p-4 py-8 flex lg:px-4 gap-4 flex-col items-center border rounded-md h-full text-center">
                                 <img
                                     src={item.image}
                                     alt={item.name}
