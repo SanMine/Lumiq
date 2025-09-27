@@ -5,7 +5,7 @@ export default function RootLayout() {
     return (
         <div>
             <Navbar />
-            <div className="pt-20 md:pt-24 max-w-[1400px] mx-auto px-4 pb-5">
+            <div className="pt-20 md:pt-24">
                 <Outlet />
             </div>
         </div>
