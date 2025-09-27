@@ -7,7 +7,6 @@ import LoginPage from './pages/auth/login-page'
 import RegisterPage from './pages/auth/register-page'
 import NotFoundPage from './pages/not-found/not-found-page'
 
-
 export default function Router() {
     const router = createBrowserRouter([
         {

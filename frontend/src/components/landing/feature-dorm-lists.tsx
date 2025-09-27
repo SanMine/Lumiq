@@ -7,8 +7,8 @@ export default function FeatureDormLists() {
   return (
     <section className="py-24 w-full max-w-6xl mx-auto px-8">
       <div className="max-w-3xl mx-auto flex flex-col items-center">
-        <h2 className="text-3xl font-bold">Featured Dorm Listings</h2>
-        <p className="text-sm text-muted-foreground tracking-wide">Handpicked residence for an amazing student life.</p>
+        <h2 className="text-2xl md:text-3xl font-bold">Featured Dorm Listings</h2>
+        <p className="text-xs md:text-sm text-muted-foreground tracking-wide text-center">Handpicked residence for an amazing student life.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-8">
         {

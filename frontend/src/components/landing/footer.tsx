@@ -29,7 +29,7 @@ export default function Footer() {
                     <section className="grid grid-cols-2 gap-10">
                         {footerLinks.map(({ title, items }, categoryIndex) => (
                             <div key={categoryIndex}>
-                                <h3 className="mb-4 text-lg font-bold uppercase">{title}</h3>
+                                <h3 className="mb-4 text-base md:text-lg font-bold uppercase">{title}</h3>
                                 <ul className="space-y-3">
                                     {items.map((link, index) => (
                                         <li key={index}>
@@ -40,7 +40,7 @@ export default function Footer() {
                                                         el.scrollIntoView({ behavior: 'smooth' });
                                                     }
                                                 }}
-                                                className={`text-muted-foreground hover:text-black transition-colors duration-300 cursor-pointer`}>{link.title}</span>
+                                                className={`text-muted-foreground hover:text-black text-sm md:text-base transition-colors duration-300 cursor-pointer`}>{link.title}</span>
                                         </li>
                                     ))}
                                 </ul>

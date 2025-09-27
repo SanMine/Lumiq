@@ -19,8 +19,8 @@ export default function Testimonials() {
         <section className="pb-32 pt-16 w-full max-w-6xl mx-auto px-8">
             <div className="max-w-6xl mx-auto flex flex-col text-center items-center mb-6">
                 <FaQuoteLeft className="h-12 w-12 mb-2" />
-                <h2 className="text-3xl font-bold">What Our Community Says</h2>
-                <p className="text-sm text-muted-foreground tracking-wide">
+                <h2 className="text-2xl md:text-3xl font-bold">What Our Community Says</h2>
+                <p className="text-sm md:text-base text-muted-foreground tracking-wide">
                     Hear from our residents about their dormitory life experiences.
                 </p>
             </div>

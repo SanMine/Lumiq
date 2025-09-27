@@ -45,7 +45,7 @@ export default function NewsLetterForm() {
                             <FormLabel className="sr-only">Email Address</FormLabel>
                             <FormControl>
                                 <Input
-                                    className="pr-12"
+                                    className="pr-12 text-sm md:text-base"
                                     disabled={form.formState.isSubmitting}
                                     placeholder="name@gmail.com"
                                     {...field}
