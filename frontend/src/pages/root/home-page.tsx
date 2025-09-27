@@ -4,6 +4,7 @@ import FeatureDormLists from "@/components/landing/feature-dorm-lists"
 import Footer from "@/components/landing/footer"
 import GetStarted from "@/components/landing/get-started"
 import Hero from "@/components/landing/hero"
+import ScrollTopBtn from "@/components/shared/scroll-top-btn"
 
 export default function HomePage() {
     return (
@@ -14,6 +15,7 @@ export default function HomePage() {
             <GetStarted />
             <FAQ />
             <Footer />
+            <ScrollTopBtn />
         </>
     )
 }

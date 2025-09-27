@@ -151,6 +151,10 @@
   }
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .hamburger {
   cursor: pointer;
   width: 24px;

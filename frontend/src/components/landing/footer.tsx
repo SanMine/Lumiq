@@ -17,7 +17,7 @@ export default function Footer() {
                             </h1>
                         </div>
                         <p className="mb-6 max-w-xs">
-                            Your gateway to a world of blogs. Discover, explore, and share your reading journey.
+                            Your gateway to dorm life. Discover, explore, and share your campus living experience.
                         </p>
                         <div className="flex items-center gap-2">
                             <a target="_blank" className="flex items-center justify-center w-10 h-10 rounded-full hover:text-blue-600" href={'https://www.facebook.com/share/12K662nTcjn/?mibextid=wwXIfr'}><FaFacebookF className="size-5" /></a>
