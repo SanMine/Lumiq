@@ -24,11 +24,7 @@ export default function Router() {
             ]
         },
         {
-            path: '/sign-in',
-            Component: SignInPage,
-        },
-        {
-            path: '/sign-up',
+            path: '/auth',
             lazy: async () => {
                 const { default: AuthRootLayout } = await import('@/pages/auth/auth-root-layout')
                 return { Component: AuthRootLayout }
@@ -36,7 +32,12 @@ export default function Router() {
             children: [
                 {
                     index: true,
-                    Component: SignUpPage
+                    path: 'sign-in',
+                    Component: SignInPage
+                },
+                {
+                    path: 'sign-up',
+                    Component: SignUpPage,
                 },
             ]
         },

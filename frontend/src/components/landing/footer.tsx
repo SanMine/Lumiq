@@ -1,9 +1,9 @@
 import { APP_NAME, footerLinks } from "@/lib/constants";
 import { FaFacebookF, FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import { SiLogseq } from "react-icons/si";
-import NewsLetterForm from "../news-letter-form";
 import { Link } from "react-router";
+import NewsLetterForm from "../news-letter-form";
+import Logo from "../shared/logo";
 
 export default function Footer() {
     return (
@@ -11,12 +11,7 @@ export default function Footer() {
             <div className="max-w-[1400px] pt-16 pb-8 mx-auto px-7 sm:px-6 lg:px-8">
                 <section className="flex flex-col xl:flex-row gap-10 pb-10 lg:gap-20 lg:justify-between">
                     <section>
-                        <div className="flex items-center cursor-pointer gap-4 mb-6">
-                            <SiLogseq className='size-5' />
-                            <h1 className="text-xl font-bold tracking-wider dark:bg-gradient-to-r dark:from-purple-400 dark:via-pink-500 dark:to-blue-500 dark:bg-clip-text dark:text-transparent">
-                                {APP_NAME}
-                            </h1>
-                        </div>
+                        <Logo />
                         <p className="mb-6 max-w-xs">
                             Your gateway to dorm life. Discover, explore, and share your campus living experience.
                         </p>

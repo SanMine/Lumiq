@@ -30,7 +30,7 @@ export default function NewsLetterForm() {
         await new Promise(resolve => setTimeout(resolve, 2000))
         form.reset()
         toast.success("Success", {
-            description: "Subscribed to newsletter"
+            description: "You've successfully subscribed to our newsletter!"
         })
     }
 
