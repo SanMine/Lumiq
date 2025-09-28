@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import Loader from './components/shared/loader'
 import SignInPage from './pages/auth/sign-in-page'
 import SignUpPage from './pages/auth/sign-up-page'
@@ -20,7 +20,14 @@ export default function Router() {
                         const { default: HomePage } = await import("@/pages/root/home-page")
                         return { Component: HomePage }
                     },
-                }
+                },
+                {
+                    path: '/roommate-match',
+                    lazy: async () => {
+                        const { default: RoommateMatchingPage } = await import('@/pages/root/roommate-matching-page')
+                        return { Component: RoommateMatchingPage }
+                    }
+                },
             ]
         },
         {
@@ -32,6 +39,9 @@ export default function Router() {
             children: [
                 {
                     index: true,
+                    element: <Navigate to="sign-in" replace />,
+                },
+                {
                     path: 'sign-in',
                     Component: SignInPage
                 },

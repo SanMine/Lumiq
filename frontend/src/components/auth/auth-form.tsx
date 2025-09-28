@@ -46,8 +46,8 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
         <Form {...form}>
             <form className="gap-6 flex flex-col" onSubmit={form.handleSubmit(handleSubmit)} {...props}>
                 <div className="flex flex-col items-center gap-2 text-center">
-                    <h1 className="text-2xl font-bold">{formType === 'SIGNIN' ? SIGNIN_TITLE : SIGNUP_TITLE}</h1>
-                    <p className="text-muted-foreground text-sm text-balance">
+                    <h1 className="text-xl md:text-2xl font-bold">{formType === 'SIGNIN' ? SIGNIN_TITLE : SIGNUP_TITLE}</h1>
+                    <p className="text-muted-foreground text-xs md:text-sm text-balance">
                         {formType === 'SIGNIN' ? SIGNIN_SUBTITLE : SIGNUP_SUBTITLE}
                     </p>
                 </div>
