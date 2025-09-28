@@ -4,11 +4,11 @@ import dorm3 from '@/assets/dorm-3.jpg'
 
 export const APP_NAME = "Lumiq";
 export const SIGNIN = "Sign In";
-export const SIGNIN_TITLE = "Welcome Back!";
-export const SIGNIN_SUBTITLE = "The faster you fill up, the faster you get a ticket.";
+export const SIGNIN_TITLE = "Welcome Back! 💫";
+export const SIGNIN_SUBTITLE = "The faster you fill up, the faster you get your match.";
 export const SIGNUP = "Sign Up";
-export const SIGNUP_TITLE = "Create an account";
-export const SIGNUP_SUBTITLE = "Join us today and unlock your potential.";
+export const SIGNUP_TITLE = "Create your dorm account ✨";
+export const SIGNUP_SUBTITLE = "Join now and get matched with your ideal roommate.";
 
 export const NAVLINKS = [
     { to: "/", name: "Home" },

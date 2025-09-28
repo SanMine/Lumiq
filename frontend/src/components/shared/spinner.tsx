@@ -1,8 +1,8 @@
-import { Loader } from "lucide-react"
+import { ImSpinner9 } from "react-icons/im";
 
 interface SpinnerProps {
     isLoading: boolean,
-    label: string,
+    label?: string,
     children: React.ReactNode
 }
 
@@ -11,8 +11,8 @@ export default function Spinner({ isLoading, label, children }: SpinnerProps) {
         <>
             {
                 isLoading ? <>
-                    <Loader className='size-4 animate-spin' />
-                    <span>{label}</span>
+                    <ImSpinner9 className='size-4 animate-spin' />
+                    {label && <span>{label}</span>}
                 </> : children
             }
         </>

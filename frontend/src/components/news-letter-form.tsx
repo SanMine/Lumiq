@@ -13,10 +13,10 @@ import {
     FormMessage
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Loader } from "lucide-react"
 import { NewsLetterFormSchema } from "@/lib/validators"
 import { toast } from "sonner"
 import { FaPaperPlane } from "react-icons/fa"
+import Spinner from "./shared/spinner"
 
 export default function NewsLetterForm() {
     const form = useForm<z.infer<typeof NewsLetterFormSchema>>({
@@ -56,11 +56,10 @@ export default function NewsLetterForm() {
                                 className="absolute top-[4px] right-[3.5px] size-7 z-20 cursor-pointer"
                                 size='icon'
                                 disabled={form.formState.isSubmitting}>
-                                {
-                                    form.formState.isSubmitting ?
-                                        <Loader className="size-3 animate-spin" aria-hidden="true" /> :
-                                        <FaPaperPlane className="size-3" aria-hidden="true" />
-                                }
+                                <Spinner
+                                    isLoading={form.formState.isSubmitting}>
+                                    <FaPaperPlane className="size-3" aria-hidden="true" />
+                                </Spinner>
                                 <span className="sr-only">Join newsletter</span>
                             </Button>
                         </FormItem>
