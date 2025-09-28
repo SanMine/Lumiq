@@ -14,19 +14,19 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Loader } from "lucide-react"
-import { NewsLetterSchema } from "@/lib/validators"
+import { NewsLetterFormSchema } from "@/lib/validators"
 import { toast } from "sonner"
 import { FaPaperPlane } from "react-icons/fa"
 
 export default function NewsLetterForm() {
-    const form = useForm<z.infer<typeof NewsLetterSchema>>({
+    const form = useForm<z.infer<typeof NewsLetterFormSchema>>({
         defaultValues: {
             email: ''
         },
-        resolver: zodResolver(NewsLetterSchema)
+        resolver: zodResolver(NewsLetterFormSchema)
     })
 
-    const onSubmit: SubmitHandler<z.infer<typeof NewsLetterSchema>> = async () => {
+    const onSubmit: SubmitHandler<z.infer<typeof NewsLetterFormSchema>> = async () => {
         await new Promise(resolve => setTimeout(resolve, 2000))
         form.reset()
         toast.success("Success", {
@@ -40,12 +40,12 @@ export default function NewsLetterForm() {
                 <FormField
                     control={form.control}
                     name="email"
-                    render={({ field }: { field: ControllerRenderProps<z.infer<typeof NewsLetterSchema>, "email"> }) => (
+                    render={({ field }: { field: ControllerRenderProps<z.infer<typeof NewsLetterFormSchema>, "email"> }) => (
                         <FormItem className="relative space-y-0">
                             <FormLabel className="sr-only">Email Address</FormLabel>
                             <FormControl>
                                 <Input
-                                    className="pr-12 text-sm md:text-base"
+                                    className="pr-12 text-sm"
                                     disabled={form.formState.isSubmitting}
                                     placeholder="name@gmail.com"
                                     {...field}

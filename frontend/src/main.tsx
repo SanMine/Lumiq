@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import Router from './rotues.tsx'
+import Router from './routes.tsx'
 import { ThemeProvider } from './components/shared/theme-provider.tsx'
 import { Toaster } from 'sonner'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'

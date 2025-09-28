@@ -1,11 +1,11 @@
 import { Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
-import RootLayout from './pages/root/root-layout'
 import Loader from './components/shared/loader'
+import SignInPage from './pages/auth/sign-in-page'
+import SignUpPage from './pages/auth/sign-up-page'
 import ErrorElement from './pages/not-found/error-element'
-import LoginPage from './pages/auth/login-page'
-import RegisterPage from './pages/auth/register-page'
 import NotFoundPage from './pages/not-found/not-found-page'
+import RootLayout from './pages/root/root-layout'
 
 export default function Router() {
     const router = createBrowserRouter([
@@ -24,11 +24,11 @@ export default function Router() {
             ]
         },
         {
-            path: '/login',
-            Component: LoginPage,
+            path: '/sign-in',
+            Component: SignInPage,
         },
         {
-            path: '/register',
+            path: '/sign-up',
             lazy: async () => {
                 const { default: AuthRootLayout } = await import('@/pages/auth/auth-root-layout')
                 return { Component: AuthRootLayout }
@@ -36,7 +36,7 @@ export default function Router() {
             children: [
                 {
                     index: true,
-                    Component: RegisterPage,
+                    Component: SignUpPage
                 },
             ]
         },

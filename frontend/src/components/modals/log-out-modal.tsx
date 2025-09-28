@@ -24,7 +24,7 @@ export default function LogoutModal() {
                 <DialogClose asChild>
                     <Button variant="outline" className="cursor-pointer">Cancel</Button>
                 </DialogClose>
-                <Button type="submit" onClick={() => navigate("/login")} variant='destructive' className="cursor-pointer">
+                <Button type="submit" onClick={() => navigate("/sign-in")} variant='destructive' className="cursor-pointer">
                     <Spinner isLoading={false} label={'Logging out...'}>
                         Confirm
                     </Spinner>

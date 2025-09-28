@@ -3,6 +3,7 @@ import { FaFacebookF, FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { SiLogseq } from "react-icons/si";
 import NewsLetterForm from "../news-letter-form";
+import { Link } from "react-router";
 
 export default function Footer() {
     return (
@@ -33,14 +34,9 @@ export default function Footer() {
                                 <ul className="space-y-3">
                                     {items.map((link, index) => (
                                         <li key={index}>
-                                            <span
-                                                onClick={() => {
-                                                    const el = document.querySelector(`${link.href}`);
-                                                    if (el) {
-                                                        el.scrollIntoView({ behavior: 'smooth' });
-                                                    }
-                                                }}
-                                                className={`text-muted-foreground hover:text-black text-sm md:text-base transition-colors duration-300 cursor-pointer`}>{link.title}</span>
+                                            <Link
+                                                to={link.href}
+                                                className={`text-muted-foreground hover:text-black dark:hover:text-white text-sm md:text-base transition-colors duration-300 cursor-pointer`}>{link.title}</Link>
                                         </li>
                                     ))}
                                 </ul>
