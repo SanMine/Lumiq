@@ -1,7 +1,13 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import dormImage from "./assets/dorm1.jpeg"; // Replace with actual dorm image
 
 export default function RoomsDetail() {
+  const { id } = useParams();
+  
+  // You can use this id to fetch specific dorm data or filter from your dorms array
+  console.log("Dorm ID:", id);
+
   return (
     <div className="min-h-screen bg-[#0d0d1f] text-white p-6">
       {/* Header */}
@@ -47,7 +53,7 @@ export default function RoomsDetail() {
         <p className="text-gray-300">
           Campus Suites offers modern student living with a focus on community and
           convenience. Located just steps from MFU campus, it provides a range of
-          room options and amenities to suit every student’s needs.
+          room options and amenities to suit every student's needs.
         </p>
 
         {/* Highlights */}
