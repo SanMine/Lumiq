@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
-import { api } from "./lib/api";
-import Rooms from "./Rooms"
-import "./App.css"
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dorms from "./Dorms";
+import RoomsDetail from "./Roomsdetail";
+import "./App.css";
 
-function App(){   
-  return (     
-    <div>
-      <Rooms/>
-    </div>   
-  ); 
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dorms />} />
+        <Route path="/rooms/:id" element={<RoomsDetail />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
