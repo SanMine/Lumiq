@@ -1,0 +1,33 @@
+{
+  "name": "lumiq",
+  "version": "1.0.0",
+  "description": "Lumiq Full Stack Application",
+  "private": true,
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.0.0"
+  },
+  "volta": {
+    "node": "22.19.0"
+  },
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "check-node": "node --version",
+    "postinstall": "echo 'Node.js version:' && node --version && echo 'Required: >=22.19.0'"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {},
+  "keywords": [
+    "lumiq",
+    "react",
+    "node",
+    "fullstack"
+  ],
+  "author": "Lumiq Team",
+  "license": "MIT"
+}
