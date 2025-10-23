@@ -35,6 +35,10 @@
 
 }
 
+@utility bg-gradient {
+  @apply bg-gradient-to-r from-pink-500 to-purple-600 hover:brightness-110 transition-all duration-300
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

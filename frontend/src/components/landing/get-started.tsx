@@ -13,7 +13,7 @@ export default function GetStarted() {
             <p className="text-xs md:text-sm text-muted-foreground max-w-lg mx-auto pb-8 px-4 pt-2">Our smart matching helps you find roomates who share your lifestyle and interest.</p>
             <Button
                 onClick={handleClick}
-                className="px-8 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 font-semibold hover:from-pink-500 hover:via-purple-500 hover:to-blue-400 transition-colors duration-300 w-fit min-h-[40px] text-white cursor-pointer">
+                className="px-8 rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                 Start Matching
             </Button>
         </section>

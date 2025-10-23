@@ -107,7 +107,7 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                     <div className="flex flex-col gap-4">
                         <Button
                             type="submit"
-                            className="w-full min-h-[48px] flex items-center gap-2 justify-center cursor-pointer"
+                            className="w-full min-h-[48px] flex items-center gap-2 justify-center cursor-pointer bg-gradient text-white"
                             disabled={isWorking}
                         >
                             <Spinner
@@ -142,7 +142,8 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                     formType === 'SIGNIN' ?
                         <div className="mt-4 text-center text-sm">
                             Don&apos;t have an account?{" "}
-                            <Link to='/auth/sign-up' className="underline-offset-4 hover:underline font-bold">
+                            <Link to='/auth/sign-up'
+                                className="underline-offset-4 hover:underline font-bold tracking-wider">
                                 Sign up
                             </Link>
                         </div> :

@@ -28,6 +28,20 @@ export default function Router() {
                         return { Component: RoommateMatchingPage }
                     }
                 },
+                {
+                    path: "/roommates",
+                    lazy: async () => {
+                        const { default: RoommatesPage } = await import('@/pages/root/roommates-page')
+                        return { Component: RoommatesPage }
+                    }
+                },
+                {
+                    path: "/roommates/:id",
+                    lazy: async () => {
+                        const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
+                        return { Component: RoommateDetailPage }
+                    }
+                }
             ]
         },
         {
