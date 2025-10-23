@@ -22,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import { LuMoveRight } from "react-icons/lu";
 import Spinner from "@/components/shared/spinner";
+import { useNavigate } from "react-router";
 
 export const RoommateMatchingFormSchema = z.object({
     //* Basic Info
@@ -81,17 +82,20 @@ const DURATION = ["1 semester", "2 semesters", "Full year"] as const;
 const FOOD = ["No preference", "Vegetarian", "Vegan", "Halal", "Kosher"] as const;
 
 export default function RoommateMatchingPage() {
+    const navigate = useNavigate()
+
     const form = useForm<RoommateFormValues>({
         resolver: zodResolver(RoommateMatchingFormSchema),
         defaultValues: {
             fullName: "",
             age: 18,
         },
-        mode: "onTouched",
     });
 
     const handleSubmit: SubmitHandler<RoommateFormValues> = async (values) => {
-        console.log(values);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        console.log(values)
+        navigate('/roommates')
     };
 
     const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -464,7 +468,7 @@ export default function RoommateMatchingPage() {
 
 
                             <div className="flex justify-end pt-2">
-                                <Button type="submit" size="lg" className="rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 font-semibold hover:from-pink-500 hover:via-purple-500 hover:to-blue-400 transition-colors duration-300 w-fit min-h-[40px] text-white cursor-pointer">
+                                <Button type="submit" size="lg" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                                     <Spinner isLoading={isWorking} label="Finding your match...">
                                         Find My Match <LuMoveRight className="ml-1 size-5" />
                                     </Spinner>
