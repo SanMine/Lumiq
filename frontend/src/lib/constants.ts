@@ -12,6 +12,8 @@ export const SIGNUP_SUBTITLE = "Join now and get matched with your ideal roommat
 
 export const NAVLINKS = [
     { to: "/", name: "Home" },
+    { to: "/roommate-match", name: "Roommates Matching" },
+    { to: "/dorms", name: "All Dormitories" },
     { to: "/account", name: "Account" },
 ]
 

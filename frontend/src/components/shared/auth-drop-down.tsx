@@ -16,6 +16,8 @@ import {
 import { useRef } from "react";
 import { IoMdLogOut } from "react-icons/io";
 import { MdOutlineAccountCircle } from "react-icons/md";
+import { FaRegBuilding } from "react-icons/fa";
+import { LiaUsersSolid } from "react-icons/lia";
 import { TbHomeSpark } from "react-icons/tb";
 import { Link } from "react-router";
 import LogoutModal from "../modals/log-out-modal";
@@ -50,6 +52,20 @@ export default function AuthDropdown() {
                             <Link to='/' className="whitespace-nowrap">
                                 <TbHomeSpark className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
                                 Home
+                                <DropdownMenuShortcut>⇧⌘H</DropdownMenuShortcut>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link to='/roommate-match' className="whitespace-nowrap">
+                                <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                Roommates Matching
+                                <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link to='/dorms' className="whitespace-nowrap">
+                                <FaRegBuilding className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                All Dormitories
                                 <DropdownMenuShortcut>⇧⌘D</DropdownMenuShortcut>
                             </Link>
                         </DropdownMenuItem>
