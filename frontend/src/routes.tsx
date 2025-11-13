@@ -22,6 +22,13 @@ export default function Router() {
                     },
                 },
                 {
+                    path: '/dorms',
+                    lazy: async () => {
+                        const { default: AllDorms } = await import('@/pages/root/all-dorms-page')
+                        return { Component: AllDorms }
+                    }
+                },
+                {
                     path: '/roommate-match',
                     lazy: async () => {
                         const { default: RoommateMatchingPage } = await import('@/pages/root/roommate-matching-page')
@@ -40,6 +47,13 @@ export default function Router() {
                     lazy: async () => {
                         const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
                         return { Component: RoommateDetailPage }
+                    }
+                },
+                {
+                    path: "/account",
+                    lazy: async () => {
+                        const { default: MyAccountPage } = await import('@/pages/root/my-account-page')
+                        return { Component: MyAccountPage }
                     }
                 }
             ]
