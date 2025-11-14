@@ -1,18 +1,11 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dorms from "./Dorms";
-import RoomsDetail from "./Roomsdetail";
-import "./App.css";
-import { JSX } from "react";
+import { ThemeProvider } from "./components/shared/theme-provider";
+import Router from "./routes";
 
-// No props, so no types needed here
-function App(): JSX.Element {
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dorms />} />
-        <Route path="/rooms/:id" element={<RoomsDetail />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Router />
+    </ThemeProvider>
   );
 }
 
