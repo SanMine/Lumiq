@@ -2,14 +2,19 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "jsx": "react-jsx",          // ← This is the key
+    "jsx": "react-jsx",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+
+    "baseUrl": ".",                     // 👈 Add this line
+    "paths": {                          // 👈 And this block
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }

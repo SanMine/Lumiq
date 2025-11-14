@@ -8,86 +8,93 @@ import NotFoundPage from './pages/not-found/not-found-page'
 import RootLayout from './pages/root/root-layout'
 
 export default function Router() {
-    const router = createBrowserRouter([
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      Component: RootLayout,
+      errorElement: <ErrorElement />,
+      children: [
         {
-            path: "/",
-            Component: RootLayout,
-            errorElement: <ErrorElement />,
-            children: [
-                {
-                    index: true,
-                    lazy: async () => {
-                        const { default: HomePage } = await import("@/pages/root/home-page")
-                        return { Component: HomePage }
-                    },
-                },
-                {
-                    path: '/dorms',
-                    lazy: async () => {
-                        const { default: AllDorms } = await import('@/pages/root/all-dorms-page')
-                        return { Component: AllDorms }
-                    }
-                },
-                {
-                    path: '/roommate-match',
-                    lazy: async () => {
-                        const { default: RoommateMatchingPage } = await import('@/pages/root/roommate-matching-page')
-                        return { Component: RoommateMatchingPage }
-                    }
-                },
-                {
-                    path: "/roommates",
-                    lazy: async () => {
-                        const { default: RoommatesPage } = await import('@/pages/root/roommates-page')
-                        return { Component: RoommatesPage }
-                    }
-                },
-                {
-                    path: "/roommates/:id",
-                    lazy: async () => {
-                        const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
-                        return { Component: RoommateDetailPage }
-                    }
-                },
-                {
-                    path: "/account",
-                    lazy: async () => {
-                        const { default: MyAccountPage } = await import('@/pages/root/my-account-page')
-                        return { Component: MyAccountPage }
-                    }
-                }
-            ]
+          index: true,
+          lazy: async () => {
+            const { default: HomePage } = await import("@/pages/root/home-page")
+            return { Component: HomePage }
+          },
         },
         {
-            path: '/auth',
-            lazy: async () => {
-                const { default: AuthRootLayout } = await import('@/pages/auth/auth-root-layout')
-                return { Component: AuthRootLayout }
-            },
-            children: [
-                {
-                    index: true,
-                    element: <Navigate to="sign-in" replace />,
-                },
-                {
-                    path: 'sign-in',
-                    Component: SignInPage
-                },
-                {
-                    path: 'sign-up',
-                    Component: SignUpPage,
-                },
-            ]
+          path: '/dorms',
+          lazy: async () => {
+            const { default: AllDorms } = await import('@/pages/root/all-dorms-page')
+            return { Component: AllDorms }
+          }
         },
         {
-            path: '*',
-            Component: NotFoundPage
+          path: '/dorms/:id',
+          lazy: async () => {
+            const { default: RoomsDetail } = await import('@/pages/root/rooms-detail-page')
+            return { Component: RoomsDetail }
+          }
+        },
+        {
+          path: '/roommate-match',
+          lazy: async () => {
+            const { default: RoommateMatchingPage } = await import('@/pages/root/roommate-matching-page')
+            return { Component: RoommateMatchingPage }
+          }
+        },
+        {
+          path: "/roommates",
+          lazy: async () => {
+            const { default: RoommatesPage } = await import('@/pages/root/roommates-page')
+            return { Component: RoommatesPage }
+          }
+        },
+        {
+          path: "/roommates/:id",
+          lazy: async () => {
+            const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
+            return { Component: RoommateDetailPage }
+          }
+        },
+        {
+          path: "/account",
+          lazy: async () => {
+            const { default: MyAccountPage } = await import('@/pages/root/my-account-page')
+            return { Component: MyAccountPage }
+          }
         }
-    ])
+      ]
+    },
+    {
+      path: '/auth',
+      lazy: async () => {
+        const { default: AuthRootLayout } = await import('@/pages/auth/auth-root-layout')
+        return { Component: AuthRootLayout }
+      },
+      children: [
+        {
+          index: true,
+          element: <Navigate to="sign-in" replace />,
+        },
+        {
+          path: 'sign-in',
+          Component: SignInPage
+        },
+        {
+          path: 'sign-up',
+          Component: SignUpPage,
+        },
+      ]
+    },
+    {
+      path: '*',
+      Component: NotFoundPage
+    }
+  ])
 
-    return (
-        <Suspense fallback={<Loader />}>
-            <RouterProvider router={router} />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<Loader />}>
+      <RouterProvider router={router} />
+    </Suspense>
+  )
 }
