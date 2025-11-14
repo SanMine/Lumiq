@@ -2,37 +2,23 @@ import { User } from "./User.js";
 import { Dorm } from "./Dorm.js";
 import { Rating } from "./Rating.js";
 import { Room } from "./Room.js";
-import { User_personality } from "./User_personality.js"; 
+import { User_personality } from "./User_personality.js";
 import { Preferred_roommate } from "./Preferred_roommate.js";
 
-// Personality associations
-User_personality.belongsTo(User, { foreignKey: 'userId' });
-User.hasOne(User_personality, { foreignKey: 'userId' });
+// 🔗 Mongoose uses references instead of associations
+// The relationships are defined through ref fields in each schema
 
-// Preferred roommate associations
-Preferred_roommate.belongsTo(User, { foreignKey: 'userId' });
-User.hasOne(Preferred_roommate, { foreignKey: 'userId' });
+// Personality relationships (via userId reference in User_personality)
+// User.hasOne(User_personality) - User_personality has ref to User via userId
 
-// Rating associations
-Rating.belongsTo(User, { foreignKey: 'userId' });
-Rating.belongsTo(Dorm, { foreignKey: 'dormId' });
+// Preferred roommate relationships (via userId reference in Preferred_roommate)
+// User.hasOne(Preferred_roommate) - Preferred_roommate has ref to User via userId
 
-User.hasMany(Rating, { foreignKey: 'userId' });
-Dorm.hasMany(Rating, { foreignKey: 'dormId' });
+// Rating relationships (via userId and dormId references in Rating)
+// Rating.belongsTo(User) and Rating.belongsTo(Dorm)
 
-// Room associations
-Room.belongsTo(Dorm, { foreignKey: 'dormId' });
-Room.belongsTo(User, { 
-  foreignKey: 'current_resident_id', 
-  as: 'CurrentResident' 
-});
+// Room relationships (via dormId and current_resident_id references in Room)
+// Room.belongsTo(Dorm) - Room has ref to Dorm via dormId
+// Room.belongsTo(User) - Room has ref to User via current_resident_id
 
-Dorm.hasMany(Room, { foreignKey: 'dormId' });
-User.hasOne(Room, { 
-  foreignKey: 'current_resident_id', 
-  as: 'CurrentRoom' 
-});
-
-// 🔧 ISSUE FIXED: Added User_personality to exports (was missing before)
-// This was causing the personalities routes to fail when importing the model
 export { User, Dorm, Rating, Room, User_personality, Preferred_roommate };

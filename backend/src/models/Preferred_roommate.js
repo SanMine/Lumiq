@@ -1,81 +1,109 @@
-import { DataTypes } from "sequelize";
-import { sequelize } from "../../sequelize.js";
-import { User } from "./User.js";
+import mongoose from "mongoose";
 
-export const Preferred_roommate = sequelize.define("Preferred_roommate", {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
+const PreferredRoommateSchema = new mongoose.Schema(
+  {
+    _id: {
+      type: Number,
     },
-
     userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: "users",
-            key: "id"
-        }
+      type: Number,
+      ref: "User",
+      required: true,
+      unique: true,
     },
     preferred_age_range: {
-        type: DataTypes.JSON,
-        allowNull: true,  // Changed to true to allow optional field
-        defaultValue: { min: 18, max: 30 } // Default age range
+      type: {
+        min: { type: Number, default: 18 },
+        max: { type: Number, default: 30 },
+      },
+      default: { min: 18, max: 30 },
     },
     preferred_gender: {
-        type: DataTypes.ENUM('Male','Female','Non-Binary','Trans Male','Trans Female', 'Agender','Genderqueer','Any'),
-        allowNull: true,
-        defaultValue: 'Any'
+      type: String,
+      enum: [
+        "Male",
+        "Female",
+        "Non-Binary",
+        "Trans Male",
+        "Trans Female",
+        "Agender",
+        "Genderqueer",
+        "Any",
+      ],
+      default: "Any",
     },
     preferred_nationality: {
-        type: DataTypes.STRING(100),
-        allowNull: true
+      type: String,
+      default: null,
     },
     preferred_sleep_type: {
-        type: DataTypes.ENUM('Early Bird', 'Night Owl', 'Any'),
-        allowNull: false,
-        defaultValue: 'Any'
+      type: String,
+      enum: ["Early Bird", "Night Owl", "Any"],
+      default: "Any",
     },
     preferred_smoking: {
-        type: DataTypes.BOOLEAN,
-        allowNull: true,
-        defaultValue: false // Default smoking preference
+      type: Boolean,
+      default: false,
     },
     preferred_pets: {
-        type: DataTypes.BOOLEAN,
-        allowNull: true,
-        defaultValue: false // Default pets preference
+      type: Boolean,
+      default: false,
     },
     preferred_noise_tolerance: {
-        type: DataTypes.ENUM('Low', 'Medium', 'High', 'Flexible'),
-        allowNull: false,
-        defaultValue: 'Medium'
+      type: String,
+      enum: ["Low", "Medium", "High", "Flexible"],
+      default: "Medium",
     },
     preferred_cleanliness: {
-        type: DataTypes.ENUM('Tidy', 'Moderate', 'Messy'),
-        allowNull: false,
-        defaultValue: 'Moderate'
+      type: String,
+      enum: ["Tidy", "Moderate", "Messy"],
+      default: "Moderate",
     },
     preferred_MBTI: {
-        type: DataTypes.ENUM('INTJ', 'INFP', 'ENTJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP', 'INFJ', 'INTP', 'ENFJ', 'ENTP', 'Any'),
-        allowNull: true,
-        defaultValue: 'Any'
+      type: String,
+      enum: [
+        "INTJ",
+        "INFP",
+        "ENTJ",
+        "ENFP",
+        "ISTJ",
+        "ISFJ",
+        "ESTJ",
+        "ESFJ",
+        "ISTP",
+        "ISFP",
+        "ESTP",
+        "ESFP",
+        "INFJ",
+        "INTP",
+        "ENFJ",
+        "ENTP",
+        "Any",
+      ],
+      default: "Any",
     },
     preferred_temperature: {
-        type: DataTypes.ENUM('Cold', 'Cool', 'Warm', 'Hot', 'Flexible'),
-        allowNull: false,
-        defaultValue: 'Flexible'
+      type: String,
+      enum: ["Cold", "Cool", "Warm", "Hot", "Flexible"],
+      default: "Flexible",
     },
     additional_preferences: {
-        type: DataTypes.TEXT,
-        allowNull: true
+      type: String,
+      default: null,
     },
     preferred_dorms: {
-        type: DataTypes.JSON,
-        allowNull: true,
-        defaultValue: [] // Array of preferred dorm IDs
-    }
-}, {
-    tableName: "preferred_roommate",
-    timestamps: true
-});
+      type: [Number],
+      ref: "Dorm",
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+    collection: "preferred_roommate",
+  }
+);
+
+export const Preferred_roommate = mongoose.model(
+  "Preferred_roommate",
+  PreferredRoommateSchema
+);

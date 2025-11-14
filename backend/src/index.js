@@ -9,25 +9,36 @@ config({ path: join(__dirname, "../.env") });
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { sequelize } from "../sequelize.js";
+import { connectDatabase } from "./db/connection.js";
 import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
 import { dorms } from "./routes/dorms.js";
 import { rooms } from "./routes/rooms.js";
-import { auth } from "./routes/auth.js";  // 🔐 Import our new authentication routes
+import { auth } from "./routes/auth.js";
 import { errorHandler } from "./middlewares/error.js";
-import { personalities } from "./routes/personalities.js"; // Import personalities routes
+import { personalities } from "./routes/personalities.js";
 import { preferred_roommate } from "./routes/preferred_roommate.js";
+import matchingRoutes from "./routes/matching.js";
 
-// Import models and associations
+// Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
 
 const app = express();
 
+// CORS Configuration - Allow credentials and auth headers
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Authorization']
+};
+
 // Middlewares
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || true }));
+app.use(cors(corsOptions));
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -35,7 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// routes
+// Routes
 app.get("/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
@@ -45,8 +56,9 @@ app.use("/api/users", users);
 app.use("/api/dorms", dorms);
 app.use("/api/rooms", rooms);
 app.use("/api/personalities", personalities);
-app.use("/api/auth", auth);  // 🔐 Mount authentication routes at /api/auth
+app.use("/api/auth", auth);
 app.use("/api/preferred_roommate", preferred_roommate);
+app.use("/api/matching", matchingRoutes);
 
 // Error handler (last)
 app.use(errorHandler);
@@ -55,43 +67,12 @@ const PORT = process.env.PORT || 5000;
 
 (async () => {
   try {
-    await sequelize.authenticate();
+    await connectDatabase();
     console.log("✅ Database connected successfully");
-    
-    // 🔧 IMPROVED DATABASE SYNC - Handle relationships properly
-    try {
-      // First try to sync without altering (safe for existing data)
-      await sequelize.sync({ force: false, alter: false });
-      console.log("✅ Database tables synced successfully");
-    } catch (syncError) {
-      console.log("⚠️  Standard sync failed, trying to handle foreign key issues...");
-      console.log("Error details:", syncError.message);
-      
-      // For development, we can drop and recreate tables (THIS WILL DELETE DATA!)
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🔄 Development mode: Recreating tables with fresh schema...");
-        
-        try {
-          // Force recreate all tables in correct order
-          await sequelize.sync({ force: true });
-          console.log("✅ Database tables recreated successfully");
-        } catch (forceError) {
-          console.error("❌ Force sync also failed:", forceError.message);
-          
-          // Last resort: disable foreign key checks temporarily
-          console.log("🔧 Trying without foreign key constraints...");
-          await sequelize.query('SET FOREIGN_KEY_CHECKS = 0;');
-          await sequelize.sync({ force: true });
-          await sequelize.query('SET FOREIGN_KEY_CHECKS = 1;');
-          console.log("✅ Database tables created with foreign keys disabled temporarily");
-        }
-      } else {
-        // For production, we'd use proper migrations instead
-        throw syncError;
-      }
-    }
-    
-    app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
+
+    app.listen(PORT, () => {
+      console.log(`🚀 API running on http://localhost:${PORT}`);
+    });
   } catch (error) {
     console.error("❌ Database connection failed:", error);
     process.exit(1);

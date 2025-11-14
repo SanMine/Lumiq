@@ -1,43 +1,34 @@
-import { DataTypes } from "sequelize";
-import { sequelize } from "../../sequelize.js";
+import mongoose from "mongoose";
 
-export const Rating = sequelize.define("Rating", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  rating: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
+const RatingSchema = new mongoose.Schema(
+  {
+    _id: {
+      type: Number,
+    },
+    rating: {
+      type: Number,
+      required: true,
       min: 1,
       max: 5,
     },
+    userId: {
+      type: Number,
+      ref: "User",
+      required: true,
+    },
+    dormId: {
+      type: Number,
+      ref: "Dorm",
+      required: true,
+    },
   },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'users',  // Updated to match actual table name
-      key: 'id'
-    }
-  },
-  dormId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'dorms',  // Updated to match actual table name
-      key: 'id'
-    }
-  },
-}, {
-  timestamps: true,
-  tableName: 'ratings',  // Set explicit table name
-  indexes: [
-    {
-      unique: true,
-      fields: ['userId', 'dormId'] // One rating per user per dorm
-    }
-  ]
-});
+  {
+    timestamps: true,
+    collection: "ratings",
+  }
+);
+
+// Add compound index for unique rating per user per dorm
+RatingSchema.index({ userId: 1, dormId: 1 }, { unique: true });
+
+export const Rating = mongoose.model("Rating", RatingSchema);

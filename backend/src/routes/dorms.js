@@ -2,158 +2,144 @@ import { Router } from "express";
 import { Dorm } from "../models/Dorm.js";
 import { Rating } from "../models/Rating.js";
 import { User } from "../models/User.js";
-import { sequelize } from "../../sequelize.js";
 import { RatingService } from "../services/ratingService.js";
 
 export const dorms = Router();
 
 // Get all dorms with calculated average ratings
-dorms.get("/", async (req, res) => {
+dorms.get("/", async (req, res, next) => {
   try {
-    // Get all dorms
-    const allDorms = await Dorm.findAll({
-      order: [["id", "ASC"]]
-    });
-
-    // Calculate ratings using the service
-    const dormsWithRatings = await RatingService.calculateMultipleDormRatings(allDorms);
-
+    const allDorms = await Dorm.find().sort({ _id: 1 });
+    const dormsWithRatings =
+      await RatingService.calculateMultipleDormRatings(allDorms);
     res.json(dormsWithRatings);
   } catch (error) {
-    console.error("Error fetching dorms:", error);
-    res.status(500).json({ error: "Failed to fetch dorms" });
+    next(error);
   }
 });
 
 // Get specific dorm with ratings
-dorms.get("/:id", async (req, res) => {
+dorms.get("/:id", async (req, res, next) => {
   try {
-    // Get the dorm
-    const dorm = await Dorm.findByPk(req.params.id);
-    
+    const dorm = await Dorm.findById(req.params.id);
+
     if (!dorm) {
       return res.status(404).json({ error: "Dorm not found" });
     }
 
-    // Calculate detailed rating statistics
-    const ratingStats = await RatingService.getDormRatingStatistics(req.params.id);
-    
+    const ratingStats = await RatingService.getDormRatingStatistics(
+      req.params.id
+    );
+
     const result = {
       ...dorm.toJSON(),
       average_rating: ratingStats.average_rating,
       total_ratings: ratingStats.total_ratings,
       min_rating: ratingStats.min_rating,
-      max_rating: ratingStats.max_rating
+      max_rating: ratingStats.max_rating,
     };
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching dorm:", error);
-    res.status(500).json({ error: "Failed to fetch dorm" });
+    next(error);
   }
 });
 
 // Create new dorm
-dorms.post("/", async (req, res) => {
+dorms.post("/", async (req, res, next) => {
   try {
     const dorm = await Dorm.create(req.body);
     res.status(201).json(dorm);
   } catch (error) {
-    console.error("Error creating dorm:", error);
-    res.status(500).json({ error: "Failed to create dorm" });
+    next(error);
   }
 });
 
 // Rate a dorm
-dorms.post("/:id/rate", async (req, res) => {
+dorms.post("/:id/rate", async (req, res, next) => {
   try {
     const { rating, userId } = req.body;
     const dormId = req.params.id;
 
-    // Check if dorm exists
-    const dorm = await Dorm.findByPk(dormId);
+    const dorm = await Dorm.findById(dormId);
     if (!dorm) {
       return res.status(404).json({ error: "Dorm not found" });
     }
 
-    // Check if user exists
-    const user = await User.findByPk(userId);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Use rating service to handle the rating logic
-    const result = await RatingService.addOrUpdateRating(dormId, userId, rating);
+    const result = await RatingService.addOrUpdateRating(
+      dormId,
+      userId,
+      rating
+    );
 
     res.json({
       message: result.message,
       rating: result.rating,
       average_rating: result.statistics.average_rating,
-      total_ratings: result.statistics.total_ratings
+      total_ratings: result.statistics.total_ratings,
     });
-
   } catch (error) {
-    console.error("Error rating dorm:", error);
-    const statusCode = error.message.includes("must be between") ? 400 : 500;
-    res.status(statusCode).json({ error: error.message || "Failed to rate dorm" });
+    next(error);
   }
 });
 
 // Get ratings for a specific dorm
-dorms.get("/:id/ratings", async (req, res) => {
+dorms.get("/:id/ratings", async (req, res, next) => {
   try {
     const ratings = await RatingService.getDormRatings(req.params.id);
     res.json(ratings);
   } catch (error) {
-    console.error("Error fetching ratings:", error);
-    res.status(500).json({ error: "Failed to fetch ratings" });
+    next(error);
   }
 });
 
 // Get rating distribution for a specific dorm
-dorms.get("/:id/rating-distribution", async (req, res) => {
+dorms.get("/:id/rating-distribution", async (req, res, next) => {
   try {
-    const distribution = await RatingService.getRatingDistribution(req.params.id);
+    const distribution = await RatingService.getRatingDistribution(
+      req.params.id
+    );
     res.json(distribution);
   } catch (error) {
-    console.error("Error fetching rating distribution:", error);
-    res.status(500).json({ error: "Failed to fetch rating distribution" });
+    next(error);
   }
 });
 
 // Update dorm
-dorms.put("/:id", async (req, res) => {
+dorms.put("/:id", async (req, res, next) => {
   try {
-    const [updatedRowsCount] = await Dorm.update(req.body, {
-      where: { id: req.params.id }
-    });
+    const updatedDorm = await Dorm.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
-    if (updatedRowsCount === 0) {
+    if (!updatedDorm) {
       return res.status(404).json({ error: "Dorm not found" });
     }
 
-    const updatedDorm = await Dorm.findByPk(req.params.id);
     res.json(updatedDorm);
   } catch (error) {
-    console.error("Error updating dorm:", error);
-    res.status(500).json({ error: "Failed to update dorm" });
+    next(error);
   }
 });
 
 // Delete dorm
-dorms.delete("/:id", async (req, res) => {
+dorms.delete("/:id", async (req, res, next) => {
   try {
-    const deletedRowsCount = await Dorm.destroy({
-      where: { id: req.params.id }
-    });
+    const deletedDorm = await Dorm.findByIdAndDelete(req.params.id);
 
-    if (deletedRowsCount === 0) {
+    if (!deletedDorm) {
       return res.status(404).json({ error: "Dorm not found" });
     }
 
     res.json({ message: "Dorm deleted successfully" });
   } catch (error) {
-    console.error("Error deleting dorm:", error);
-    res.status(500).json({ error: "Failed to delete dorm" });
+    next(error);
   }
 });

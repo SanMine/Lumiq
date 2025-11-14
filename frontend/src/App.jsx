@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { api } from "./lib/api";
 import Rooms from "./Rooms"
 import Personality from "./Personality"
+import Matching from "./pages/Matching"
 import "./App.css"
 
 function App(){   
-  const [currentView, setCurrentView] = useState('rooms');
+  const [currentView, setCurrentView] = useState('matching');
 
   return (     
     <div>
@@ -16,6 +17,19 @@ function App(){
         display: 'flex',
         gap: '20px'
       }}>
+        <button 
+          onClick={() => setCurrentView('matching')}
+          style={{
+            padding: '10px 20px',
+            background: currentView === 'matching' ? 'white' : 'transparent',
+            color: currentView === 'matching' ? '#667eea' : 'white',
+            border: '2px solid white',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          🤖 AI Matching
+        </button>
         <button 
           onClick={() => setCurrentView('rooms')}
           style={{
@@ -44,6 +58,7 @@ function App(){
         </button>
       </nav>
 
+      {currentView === 'matching' && <Matching/>}
       {currentView === 'rooms' && <Rooms/>}
       {currentView === 'personality' && <Personality/>}
     </div>   

@@ -1,16 +1,13 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Lumiq API (Express + Sequelize + MySQL)",
+  "description": "Lumiq API (Express + Mongoose + MongoDB)",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "db:migrate": "npx sequelize-cli db:migrate",
-    "db:undo": "npx sequelize-cli db:migrate:undo",
-    "db:seed": "npx sequelize-cli db:seed:all",
-    "db:reset": "npm run db:undo && npm run db:migrate && npm run db:seed"
+    "seed": "node src/db/seedData.js"
   },
   "keywords": [],
   "author": "",
@@ -20,12 +17,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "groq-sdk": "^0.35.0",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
-    "mysql2": "^3.14.5",
-    "sequelize": "^6.37.7",
-    "sequelize-cli": "^6.6.3",
-    "sqlite3": "^5.1.7"
+    "mongoose": "^8.0.0",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

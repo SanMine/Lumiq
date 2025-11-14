@@ -1,113 +1,151 @@
-import { DataTypes } from "sequelize";
-import { sequelize } from "../../sequelize.js";
+import mongoose from "mongoose";
 
-export const User_personality = sequelize.define("User_personality", {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
+const UserPersonalitySchema = new mongoose.Schema(
+  {
+    _id: {
+      type: Number,
     },
-
     userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: "users",
-            key: "id"
-        }
+      type: Number,
+      ref: "User",
+      required: true,
+      unique: true,
     },
     nickname: {
-        type: DataTypes.STRING(100),
-        allowNull: false
+      type: String,
+      required: true,
+      trim: true,
     },
     age: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+      type: Number,
+      required: true,
     },
     gender: {
-        type: DataTypes.ENUM('Male','Female','Non-Binary','Trans Male','Trans Female', 'Agender','Genderqueer','Other', 'Prefer Not to Say'),
-        allowNull: false,
-        defaultValue: 'Prefer Not to Say',
+      type: String,
+      enum: [
+        "Male",
+        "Female",
+        "Non-Binary",
+        "Trans Male",
+        "Trans Female",
+        "Agender",
+        "Genderqueer",
+        "Other",
+        "Prefer Not to Say",
+      ],
+      default: "Prefer Not to Say",
     },
     nationality: {
-        type: DataTypes.STRING(100),
-        allowNull: true
+      type: String,
+      default: null,
     },
     description: {
-        type: DataTypes.TEXT,
-        allowNull: true
+      type: String,
+      default: null,
     },
     contact: {
-        type: DataTypes.STRING(100),
-        allowNull: true
+      type: String,
+      default: null,
     },
     sleep_schedule: {
-        type: DataTypes.TIME,
-        allowNull: true,
-        comment: 'Preferred sleep time'
+      type: String,
+      default: null,
+      comment: "Preferred sleep time",
     },
     lifestyle: {
-        type: DataTypes.JSON,
-        allowNull: true,  
-        defaultValue: []
+      type: [String],
+      default: [],
     },
     sleep_type: {
-        type: DataTypes.ENUM('Early Bird', 'Night Owl', 'Flexible'),
-        allowNull: false,
-        defaultValue: 'Flexible'
+      type: String,
+      enum: ["Early Bird", "Night Owl", "Flexible"],
+      default: "Flexible",
     },
     study_habits: {
-        type: DataTypes.ENUM('silent', 'some_noise', 'flexible'),
-        allowNull: false,
-        defaultValue: 'flexible'
+      type: String,
+      enum: ["silent", "some_noise", "flexible"],
+      default: "flexible",
     },
     cleanliness: {
-        type: DataTypes.ENUM('Tidy', 'Moderate', 'Messy'),
-        allowNull: false,
-        defaultValue: 'Moderate'
+      type: String,
+      enum: ["Tidy", "Moderate", "Messy"],
+      default: "Moderate",
     },
     social: {
-        type: DataTypes.ENUM('Quiet', 'Social', 'Moderate'),
-        allowNull: false,
-        defaultValue: 'Moderate'
+      type: String,
+      enum: ["Quiet", "Social", "Moderate"],
+      default: "Moderate",
     },
-    // 🔧 ISSUE FIXED: Removed extra space in field name (was "MBTI :" now "MBTI:")
-    // This syntax error was causing potential parsing issues
     MBTI: {
-        type: DataTypes.ENUM('INTJ', 'INFP', 'ENTJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP', 'INFJ', 'INTP', 'ENFJ', 'ENTP'),
-        allowNull: false
+      type: String,
+      enum: [
+        "INTJ",
+        "INFP",
+        "ENTJ",
+        "ENFP",
+        "ISTJ",
+        "ISFJ",
+        "ESTJ",
+        "ESFJ",
+        "ISTP",
+        "ISFP",
+        "ESTP",
+        "ESFP",
+        "INFJ",
+        "INTP",
+        "ENFJ",
+        "ENTP",
+      ],
+      required: true,
     },
     going_out: {
-        type: DataTypes.ENUM('Homebody', 'Occasional', 'Frequent'),
-        allowNull: false
+      type: String,
+      enum: ["Homebody", "Occasional", "Frequent"],
+      required: true,
     },
     smoking: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+      type: Boolean,
+      default: false,
     },
     drinking: {
-        type: DataTypes.ENUM('Never', 'Occasional', 'Frequent'),
-        allowNull: false
+      type: String,
+      enum: ["Never", "Occasional", "Frequent"],
+      required: true,
     },
     pets: {
-        type: DataTypes.ENUM('No Pets', 'Allergic', 'Pet Owner', 'Pet Friendly', 'Cat Person', 'Dog Person', 'Dog & Cat Person', 'Flexible', 'Do not like pets'),
-        allowNull: false,
-        defaultValue: 'Flexible'
+      type: String,
+      enum: [
+        "No Pets",
+        "Allergic",
+        "Pet Owner",
+        "Pet Friendly",
+        "Cat Person",
+        "Dog Person",
+        "Dog & Cat Person",
+        "Flexible",
+        "Do not like pets",
+      ],
+      default: "Flexible",
     },
     noise_tolerance: {
-        type: DataTypes.ENUM('Low', 'Medium', 'High', 'Flexible'),
-        allowNull: false,
-        defaultValue: 'Flexible'
+      type: String,
+      enum: ["Low", "Medium", "High", "Flexible"],
+      default: "Flexible",
     },
     temperature: {
-        type: DataTypes.ENUM('Cold', 'Cool', 'Warm', 'Hot', 'Flexible'),
-        allowNull: false,
-        defaultValue: 'Flexible'
-    } 
-}, {
-    tableName: 'personalities',
-    timestamps: true    
+      type: String,
+      enum: ["Cold", "Cool", "Warm", "Hot", "Flexible"],
+      default: "Flexible",
+    },
+  },
+  {
+    timestamps: true,
+    collection: "personalities",
+  }
+);
 
-});
+export const User_personality = mongoose.model(
+  "User_personality",
+  UserPersonalitySchema
+);
 

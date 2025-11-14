@@ -1,13 +1,22 @@
 import { Router } from "express";
-import { sequelize } from "../../sequelize.js";
+import mongoose from "mongoose";
 
 export const health = Router();
 
 health.get("/health", async (_req, res) => {
   try {
-    await sequelize.query("SELECT 1");
-    res.json({ ok: true, db: "up", now: new Date().toISOString() });
+    const mongoState = mongoose.connection.readyState;
+    const isConnected = mongoState === 1;
+    res.json({
+      ok: isConnected,
+      db: isConnected ? "up" : "down",
+      now: new Date().toISOString(),
+    });
   } catch {
-    res.status(500).json({ ok: false, db: "down", now: new Date().toISOString() });
+    res.status(500).json({
+      ok: false,
+      db: "down",
+      now: new Date().toISOString(),
+    });
   }
 });

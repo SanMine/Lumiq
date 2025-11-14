@@ -3,259 +3,179 @@ import { RoomService } from "../services/roomService.js";
 
 export const rooms = Router();
 
-// Get all rooms or filter by dorm
-rooms.get("/", async (req, res) => {
+rooms.get("/", async (req, res, next) => {
   try {
     const { dormId } = req.query;
-    
     if (dormId) {
-      const roomsByDorm = await RoomService.getRoomsByDorm(parseInt(dormId));
+      const roomsByDorm = await RoomService.getRoomsByDorm(dormId);
       res.json(roomsByDorm);
     } else {
       const allRooms = await RoomService.getAllRooms();
       res.json(allRooms);
     }
   } catch (error) {
-    console.error("Error fetching rooms:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch rooms",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Get specific room by ID
-rooms.get("/:id", async (req, res) => {
+rooms.get("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const room = await RoomService.getRoomById(parseInt(id));
+    const room = await RoomService.getRoomById(id);
     res.json(room);
   } catch (error) {
-    console.error("Error fetching room:", error);
-    res.status(404).json({ 
-      error: "Room not found",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Create new room
-rooms.post("/", async (req, res) => {
+rooms.post("/", async (req, res, next) => {
   try {
     const roomData = req.body;
-    
-    // Validate required fields
     if (!roomData.dormId || !roomData.room_number || !roomData.price_per_month) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
-        message: "dormId, room_number, and price_per_month are required" 
+        message: "dormId, room_number, and price_per_month are required",
       });
     }
-
     const newRoom = await RoomService.createRoom(roomData.dormId, roomData);
     res.status(201).json(newRoom);
   } catch (error) {
-    console.error("Error creating room:", error);
-    res.status(400).json({ 
-      error: "Failed to create room",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Update room
-rooms.put("/:id", async (req, res) => {
+rooms.put("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    
-    const updatedRoom = await RoomService.updateRoom(parseInt(id), updateData);
+    const updatedRoom = await RoomService.updateRoom(id, updateData);
     res.json(updatedRoom);
   } catch (error) {
-    console.error("Error updating room:", error);
-    res.status(400).json({ 
-      error: "Failed to update room",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Update room availability
-rooms.patch("/:id/availability", async (req, res) => {
+rooms.patch("/:id/availability", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { available } = req.body;
-    
-    if (typeof available !== 'boolean') {
-      return res.status(400).json({ 
+    if (typeof available !== "boolean") {
+      return res.status(400).json({
         error: "Invalid data",
-        message: "Available must be a boolean value" 
+        message: "Available must be a boolean value",
       });
     }
-
-    const updatedRoom = await RoomService.updateRoomAvailability(parseInt(id), available);
+    const updatedRoom = await RoomService.updateRoomAvailability(id, available);
     res.json(updatedRoom);
   } catch (error) {
-    console.error("Error updating room availability:", error);
-    res.status(400).json({ 
-      error: "Failed to update room availability",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Reserve room
-rooms.post("/:id/reserve", async (req, res) => {
+rooms.post("/:id/reserve", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId, moveInDate } = req.body;
-    
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
-        message: "userId is required" 
+        message: "userId is required",
       });
     }
-
-    const reservedRoom = await RoomService.reserveRoom(parseInt(id), userId, moveInDate);
+    const reservedRoom = await RoomService.reserveRoom(id, userId, moveInDate);
     res.json(reservedRoom);
   } catch (error) {
-    console.error("Error reserving room:", error);
-    res.status(400).json({ 
-      error: "Failed to reserve room",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Move student in (Reserved → Occupied)
-rooms.post("/:id/move-in", async (req, res) => {
+rooms.post("/:id/move-in", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
-    
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
-        message: "userId is required" 
+        message: "userId is required",
       });
     }
-
-    const updatedRoom = await RoomService.moveStudentIn(parseInt(id), userId);
+    const updatedRoom = await RoomService.moveStudentIn(id, userId);
     res.json(updatedRoom);
   } catch (error) {
-    console.error("Error moving student in:", error);
-    res.status(400).json({ 
-      error: "Failed to move student in",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Set move-out date
-rooms.patch("/:id/move-out-date", async (req, res) => {
+rooms.patch("/:id/move-out-date", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId, moveOutDate } = req.body;
-    
     if (!userId || !moveOutDate) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
-        message: "userId and moveOutDate are required" 
+        message: "userId and moveOutDate are required",
       });
     }
-
-    const updatedRoom = await RoomService.setMoveOutDate(parseInt(id), userId, moveOutDate);
+    const updatedRoom = await RoomService.setMoveOutDate(id, userId, moveOutDate);
     res.json(updatedRoom);
   } catch (error) {
-    console.error("Error setting move-out date:", error);
-    res.status(400).json({ 
-      error: "Failed to set move-out date",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Move student out (Occupied → Available)
-rooms.post("/:id/move-out", async (req, res) => {
+rooms.post("/:id/move-out", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
-    
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
-        message: "userId is required" 
+        message: "userId is required",
       });
     }
-
-    const updatedRoom = await RoomService.moveStudentOut(parseInt(id), userId);
+    const updatedRoom = await RoomService.moveStudentOut(id, userId);
     res.json(updatedRoom);
   } catch (error) {
-    console.error("Error moving student out:", error);
-    res.status(400).json({ 
-      error: "Failed to move student out",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Delete room
-rooms.delete("/:id", async (req, res) => {
+rooms.delete("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    await RoomService.deleteRoom(parseInt(id));
+    await RoomService.deleteRoom(id);
     res.json({ message: "Room deleted successfully" });
   } catch (error) {
-    console.error("Error deleting room:", error);
-    res.status(400).json({ 
-      error: "Failed to delete room",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Get room statistics for a dorm
-rooms.get("/dorm/:dormId/statistics", async (req, res) => {
+rooms.get("/dorm/:dormId/statistics", async (req, res, next) => {
   try {
     const { dormId } = req.params;
-    const stats = await RoomService.getDormRoomStatistics(parseInt(dormId));
+    const stats = await RoomService.getDormRoomStatistics(dormId);
     res.json(stats);
   } catch (error) {
-    console.error("Error fetching room statistics:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch room statistics",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Get rooms by floor for a dorm
-rooms.get("/dorm/:dormId/by-floor", async (req, res) => {
+rooms.get("/dorm/:dormId/by-floor", async (req, res, next) => {
   try {
     const { dormId } = req.params;
-    const roomsByFloor = await RoomService.getRoomsByFloor(parseInt(dormId));
+    const roomsByFloor = await RoomService.getRoomsByFloor(dormId);
     res.json(roomsByFloor);
   } catch (error) {
-    console.error("Error fetching rooms by floor:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch rooms by floor",
-      message: error.message 
-    });
+    next(error);
   }
 });
 
-// Get upcoming available rooms
-rooms.get("/upcoming-available/:days", async (req, res) => {
+rooms.get("/upcoming-available/:days", async (req, res, next) => {
   try {
     const { days } = req.params;
     const upcomingRooms = await RoomService.getUpcomingAvailableRooms(parseInt(days));
     res.json(upcomingRooms);
   } catch (error) {
-    console.error("Error fetching upcoming available rooms:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch upcoming available rooms",
-      message: error.message 
-    });
+    next(error);
   }
 });

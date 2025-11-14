@@ -1,123 +1,81 @@
-import { DataTypes } from "sequelize";
-import { sequelize } from "../../sequelize.js";
+import mongoose from "mongoose";
 
-export const Room = sequelize.define("Room", 
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        dormId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'dorms',
-                key: 'id'
-            },
-        },
-        room_number: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        room_type: {
-            type: DataTypes.ENUM('Single', 'Double', 'Triple'),
-            allowNull: false,
-            defaultValue: 'Single',
-        },
-        capacity: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 1,
-            validate:{
-                min: 1,
-                max: 3,
-            }
-        },
-        price_per_month: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-        },
-        floor: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 1,
-        },
-        description: {
-            type: DataTypes.TEXT,
-            allowNull: true,
-        },
-        amenities: {
-            type: DataTypes.TEXT,
-            allowNull: true,
-        },
-        images: {
-            type: DataTypes.JSON,
-            allowNull: true,
-            comment: 'Array of image URLs stored as JSON'
-        },
-        status: {
-            type: DataTypes.ENUM('Available', 'Reserved', 'Occupied', 'Maintenance'),
-            allowNull: false,
-            defaultValue: 'Available',
-        },
-        current_resident_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true, // Can be null when room is empty
-            references: {
-                model: 'users',
-                key: 'id'
-            },
-        },
-        expected_move_in_date: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            comment: 'Expected date when new tenant will move in'
-        },
-        expected_available_date: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            comment: 'Expected date when room will become available (move out date)'
-        },
-        // Virtual fields for easier access
-        image_urls: {
-            type: DataTypes.VIRTUAL,
-            get() {
-                const images = this.getDataValue('images');
-                return images ? (Array.isArray(images) ? images : []) : [];
-            }
-        },
-        current_resident_name: {
-            type: DataTypes.VIRTUAL,
-            get() {
-                const user = this.getDataValue('CurrentResident');
-                return user ? user.name : null;
-            }
-        },
-        display_status: {
-            type: DataTypes.VIRTUAL,
-            get() {
-                const status = this.getDataValue('status');
-                const expectedDate = this.getDataValue('expected_available_date');
-                
-                if (status === 'Available') {
-                    return 'Available Now';
-                } else if ((status === 'Occupied' || status === 'Reserved') && expectedDate) {
-                    return `${status} until ${expectedDate.toLocaleDateString()}`;
-                } else {
-                    return status;
-                }
-            }
-        }
+const RoomSchema = new mongoose.Schema(
+  {
+    _id: {
+      type: Number,
     },
-    {
-        timestamps: true,
-        tableName: 'rooms',
-        indexes: [
-            {
-                unique: true,
-                fields: ['room_number', 'dormId'],
-            },
-        ]
-    }
-)
+    dormId: {
+      type: Number,
+      ref: "Dorm",
+      required: true,
+    },
+    room_number: {
+      type: String,
+      required: true,
+    },
+    room_type: {
+      type: String,
+      enum: ["Single", "Double", "Triple"],
+      default: "Single",
+    },
+    capacity: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+      max: 3,
+    },
+    price_per_month: {
+      type: Number,
+      required: true,
+    },
+    floor: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    amenities: {
+      type: String,
+      default: null,
+    },
+    images: {
+      type: [String],
+      default: [],
+      comment: "Array of image URLs",
+    },
+    status: {
+      type: String,
+      enum: ["Available", "Reserved", "Occupied", "Maintenance"],
+      default: "Available",
+    },
+    current_resident_id: {
+      type: Number,
+      ref: "User",
+      default: null,
+    },
+    expected_move_in_date: {
+      type: Date,
+      default: null,
+      comment: "Expected date when new tenant will move in",
+    },
+    expected_available_date: {
+      type: Date,
+      default: null,
+      comment: "Expected date when room will become available (move out date)",
+    },
+  },
+  {
+    timestamps: true,
+    collection: "rooms",
+  }
+);
+
+// Add compound index for unique room_number per dorm
+RoomSchema.index({ room_number: 1, dormId: 1 }, { unique: true });
+
+export const Room = mongoose.model("Room", RoomSchema);
