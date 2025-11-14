@@ -14,7 +14,7 @@ export default function RoomsDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         
         {/* Main Dorm Info Card */}
-        <Card className="overflow-hidden border-2 border-border bg-card mb-8">
+        <Card className="overflow-hidden bg-card mb-8 py-0">
           <CardContent className="p-0">
             {/* Hero Image */}
             <div className="relative h-96 overflow-hidden">
