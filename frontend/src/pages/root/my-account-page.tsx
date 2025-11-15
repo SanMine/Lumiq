@@ -28,18 +28,32 @@ import {
     Shield,
     User
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import Loader from "@/components/shared/loader";
+import api from "@/api";
 
 export default function MyAccountPage() {
+    const { user, logout, isLoading, setUser } = useAuth();
+    const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [profileData, setProfileData] = useState({
-        fullName: "Viviana",
-        email: "6531503187@lamduan.mfu.ac.th",
-        phone: "+66 89 123 4567",
-        dateOfBirth: "2002-12-19",
-        address: "Mae Fah Luang University, Chiang Rai",
-        bio: "Software Engineering student passionate about full-stack development and AI."
+        fullName: "",
+        email: "",
+        phone: "",
+        dateOfBirth: "",
+        address: "",
+        bio: ""
     });
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     const [notifications, setNotifications] = useState({
         emailNotifications: true,
@@ -48,10 +62,144 @@ export default function MyAccountPage() {
         weeklyDigest: true
     });
 
-    const handleSave = () => {
-        setIsEditing(false);
-        // Save logic here
+    useEffect(() => {
+        if (!isLoading && !user) {
+            navigate('/auth/sign-in');
+        }
+        
+        if (user) {
+            // Fetch full user data from backend to get all fields
+            const fetchUserData = async () => {
+                try {
+                    const response = await api.get(`/users/${user._id || user.id}`);
+                    const userData = response.data;
+                    setProfileData({
+                        fullName: userData.name || "",
+                        email: userData.email || "",
+                        phone: userData.phone || "",
+                        dateOfBirth: userData.dateOfBirth || "",
+                        address: userData.address || "",
+                        bio: userData.bio || ""
+                    });
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    // Fallback to user from context
+                    setProfileData({
+                        fullName: user.name || "",
+                        email: user.email || "",
+                        phone: "",
+                        dateOfBirth: "",
+                        address: "",
+                        bio: ""
+                    });
+                }
+            };
+            
+            fetchUserData();
+        }
+    }, [user, isLoading, navigate]);
+
+    const handleLogout = () => {
+        logout();
+        toast.success("Logged out successfully");
+        navigate('/');
     };
+
+    const handleSave = async () => {
+        if (!user) return;
+        
+        try {
+            setIsSaving(true);
+            
+            // Update user profile via API with all fields
+            const response = await api.put(`/users/${user._id || user.id}`, {
+                name: profileData.fullName,
+                email: profileData.email,
+                phone: profileData.phone,
+                dateOfBirth: profileData.dateOfBirth,
+                address: profileData.address,
+                bio: profileData.bio
+            });
+            
+            // Update the user context with new data
+            if (setUser) {
+                setUser({
+                    ...user,
+                    name: response.data.name,
+                    email: response.data.email,
+                    _id: response.data._id
+                });
+            }
+            
+            setIsEditing(false);
+            toast.success("Profile updated successfully");
+        } catch (error: any) {
+            console.error("Error updating profile:", error);
+            toast.error(error.response?.data?.error || "Failed to update profile");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handlePasswordChange = async () => {
+        if (!user) return;
+        
+        try {
+            setIsChangingPassword(true);
+            
+            // Validate password fields
+            if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+                toast.error("All password fields are required");
+                return;
+            }
+            
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                toast.error("New passwords do not match");
+                return;
+            }
+            
+            if (passwordData.newPassword.length < 6) {
+                toast.error("Password must be at least 6 characters");
+                return;
+            }
+            
+            // Call password change API
+            await api.put(`/users/${user._id || user.id}/password`, {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword,
+                confirmPassword: passwordData.confirmPassword
+            });
+            
+            // Clear password fields
+            setPasswordData({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: ""
+            });
+            
+            toast.success("Password updated successfully");
+        } catch (error: any) {
+            console.error("Error changing password:", error);
+            toast.error(error.response?.data?.error || "Failed to change password");
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+    if (isLoading) {
+        return <Loader />;
+    }
+
+    if (!user) {
+        return null;
+    }
+
+    const userInitials = user.name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
 
     return (
         <section className="min-h-screen bg-background px-4 sm:px-6 py-8">
@@ -75,8 +223,8 @@ export default function MyAccountPage() {
                                     {/* Avatar with upload button */}
                                     <div className="relative mb-4">
                                         <Avatar className="w-32 h-32 border-4 border-border">
-                                            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Steven" />
-                                            <AvatarFallback className="text-2xl">SA</AvatarFallback>
+                                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} />
+                                            <AvatarFallback className="text-2xl">{userInitials}</AvatarFallback>
                                         </Avatar>
                                         <Button
                                             size="icon"
@@ -87,14 +235,14 @@ export default function MyAccountPage() {
                                     </div>
 
                                     <h2 className="text-2xl font-bold text-foreground mb-1">
-                                        {profileData.fullName}
+                                        {user.name}
                                     </h2>
                                     <p className="text-muted-foreground text-sm mb-3">
-                                        {profileData.email}
+                                        {user.email}
                                     </p>
 
                                     <Badge className="mb-4 bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20">
-                                        Active Account
+                                        {user.role === 'student' ? 'Student' : user.role === 'admin' ? 'Admin' : 'Owner'}
                                     </Badge>
 
                                     <Separator className="my-4" />
@@ -119,6 +267,7 @@ export default function MyAccountPage() {
                                     <Button
                                         variant="outline"
                                         className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={handleLogout}
                                     >
                                         <LogOut className="w-4 h-4 mr-2" />
                                         Sign Out
@@ -233,12 +382,20 @@ export default function MyAccountPage() {
 
                                         {isEditing && (
                                             <div className="flex justify-end gap-3 pt-4">
-                                                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => setIsEditing(false)}
+                                                    disabled={isSaving}
+                                                >
                                                     Cancel
                                                 </Button>
-                                                <Button onClick={handleSave} className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                                                <Button 
+                                                    onClick={handleSave} 
+                                                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                                    disabled={isSaving}
+                                                >
                                                     <Save className="w-4 h-4 mr-2" />
-                                                    Save Changes
+                                                    {isSaving ? "Saving..." : "Save Changes"}
                                                 </Button>
                                             </div>
                                         )}
@@ -263,6 +420,8 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Enter current password"
                                                 className="bg-muted/50"
+                                                value={passwordData.currentPassword}
+                                                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -272,6 +431,8 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Enter new password"
                                                 className="bg-muted/50"
+                                                value={passwordData.newPassword}
+                                                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -281,10 +442,16 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Confirm new password"
                                                 className="bg-muted/50"
+                                                value={passwordData.confirmPassword}
+                                                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                             />
                                         </div>
-                                        <Button className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
-                                            Update Password
+                                        <Button 
+                                            className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                            onClick={handlePasswordChange}
+                                            disabled={isChangingPassword}
+                                        >
+                                            {isChangingPassword ? "Updating..." : "Update Password"}
                                         </Button>
                                     </CardContent>
                                 </Card>

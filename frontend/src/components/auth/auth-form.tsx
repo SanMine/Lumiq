@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useForm, type ControllerRenderProps, type DefaultValues, type Path, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import Spinner from '../shared/spinner';
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
@@ -26,6 +28,7 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
     type FormData = z.infer<T>
     const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
     const navigate = useNavigate()
+    const { login, register } = useAuth()
 
     const form = useForm({
         defaultValues: defaultValues as DefaultValues<FormData>,
@@ -33,9 +36,21 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
     })
 
     const handleSubmit: SubmitHandler<FormData> = async (values) => {
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        console.log(values)
-        navigate('/')
+        try {
+            if (formType === 'SIGNIN') {
+                await login(values.email, values.password)
+                toast.success('Login successful!')
+                navigate('/')
+            } else {
+                await register(values.name, values.email, values.password)
+                toast.success('Registration successful!')
+                navigate('/')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred'
+            toast.error(errorMessage)
+            console.error('Auth error:', error)
+        }
     }
 
     const buttonText = formType === 'SIGNIN' ? SIGNIN : SIGNUP

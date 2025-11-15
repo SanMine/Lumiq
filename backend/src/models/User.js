@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { getNextId } from "../db/counter.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -28,12 +29,42 @@ const UserSchema = new mongoose.Schema(
       enum: ["student", "admin", "owner"],
       default: "student",
     },
+    phone: {
+      type: String,
+      default: "",
+    },
+    dateOfBirth: {
+      type: String,
+      default: "",
+    },
+    address: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
     collection: "users",
   }
 );
+
+// 🔢 Auto-increment ID
+UserSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      this._id = await getNextId("users");
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
+});
 
 // 🔐 Password hashing middleware
 UserSchema.pre("save", async function (next) {

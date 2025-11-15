@@ -1,4 +1,5 @@
 import { APP_NAME, NAVLINKS } from '@/lib/constants'
+import { useAuth } from '@/contexts/AuthContext'
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router'
 import LogoutModal from '../modals/log-out-modal'
@@ -11,7 +12,7 @@ import { SiLogseq } from "react-icons/si";
 export default function Navbar() {
     const [isMobMenuOpen, setIsMobMenuOpen] = useState(false)
     const navigate = useNavigate()
-    const [auth, setAuth] = useState(false)
+    const { user } = useAuth()
 
     const renderNavLinks = () =>
         NAVLINKS.map((link, index) => (
@@ -41,13 +42,13 @@ export default function Navbar() {
 
                     {/* Desktop Right Side */}
                     <div className='hidden md:flex items-center gap-3'>
-                        {auth ? <>
+                        {user ? <>
                             <ModeToggle />
                             <AuthDropdown />
                         </> : <>
-                            <Button onClick={() => setAuth(true)} variant='outline' className='rounded-full cursor-pointer w-fit min-h-[40px] font-semibold'>Log In</Button>
+                            <Button onClick={() => navigate('/auth/sign-in')} variant='outline' className='rounded-full cursor-pointer w-fit min-h-[40px] font-semibold'>Log In</Button>
                             <Button
-                                onClick={() => setAuth(true)}
+                                onClick={() => navigate('/auth/sign-up')}
                                 className="rounded-full bg-gradient  w-fit min-h-[40px] text-white cursor-pointer">
                                 Sign Up
                             </Button>

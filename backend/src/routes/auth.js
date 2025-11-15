@@ -38,11 +38,11 @@ auth.post("/register", async (req, res, next) => {
       });
     }
 
-    const hashedPassword = await User.hashPassword(password);
+    // Store plain password - the pre-save hook will hash it automatically
     const newUser = await User.create({
       email: email.toLowerCase(),
       name: name,
-      passwordHash: hashedPassword,
+      passwordHash: password,
       role: role || "student",
     });
 

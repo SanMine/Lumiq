@@ -13,6 +13,7 @@ import {
     DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRef } from "react";
 import { IoMdLogOut } from "react-icons/io";
 import { MdOutlineAccountCircle } from "react-icons/md";
@@ -26,8 +27,14 @@ import { Dialog, DialogTrigger } from "../ui/dialog";
 
 export default function AuthDropdown() {
     const dialogTriggerRef = useRef<HTMLButtonElement>(null)
+    const { user } = useAuth()
 
-    // const initialName = `${user.fullName?.split(" ")[0]?.charAt(0).toUpperCase()}${user.fullName?.split(" ")[1]?.charAt(0).toUpperCase()}`
+    const userInitials = user?.name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2) || 'U'
 
     return (
         <Dialog>
@@ -35,16 +42,16 @@ export default function AuthDropdown() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" className="size-8 rounded-full cursor-pointer">
                         <Avatar className="size-9">
-                            <AvatarImage src={""} alt={'VV'} />
-                            <AvatarFallback>{'VV'}</AvatarFallback>
+                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt={userInitials} />
+                            <AvatarFallback>{userInitials}</AvatarFallback>
                         </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-70" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal mb-1">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none truncate">{'Viviana'}</p>
-                            <p className="text-xs leading-none text-muted-foreground truncate">{'viviana@gmail.com'}</p>
+                            <p className="text-sm font-medium leading-none truncate">{user?.name || 'User'}</p>
+                            <p className="text-xs leading-none text-muted-foreground truncate">{user?.email || ''}</p>
                         </div>
                     </DropdownMenuLabel>
                     <DropdownMenuGroup>

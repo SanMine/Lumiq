@@ -7,7 +7,7 @@ export default function SignUpPage() {
             formType="SIGNUP"
             schema={SignUPFormSchema}
             defaultValues={{
-                username: "",
+                name: "",
                 email: "",
                 password: "",
                 confirmPassword: ""

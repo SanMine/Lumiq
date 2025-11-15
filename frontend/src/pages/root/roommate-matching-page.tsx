@@ -25,6 +25,10 @@ import z from "zod";
 import { LuMoveRight } from "react-icons/lu";
 import Spinner from "@/components/shared/spinner";
 import { useNavigate } from "react-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import api from "@/api";
+import { useEffect } from "react";
 
 export const RoommateMatchingFormSchema = z.object({
     //* Account Information
@@ -87,6 +91,7 @@ const TEMPERATURE = ["Prefer warm", "Prefer cool", "No preference"] as const;
 
 export default function RoommateMatchingPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const form = useForm<RoommateFormValues>({
         resolver: zodResolver(RoommateMatchingFormSchema),
@@ -100,10 +105,99 @@ export default function RoommateMatchingPage() {
         },
     });
 
+    // Fetch existing personality data if available
+    useEffect(() => {
+        const fetchPersonality = async () => {
+            if (!user) return;
+            
+            try {
+                const response = await api.get(`/personalities?userId=${user._id || user.id}`);
+                const personality = response.data;
+                
+                // Map backend data to frontend form
+                form.reset({
+                    fullName: user.name || "",
+                    nickname: personality.nickname || "",
+                    age: personality.age || 18,
+                    gender: personality.gender || "Prefer not to say",
+                    nationality: personality.nationality || "",
+                    contact: personality.contact || "",
+                    description: personality.description || "",
+                    sleepSchedule: personality.sleep_type || "Flexible",
+                    lifestyle: personality.lifestyle?.[0] || "Moderate",
+                    sleepType: personality.sleep_type === "Early Bird" ? "Light sleeper" : personality.sleep_type === "Night Owl" ? "Heavy sleeper" : "Normal",
+                    studyHabits: personality.study_habits === "silent" ? "Frequent studier" : personality.study_habits === "some_noise" ? "Moderate studier" : "Light studier",
+                    cleanliness: personality.cleanliness === "Tidy" ? "Very tidy" : personality.cleanliness === "Moderate" ? "Moderately tidy" : "Not so tidy",
+                    social: personality.social === "Social" ? "Very social" : personality.social === "Moderate" ? "Moderately social" : "Prefer solitude",
+                    mbti: personality.MBTI,
+                    goingOut: personality.going_out === "Frequent" ? "Often" : personality.going_out === "Occasional" ? "Sometimes" : "Rarely",
+                    smoking: personality.smoking ? "Yes" : "No",
+                    drinking: personality.drinking === "Never" ? "No" : personality.drinking === "Occasional" ? "Socially" : "Yes",
+                    pets: personality.pets?.includes("Allergic") ? "Allergic to pets" : personality.pets?.includes("Owner") || personality.pets?.includes("Dog") || personality.pets?.includes("Cat") ? "Have pets" : "No preference",
+                    noiseTolerance: personality.noise_tolerance || "Medium",
+                    temperature: personality.temperature === "Warm" || personality.temperature === "Hot" ? "Prefer warm" : personality.temperature === "Cold" || personality.temperature === "Cool" ? "Prefer cool" : "No preference",
+                });
+            } catch (error: any) {
+                // No existing personality data, use defaults
+                if (user?.name) {
+                    form.setValue("fullName", user.name);
+                }
+                console.log("No existing personality data");
+            }
+        };
+        
+        fetchPersonality();
+    }, [user, form]);
+
     const handleSubmit: SubmitHandler<RoommateFormValues> = async (values) => {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        console.log(values);
-        navigate('/roommates');
+        if (!user) {
+            toast.error("Please login to save your personality profile");
+            navigate("/auth/sign-in");
+            return;
+        }
+
+        try {
+            // Map frontend form data to backend schema
+            const personalityData = {
+                userId: user._id || user.id,
+                nickname: values.nickname || values.fullName,
+                age: values.age,
+                gender: values.gender,
+                nationality: values.nationality,
+                description: values.description || null,
+                contact: values.contact,
+                sleep_schedule: null, // Not captured in frontend form
+                lifestyle: [values.lifestyle], // Backend expects array
+                sleep_type: values.sleepSchedule, // "Early bird", "Night owl", "Flexible"
+                study_habits: values.studyHabits === "Frequent studier" ? "silent" : values.studyHabits === "Moderate studier" ? "some_noise" : "flexible",
+                cleanliness: values.cleanliness === "Very tidy" ? "Tidy" : values.cleanliness === "Moderately tidy" ? "Moderate" : "Messy",
+                social: values.social === "Very social" ? "Social" : values.social === "Moderately social" ? "Moderate" : "Quiet",
+                MBTI: values.mbti || "ENFP", // Default if not provided
+                going_out: values.goingOut === "Often" ? "Frequent" : values.goingOut === "Sometimes" ? "Occasional" : "Homebody",
+                smoking: values.smoking === "Yes" || values.smoking === "Occasionally" ? true : false,
+                drinking: values.drinking === "Yes" ? "Frequent" : values.drinking === "Socially" ? "Occasional" : "Never",
+                pets: values.pets === "Have pets" ? "Pet Owner" : values.pets === "Allergic to pets" ? "Allergic" : "Flexible",
+                noise_tolerance: values.noiseTolerance,
+                temperature: values.temperature === "Prefer warm" ? "Warm" : values.temperature === "Prefer cool" ? "Cool" : "Flexible",
+            };
+
+            // Check if personality already exists
+            try {
+                const existingResponse = await api.get(`/personalities?userId=${user._id || user.id}`);
+                // Update existing personality
+                await api.put(`/personalities/${existingResponse.data._id}`, personalityData);
+                toast.success("Personality profile updated successfully!");
+            } catch (error: any) {
+                // Create new personality
+                await api.post("/personalities", personalityData);
+                toast.success("Personality profile created successfully!");
+            }
+
+            navigate('/roommates');
+        } catch (error: any) {
+            console.error("Error saving personality:", error);
+            toast.error(error.response?.data?.error || "Failed to save personality profile");
+        }
     };
 
     const SectionTitle = ({ children }: { children: React.ReactNode }) => (

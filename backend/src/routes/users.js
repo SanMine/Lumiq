@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { User } from "../models/User.js";
 import { requireAuth } from "../middlewares/auth.js";
+import bcrypt from "bcryptjs";
 
 export const users = Router();
 
@@ -41,7 +42,7 @@ users.post("/", async (req, res, next) => {
 // Protected route - Update user (must be authenticated)
 users.put("/:id", requireAuth, async (req, res, next) => {
   try {
-    const { email, name } = req.body;
+    const { email, name, phone, dateOfBirth, address, bio } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -56,6 +57,10 @@ users.put("/:id", requireAuth, async (req, res, next) => {
 
     if (email) user.email = email;
     if (name) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+    if (address !== undefined) user.address = address;
+    if (bio !== undefined) user.bio = bio;
     await user.save();
 
     res.json(user);
@@ -78,6 +83,54 @@ users.delete("/:id", requireAuth, async (req, res, next) => {
 
     const result = await User.findByIdAndDelete(req.params.id);
     res.json({ deleted: result ? 1 : 0 });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Protected route - Change password
+users.put("/:id/password", requireAuth, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    // Validate required fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "All password fields are required" });
+    }
+    
+    // Check if new passwords match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "New passwords do not match" });
+    }
+    
+    // Check password length
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    
+    // Find user and explicitly select passwordHash (it's excluded by default)
+    const user = await User.findById(req.params.id).select('+passwordHash');
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Check if user is updating their own password
+    const requestedUserId = String(req.params.id);
+    const authenticatedUserId = String(req.user.id);
+    
+    if (authenticatedUserId !== requestedUserId) {
+      return res.status(403).json({ error: "You can only change your own password" });
+    }
+    
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+    
+    // Update password - the pre-save hook will hash it automatically
+    user.passwordHash = newPassword;
+    await user.save();
+    
+    res.json({ message: "Password updated successfully" });
   } catch (err) {
     next(err);
   }

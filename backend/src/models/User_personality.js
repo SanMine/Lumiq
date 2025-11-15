@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getNextId } from "../db/counter.js";
 
 const UserPersonalitySchema = new mongoose.Schema(
   {
@@ -25,15 +26,10 @@ const UserPersonalitySchema = new mongoose.Schema(
       enum: [
         "Male",
         "Female",
-        "Non-Binary",
-        "Trans Male",
-        "Trans Female",
-        "Agender",
-        "Genderqueer",
-        "Other",
-        "Prefer Not to Say",
+        "Non-binary",
+        "Prefer not to say",
       ],
-      default: "Prefer Not to Say",
+      default: "Prefer not to say",
     },
     nationality: {
       type: String,
@@ -96,12 +92,12 @@ const UserPersonalitySchema = new mongoose.Schema(
         "ENFJ",
         "ENTP",
       ],
-      required: true,
+      default: null,
     },
     going_out: {
       type: String,
       enum: ["Homebody", "Occasional", "Frequent"],
-      required: true,
+      default: "Occasional",
     },
     smoking: {
       type: Boolean,
@@ -110,7 +106,7 @@ const UserPersonalitySchema = new mongoose.Schema(
     drinking: {
       type: String,
       enum: ["Never", "Occasional", "Frequent"],
-      required: true,
+      default: "Never",
     },
     pets: {
       type: String,
@@ -143,6 +139,20 @@ const UserPersonalitySchema = new mongoose.Schema(
     collection: "personalities",
   }
 );
+
+// Auto-increment ID
+UserPersonalitySchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      this._id = await getNextId("personalities");
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
+});
 
 export const User_personality = mongoose.model(
   "User_personality",
