@@ -31,63 +31,52 @@ import api from "@/api";
 import { useEffect } from "react";
 
 export const RoommateMatchingFormSchema = z.object({
-    //* Account Information
-    fullName: z.string().min(1, "Full name is required"),
-    nickname: z.string().optional(),
-    age: z.number().min(16, "Minimum age is 16").max(100, "Maximum age is 100"),
-    gender: z.enum(["Male", "Female", "Non-binary", "Prefer not to say"]),
-    nationality: z.string().min(1, "Nationality is required"),
-    contact: z.string().min(1, "Contact information is required"),
-    description: z.string().optional(),
+    //* Preferred Roommate Age Range
+    ageMin: z.number().min(16, "Minimum age is 16").max(100, "Maximum age is 100"),
+    ageMax: z.number().min(16, "Minimum age is 16").max(100, "Maximum age is 100"),
 
-    //* Lifestyle Preferences
-    sleepSchedule: z.enum(["Early bird", "Night owl", "Flexible"]),
-    lifestyle: z.enum(["Active", "Moderate", "Relaxed"]),
-    sleepType: z.enum(["Light sleeper", "Heavy sleeper", "Normal"]),
-    studyHabits: z.enum(["Frequent studier", "Moderate studier", "Light studier"]),
-    cleanliness: z.enum(["Very tidy", "Moderately tidy", "Not so tidy"]),
+    //* Preferred Basic Information
+    gender: z.enum(["Male", "Female", "Non-Binary", "Trans Male", "Trans Female", "Agender", "Genderqueer", "Any"]),
+    nationality: z.string().optional(),
 
-    //* Social Preferences
-    social: z.enum(["Very social", "Moderately social", "Prefer solitude"]),
+    //* Preferred Lifestyle
+    sleepType: z.enum(["Early Bird", "Night Owl", "Any"]),
+    cleanliness: z.enum(["Tidy", "Moderate", "Messy"]),
+
+    //* Preferred Social & Personality
     mbti: z.enum([
         "INTJ", "INTP", "ENTJ", "ENTP",
         "INFJ", "INFP", "ENFJ", "ENFP",
         "ISTJ", "ISFJ", "ESTJ", "ESFJ",
-        "ISTP", "ISFP", "ESTP", "ESFP"
-    ]).optional(),
-    goingOut: z.enum(["Often", "Sometimes", "Rarely"]),
+        "ISTP", "ISFP", "ESTP", "ESFP", "Any"
+    ]),
 
-    //* Habits
-    smoking: z.enum(["Yes", "No", "Occasionally"]),
-    drinking: z.enum(["Yes", "No", "Socially"]),
-    pets: z.enum(["Have pets", "Allergic to pets", "No preference"]),
+    //* Preferred Habits
+    smoking: z.boolean(),
+    pets: z.boolean(),
 
-    //* Environmental Preferences
-    noiseTolerance: z.enum(["High", "Medium", "Low"]),
-    temperature: z.enum(["Prefer warm", "Prefer cool", "No preference"]),
+    //* Preferred Environmental
+    noiseTolerance: z.enum(["Low", "Medium", "High", "Flexible"]),
+    temperature: z.enum(["Cold", "Cool", "Warm", "Hot", "Flexible"]),
+
+    //* Additional Preferences
+    additionalPreferences: z.string().optional(),
 });
 
 type RoommateFormValues = z.infer<typeof RoommateMatchingFormSchema>;
 
-const GENDER_OPTIONS = ["Male", "Female", "Non-binary", "Prefer not to say"] as const;
-const SLEEP_SCHEDULE = ["Early bird", "Night owl", "Flexible"] as const;
-const LIFESTYLE = ["Active", "Moderate", "Relaxed"] as const;
-const SLEEP_TYPE = ["Light sleeper", "Heavy sleeper", "Normal"] as const;
-const STUDY_HABITS = ["Frequent studier", "Moderate studier", "Light studier"] as const;
-const CLEANLINESS = ["Very tidy", "Moderately tidy", "Not so tidy"] as const;
-const SOCIAL = ["Very social", "Moderately social", "Prefer solitude"] as const;
+const GENDER_OPTIONS = ["Male", "Female", "Non-Binary", "Trans Male", "Trans Female", "Agender", "Genderqueer", "Any"] as const;
+const SLEEP_TYPE = ["Early Bird", "Night Owl", "Any"] as const;
+const CLEANLINESS = ["Tidy", "Moderate", "Messy"] as const;
 const MBTI_TYPES = [
     "INTJ", "INTP", "ENTJ", "ENTP",
     "INFJ", "INFP", "ENFJ", "ENFP",
     "ISTJ", "ISFJ", "ESTJ", "ESFJ",
-    "ISTP", "ISFP", "ESTP", "ESFP"
+    "ISTP", "ISFP", "ESTP", "ESFP", "Any"
 ] as const;
-const GOING_OUT = ["Often", "Sometimes", "Rarely"] as const;
-const YES_NO_OPTIONS = ["Yes", "No", "Occasionally"] as const;
-const DRINKING_OPTIONS = ["Yes", "No", "Socially"] as const;
-const PETS_OPTIONS = ["Have pets", "Allergic to pets", "No preference"] as const;
-const NOISE_TOLERANCE = ["High", "Medium", "Low"] as const;
-const TEMPERATURE = ["Prefer warm", "Prefer cool", "No preference"] as const;
+const YES_NO_OPTIONS = ["Yes", "No"] as const;
+const NOISE_TOLERANCE = ["Low", "Medium", "High", "Flexible"] as const;
+const TEMPERATURE = ["Cold", "Cool", "Warm", "Hot", "Flexible"] as const;
 
 export default function RoommateMatchingPage() {
     const navigate = useNavigate();
@@ -96,107 +85,97 @@ export default function RoommateMatchingPage() {
     const form = useForm<RoommateFormValues>({
         resolver: zodResolver(RoommateMatchingFormSchema),
         defaultValues: {
-            fullName: "",
-            nickname: "",
-            age: 18,
+            ageMin: 18,
+            ageMax: 30,
+            gender: "Any",
             nationality: "",
-            description: "",
-            contact: "",
+            sleepType: "Any",
+            cleanliness: "Moderate",
+            mbti: "Any",
+            smoking: false,
+            pets: false,
+            noiseTolerance: "Medium",
+            temperature: "Flexible",
+            additionalPreferences: "",
         },
     });
 
-    // Fetch existing personality data if available
+    // Fetch existing preferred roommate data if available
     useEffect(() => {
-        const fetchPersonality = async () => {
+        const fetchPreferredRoommate = async () => {
             if (!user) return;
             
             try {
-                const response = await api.get(`/personalities?userId=${user._id || user.id}`);
-                const personality = response.data;
+                const response = await api.get(`/preferred_roommate?userId=${user._id || user.id}`);
+                const pref = response.data;
                 
                 // Map backend data to frontend form
                 form.reset({
-                    fullName: user.name || "",
-                    nickname: personality.nickname || "",
-                    age: personality.age || 18,
-                    gender: personality.gender || "Prefer not to say",
-                    nationality: personality.nationality || "",
-                    contact: personality.contact || "",
-                    description: personality.description || "",
-                    sleepSchedule: personality.sleep_type || "Flexible",
-                    lifestyle: personality.lifestyle?.[0] || "Moderate",
-                    sleepType: personality.sleep_type === "Early Bird" ? "Light sleeper" : personality.sleep_type === "Night Owl" ? "Heavy sleeper" : "Normal",
-                    studyHabits: personality.study_habits === "silent" ? "Frequent studier" : personality.study_habits === "some_noise" ? "Moderate studier" : "Light studier",
-                    cleanliness: personality.cleanliness === "Tidy" ? "Very tidy" : personality.cleanliness === "Moderate" ? "Moderately tidy" : "Not so tidy",
-                    social: personality.social === "Social" ? "Very social" : personality.social === "Moderate" ? "Moderately social" : "Prefer solitude",
-                    mbti: personality.MBTI,
-                    goingOut: personality.going_out === "Frequent" ? "Often" : personality.going_out === "Occasional" ? "Sometimes" : "Rarely",
-                    smoking: personality.smoking ? "Yes" : "No",
-                    drinking: personality.drinking === "Never" ? "No" : personality.drinking === "Occasional" ? "Socially" : "Yes",
-                    pets: personality.pets?.includes("Allergic") ? "Allergic to pets" : personality.pets?.includes("Owner") || personality.pets?.includes("Dog") || personality.pets?.includes("Cat") ? "Have pets" : "No preference",
-                    noiseTolerance: personality.noise_tolerance || "Medium",
-                    temperature: personality.temperature === "Warm" || personality.temperature === "Hot" ? "Prefer warm" : personality.temperature === "Cold" || personality.temperature === "Cool" ? "Prefer cool" : "No preference",
+                    ageMin: pref.preferred_age_range?.min || 18,
+                    ageMax: pref.preferred_age_range?.max || 30,
+                    gender: pref.preferred_gender || "Any",
+                    nationality: pref.preferred_nationality || "",
+                    sleepType: pref.preferred_sleep_type || "Any",
+                    cleanliness: pref.preferred_cleanliness || "Moderate",
+                    mbti: pref.preferred_MBTI || "Any",
+                    smoking: pref.preferred_smoking || false,
+                    pets: pref.preferred_pets || false,
+                    noiseTolerance: pref.preferred_noise_tolerance || "Medium",
+                    temperature: pref.preferred_temperature || "Flexible",
+                    additionalPreferences: pref.additional_preferences || "",
                 });
             } catch (error: any) {
-                // No existing personality data, use defaults
-                if (user?.name) {
-                    form.setValue("fullName", user.name);
-                }
-                console.log("No existing personality data");
+                // No existing preferred roommate data, use defaults
+                console.log("No existing preferred roommate data");
             }
         };
         
-        fetchPersonality();
+        fetchPreferredRoommate();
     }, [user, form]);
 
     const handleSubmit: SubmitHandler<RoommateFormValues> = async (values) => {
         if (!user) {
-            toast.error("Please login to save your personality profile");
+            toast.error("Please login to save your roommate preferences");
             navigate("/auth/sign-in");
             return;
         }
 
         try {
             // Map frontend form data to backend schema
-            const personalityData = {
+            const preferredRoommateData = {
                 userId: user._id || user.id,
-                nickname: values.nickname || values.fullName,
-                age: values.age,
-                gender: values.gender,
-                nationality: values.nationality,
-                description: values.description || null,
-                contact: values.contact,
-                sleep_schedule: null, // Not captured in frontend form
-                lifestyle: [values.lifestyle], // Backend expects array
-                sleep_type: values.sleepSchedule, // "Early bird", "Night owl", "Flexible"
-                study_habits: values.studyHabits === "Frequent studier" ? "silent" : values.studyHabits === "Moderate studier" ? "some_noise" : "flexible",
-                cleanliness: values.cleanliness === "Very tidy" ? "Tidy" : values.cleanliness === "Moderately tidy" ? "Moderate" : "Messy",
-                social: values.social === "Very social" ? "Social" : values.social === "Moderately social" ? "Moderate" : "Quiet",
-                MBTI: values.mbti || "ENFP", // Default if not provided
-                going_out: values.goingOut === "Often" ? "Frequent" : values.goingOut === "Sometimes" ? "Occasional" : "Homebody",
-                smoking: values.smoking === "Yes" || values.smoking === "Occasionally" ? true : false,
-                drinking: values.drinking === "Yes" ? "Frequent" : values.drinking === "Socially" ? "Occasional" : "Never",
-                pets: values.pets === "Have pets" ? "Pet Owner" : values.pets === "Allergic to pets" ? "Allergic" : "Flexible",
-                noise_tolerance: values.noiseTolerance,
-                temperature: values.temperature === "Prefer warm" ? "Warm" : values.temperature === "Prefer cool" ? "Cool" : "Flexible",
+                preferred_age_range: {
+                    min: values.ageMin,
+                    max: values.ageMax,
+                },
+                preferred_gender: values.gender,
+                preferred_nationality: values.nationality || null,
+                preferred_sleep_type: values.sleepType,
+                preferred_cleanliness: values.cleanliness,
+                preferred_MBTI: values.mbti,
+                preferred_smoking: values.smoking,
+                preferred_pets: values.pets,
+                preferred_noise_tolerance: values.noiseTolerance,
+                preferred_temperature: values.temperature,
+                additional_preferences: values.additionalPreferences || null,
             };
 
-            // Check if personality already exists
+            // Check if preferences already exist
             try {
-                const existingResponse = await api.get(`/personalities?userId=${user._id || user.id}`);
-                // Update existing personality
-                await api.put(`/personalities/${existingResponse.data._id}`, personalityData);
-                toast.success("Personality profile updated successfully!");
+                const existingResponse = await api.get(`/preferred_roommate?userId=${user._id || user.id}`);
+                // Update existing preferences
+                await api.put(`/preferred_roommate/${existingResponse.data._id}`, preferredRoommateData);
+                toast.success("Roommate preferences updated successfully!");
             } catch (error: any) {
-                // Create new personality
-                await api.post("/personalities", personalityData);
-                toast.success("Personality profile created successfully!");
+                // Create new preferences
+                await api.post("/preferred_roommate", preferredRoommateData);
+                toast.success("Roommate preferences saved successfully!");
             }
 
             navigate('/roommates');
         } catch (error: any) {
-            console.error("Error saving personality:", error);
-            toast.error(error.response?.data?.error || "Failed to save personality profile");
+            console.error("Error saving preferences:", error);
+            toast.error(error.response?.data?.error || "Failed to save roommate preferences");
         }
     };
 
@@ -209,9 +188,9 @@ export default function RoommateMatchingPage() {
     return (
         <section className="max-w-6xl mx-auto p-6 tracking-wide space-y-6">
             <div className="text-center">
-                <h1 className="text-3xl font-bold mb-1">Find Your Perfect Roommate</h1>
+                <h1 className="text-3xl font-bold mb-1">Set Your Roommate Preferences</h1>
                 <p className="text-sm text-muted-foreground">
-                    Fill out the form below to get matched with compatible roommates.
+                    Tell us what you're looking for in a roommate to get matched with compatible people.
                 </p>
             </div>
 
@@ -219,55 +198,17 @@ export default function RoommateMatchingPage() {
                 <CardContent className="">
                     <Form {...form}>
                         <form className="flex flex-col gap-8" onSubmit={form.handleSubmit(handleSubmit)}>
-                            {/* Account Information */}
+                            {/* Preferred Age Range */}
                             <div className="space-y-4">
-                                <SectionTitle>Account Information</SectionTitle>
+                                <SectionTitle>Preferred Age Range</SectionTitle>
                                 <Separator />
                                 <div className="flex flex-col md:flex-row md:items-start gap-4 w-full">
                                     <FormField
                                         control={form.control}
-                                        name="fullName"
+                                        name="ageMin"
                                         render={({ field }) => (
                                             <FormItem className="w-full md:w-1/2">
-                                                <FormLabel>Full Name</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        disabled={isWorking}
-                                                        className="min-h-[44px]"
-                                                        placeholder="Enter your full name"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="nickname"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full md:w-1/2">
-                                                <FormLabel>Nickname (Optional)</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        disabled={isWorking}
-                                                        className="min-h-[44px]"
-                                                        placeholder="Preferred name"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="flex flex-col md:flex-row md:items-start gap-4 w-full">
-                                    <FormField
-                                        control={form.control}
-                                        name="age"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full md:w-1/3">
-                                                <FormLabel>Age</FormLabel>
+                                                <FormLabel>Minimum Age</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         disabled={isWorking}
@@ -276,7 +217,7 @@ export default function RoommateMatchingPage() {
                                                         inputMode="numeric"
                                                         min={16}
                                                         max={100}
-                                                        placeholder="Enter your age"
+                                                        placeholder="Minimum age"
                                                         value={Number.isNaN(field.value as number) ? "" : field.value}
                                                         onChange={(e) => field.onChange(e.currentTarget.valueAsNumber)}
                                                     />
@@ -287,10 +228,41 @@ export default function RoommateMatchingPage() {
                                     />
                                     <FormField
                                         control={form.control}
+                                        name="ageMax"
+                                        render={({ field }) => (
+                                            <FormItem className="w-full md:w-1/2">
+                                                <FormLabel>Maximum Age</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        disabled={isWorking}
+                                                        className="min-h-[44px]"
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        min={16}
+                                                        max={100}
+                                                        placeholder="Maximum age"
+                                                        value={Number.isNaN(field.value as number) ? "" : field.value}
+                                                        onChange={(e) => field.onChange(e.currentTarget.valueAsNumber)}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Preferred Basic Information */}
+                            <div className="space-y-4">
+                                <SectionTitle>Preferred Basic Information</SectionTitle>
+                                <Separator />
+                                <div className="flex flex-col md:flex-row md:items-start gap-4 w-full">
+                                    <FormField
+                                        control={form.control}
                                         name="gender"
                                         render={({ field }) => (
-                                            <FormItem className="w-full md:w-1/3">
-                                                <FormLabel>Gender</FormLabel>
+                                            <FormItem className="w-full md:w-1/2">
+                                                <FormLabel>Preferred Gender</FormLabel>
                                                 <FormControl>
                                                     <Select
                                                         disabled={isWorking}
@@ -317,13 +289,13 @@ export default function RoommateMatchingPage() {
                                         control={form.control}
                                         name="nationality"
                                         render={({ field }) => (
-                                            <FormItem className="w-full md:w-1/3">
-                                                <FormLabel>Nationality</FormLabel>
+                                            <FormItem className="w-full md:w-1/2">
+                                                <FormLabel>Preferred Nationality (Optional)</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         disabled={isWorking}
                                                         className="min-h-[44px]"
-                                                        placeholder="Your nationality"
+                                                        placeholder="Any nationality"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -332,80 +304,13 @@ export default function RoommateMatchingPage() {
                                         )}
                                     />
                                 </div>
-                                <FormField
-                                    control={form.control}
-                                    name="contact"
-                                    render={({ field }) => (
-                                        <FormItem className="w-full">
-                                            <FormLabel>Contact Information</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    disabled={isWorking}
-                                                    className="min-h-[44px]"
-                                                    placeholder="Phone number or Line ID"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem className="w-full">
-                                            <FormLabel>About You (Optional)</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    disabled={isWorking}
-                                                    className="min-h-[100px] resize-none placeholder:text-sm"
-                                                    placeholder="Tell us a bit about yourself, your interests, and what you're looking for in a roommate..."
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormDescription>
-                                                This helps others get to know you better
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             </div>
 
-                            {/* Lifestyle Preferences */}
+                            {/* Preferred Lifestyle */}
                             <div className="space-y-4">
-                                <SectionTitle>Lifestyle Preferences</SectionTitle>
+                                <SectionTitle>Preferred Lifestyle</SectionTitle>
                                 <Separator />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="sleepSchedule"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Sleep Schedule</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {SLEEP_SCHEDULE.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
                                     <FormField
                                         control={form.control}
                                         name="sleepType"
@@ -423,62 +328,6 @@ export default function RoommateMatchingPage() {
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {SLEEP_TYPE.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="lifestyle"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Lifestyle</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {LIFESTYLE.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="studyHabits"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Study Habits</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {STUDY_HABITS.map((v) => (
                                                                 <SelectItem key={v} value={v}>
                                                                     {v}
                                                                 </SelectItem>
@@ -521,45 +370,17 @@ export default function RoommateMatchingPage() {
                                 </div>
                             </div>
 
-                            {/* Social Preferences */}
+                            {/* Preferred Personality */}
                             <div className="space-y-4">
-                                <SectionTitle>Social Preferences</SectionTitle>
+                                <SectionTitle>Preferred Personality</SectionTitle>
                                 <Separator />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="social"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Social Level</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {SOCIAL.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
                                     <FormField
                                         control={form.control}
                                         name="mbti"
                                         render={({ field }) => (
                                             <FormItem className="w-full">
-                                                <FormLabel>MBTI (Optional)</FormLabel>
+                                                <FormLabel>MBTI</FormLabel>
                                                 <FormControl>
                                                     <Select
                                                         disabled={isWorking}
@@ -582,40 +403,12 @@ export default function RoommateMatchingPage() {
                                             </FormItem>
                                         )}
                                     />
-                                    <FormField
-                                        control={form.control}
-                                        name="goingOut"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Going Out</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {GOING_OUT.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
                                 </div>
                             </div>
 
-                            {/* Habits & Preferences */}
+                            {/* Preferred Habits */}
                             <div className="space-y-4">
-                                <SectionTitle>Habits & Preferences</SectionTitle>
+                                <SectionTitle>Preferred Habits</SectionTitle>
                                 <Separator />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField
@@ -627,42 +420,14 @@ export default function RoommateMatchingPage() {
                                                 <FormControl>
                                                     <Select
                                                         disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
+                                                        onValueChange={(value) => field.onChange(value === "Yes")}
+                                                        value={field.value ? "Yes" : "No"}
                                                     >
                                                         <SelectTrigger className="w-full min-h-[44px]">
                                                             <SelectValue placeholder="Select" />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {YES_NO_OPTIONS.map((v) => (
-                                                                <SelectItem key={v} value={v}>
-                                                                    {v}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="drinking"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <FormLabel>Drinking</FormLabel>
-                                                <FormControl>
-                                                    <Select
-                                                        disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
-                                                        <SelectTrigger className="w-full min-h-[44px]">
-                                                            <SelectValue placeholder="Select" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {DRINKING_OPTIONS.map((v) => (
                                                                 <SelectItem key={v} value={v}>
                                                                     {v}
                                                                 </SelectItem>
@@ -683,14 +448,14 @@ export default function RoommateMatchingPage() {
                                                 <FormControl>
                                                     <Select
                                                         disabled={isWorking}
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
+                                                        onValueChange={(value) => field.onChange(value === "Yes")}
+                                                        value={field.value ? "Yes" : "No"}
                                                     >
                                                         <SelectTrigger className="w-full min-h-[44px]">
                                                             <SelectValue placeholder="Select" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {PETS_OPTIONS.map((v) => (
+                                                            {YES_NO_OPTIONS.map((v) => (
                                                                 <SelectItem key={v} value={v}>
                                                                     {v}
                                                                 </SelectItem>

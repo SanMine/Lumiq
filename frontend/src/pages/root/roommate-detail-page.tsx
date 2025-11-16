@@ -2,27 +2,183 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, Info, Mail } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import api from "@/api";
+import { toast } from "sonner";
+import Spinner from "@/components/shared/spinner";
+
+interface UserProfile {
+    _id: number;
+    name: string;
+    email: string;
+    phone?: string;
+    dateOfBirth?: string;
+    address?: string;
+    bio?: string;
+}
+
+interface Personality {
+    nickname: string;
+    age: number;
+    gender: string;
+    nationality: string;
+    description?: string;
+    contact?: string;
+    sleep_type: string;
+    lifestyle: string[];
+    study_habits: string;
+    cleanliness: string;
+    social: string;
+    MBTI?: string;
+    going_out: string;
+    smoking: boolean;
+    drinking: string;
+    pets: string;
+    noise_tolerance: string;
+    temperature: string;
+}
+
+interface CompatibilityDetails {
+    candidateId: number;
+    candidateName: string;
+    matchPercentage: number;
+    compatibility: {
+        personalityMatch: string;
+        lifestyleMatch: string;
+        preferenceMatch: string;
+        overallReason: string;
+    };
+}
 
 export default function RoommateDetailPage() {
     const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
+    const [roommate, setRoommate] = useState<UserProfile | null>(null);
+    const [personality, setPersonality] = useState<Personality | null>(null);
+    const [compatibility, setCompatibility] = useState<CompatibilityDetails | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const roommate = {
-        name: "Sophia Clark",
-        university: "University of California, Los Angeles",
-        year: "Sophomore",
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia",
-        email: "sophia.clark@email.com",
-        matchedPreferences: {
-            major: "Computer Science",
-            studyHabits: "Focused, prefers quiet study environment",
-            cleanliness: "Very tidy, prefers a clean living space"
-        },
-        otherPreferences: {
-            hobbies: "Hiking, coding, reading",
-            socialHabits: "Enjoys occasional social gatherings",
-            sleepSchedule: "Early riser, goes to bed around 10 PM"
-        }
+    useEffect(() => {
+        const fetchRoommateDetails = async () => {
+            if (!user || !id) {
+                toast.error("Please login to view roommate details");
+                navigate("/auth/sign-in");
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                // Fetch user profile
+                const userResponse = await api.get(`/users/${id}`);
+                setRoommate(userResponse.data);
+
+                // Fetch personality profile
+                const personalityResponse = await api.get(`/personalities?userId=${id}`);
+                setPersonality(personalityResponse.data);
+
+                // Fetch compatibility details
+                const compatibilityResponse = await api.post(`/matching/compare/${user._id || user.id}/${id}`);
+                if (compatibilityResponse.data.success) {
+                    setCompatibility(compatibilityResponse.data.compatibility);
+                }
+            } catch (error: any) {
+                console.error("Error fetching roommate details:", error);
+                const errorMessage = error.response?.data?.error || "Failed to load roommate details";
+                setError(errorMessage);
+                toast.error(errorMessage);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchRoommateDetails();
+    }, [user, id, navigate]);
+
+    if (isLoading) {
+        return (
+            <section className="min-h-screen bg-background py-6 px-4 sm:px-6 flex items-center justify-center">
+                <div className="text-center">
+                    <Spinner isLoading={true} label="Loading roommate profile...">
+                        <div className="w-12 h-12" />
+                    </Spinner>
+                </div>
+            </section>
+        );
+    }
+
+    if (error || !roommate || !personality) {
+        return (
+            <section className="min-h-screen bg-background py-6 px-4 sm:px-6">
+                <div className="max-w-4xl mx-auto text-center">
+                    <Card className="p-8">
+                        <p className="text-red-500 dark:text-red-400 mb-4">
+                            {error || "Roommate profile not found"}
+                        </p>
+                        <Button
+                            onClick={() => navigate("/roommates")}
+                            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                        >
+                            Back to Matches
+                        </Button>
+                    </Card>
+                </div>
+            </section>
+        );
+    }
+
+    // Helper functions to format data
+    const getYear = () => {
+        if (!roommate.dateOfBirth) return "Student";
+        const birthYear = new Date(roommate.dateOfBirth).getFullYear();
+        const currentYear = new Date().getFullYear();
+        const age = currentYear - birthYear;
+        if (age <= 19) return "Freshman";
+        if (age <= 20) return "Sophomore";
+        if (age <= 21) return "Junior";
+        if (age <= 22) return "Senior";
+        return "Graduate";
+    };
+
+    const formatStudyHabits = () => {
+        const habits = personality.study_habits;
+        if (habits === "silent") return "Focused, prefers quiet study environment";
+        if (habits === "some_noise") return "Can study with some background noise";
+        return "Flexible study environment";
+    };
+
+    const formatCleanliness = () => {
+        const clean = personality.cleanliness;
+        if (clean === "Tidy") return "Very tidy, prefers a clean living space";
+        if (clean === "Moderate") return "Moderately tidy, balanced approach";
+        return "Relaxed about cleanliness";
+    };
+
+    const formatSocialHabits = () => {
+        const social = personality.social;
+        const goingOut = personality.going_out;
+        if (social === "Social" && goingOut === "Frequent") return "Very social, enjoys frequent gatherings";
+        if (social === "Social") return "Enjoys occasional social gatherings";
+        if (social === "Moderate") return "Moderately social, enjoys company sometimes";
+        return "Prefers quiet time, occasional socializing";
+    };
+
+    const formatSleepSchedule = () => {
+        const sleep = personality.sleep_type;
+        if (sleep === "Early Bird") return "Early riser, goes to bed early";
+        if (sleep === "Night Owl") return "Night owl, stays up late";
+        return "Flexible sleep schedule";
+    };
+
+    const formatHobbies = () => {
+        const lifestyle = personality.lifestyle.join(", ");
+        const description = personality.description || "Various interests";
+        return `${lifestyle}, ${description}`;
     };
 
     return (
@@ -48,7 +204,7 @@ export default function RoommateDetailPage() {
                                     <div className="relative mb-6">
                                         <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-1 shadow-xl">
                                             <img
-                                                src={roommate.image}
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${roommate.name}`}
                                                 alt={roommate.name}
                                                 className="w-full h-full rounded-full bg-muted"
                                             />
@@ -63,10 +219,10 @@ export default function RoommateDetailPage() {
                                         {roommate.name}
                                     </h2>
                                     <p className="text-muted-foreground text-center mb-1 text-sm">
-                                        {roommate.university}
+                                        {roommate.address || "University Student"}
                                     </p>
                                     <Badge variant="secondary" className="mb-6">
-                                        {roommate.year}
+                                        {getYear()}
                                     </Badge>
 
                                     {/* Contact Information */}
@@ -79,7 +235,7 @@ export default function RoommateDetailPage() {
                                                 <Mail className="w-5 h-5 text-white" />
                                             </div>
                                             <span className="text-sm text-foreground break-all">
-                                                {roommate.email}
+                                                {personality.contact || roommate.email}
                                             </span>
                                         </div>
                                     </div>
@@ -109,7 +265,7 @@ export default function RoommateDetailPage() {
                                             Major
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.matchedPreferences.major}
+                                            {personality.nationality || "Not specified"}
                                         </p>
                                     </div>
 
@@ -119,7 +275,7 @@ export default function RoommateDetailPage() {
                                             Study Habits
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.matchedPreferences.studyHabits}
+                                            {formatStudyHabits()}
                                         </p>
                                     </div>
 
@@ -129,7 +285,7 @@ export default function RoommateDetailPage() {
                                             Cleanliness
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.matchedPreferences.cleanliness}
+                                            {formatCleanliness()}
                                         </p>
                                     </div>
                                 </div>
@@ -155,7 +311,7 @@ export default function RoommateDetailPage() {
                                             Hobbies
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.otherPreferences.hobbies}
+                                            {formatHobbies()}
                                         </p>
                                     </div>
 
@@ -165,7 +321,7 @@ export default function RoommateDetailPage() {
                                             Social Habits
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.otherPreferences.socialHabits}
+                                            {formatSocialHabits()}
                                         </p>
                                     </div>
 
@@ -175,7 +331,7 @@ export default function RoommateDetailPage() {
                                             Sleep Schedule
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {roommate.otherPreferences.sleepSchedule}
+                                            {formatSleepSchedule()}
                                         </p>
                                     </div>
                                 </div>

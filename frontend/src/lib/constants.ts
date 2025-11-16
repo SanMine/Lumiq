@@ -20,11 +20,13 @@ export const NAVLINKS = [
 export const cards = [
     {
         title: "Explore Dorms",
-        subTitle: "Browse our extensive list of student housing options."
+        subTitle: "Browse our extensive list of student housing options.",
+        to: "/dorms"
     },
     {
         title: "Roommate Matching",
-        subTitle: "Find compatible roommates with our smart algorithm."
+        subTitle: "Find compatible roommates with our smart algorithm.",
+        to: "/roommate-match"
     }
 ]
 

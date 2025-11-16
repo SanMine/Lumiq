@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getNextId } from "../db/counter.js";
 
 const PreferredRoommateSchema = new mongoose.Schema(
   {
@@ -102,6 +103,20 @@ const PreferredRoommateSchema = new mongoose.Schema(
     collection: "preferred_roommate",
   }
 );
+
+// Auto-increment ID
+PreferredRoommateSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      this._id = await getNextId("preferred_roommate");
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
+});
 
 export const Preferred_roommate = mongoose.model(
   "Preferred_roommate",

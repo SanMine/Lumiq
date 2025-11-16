@@ -26,7 +26,8 @@ import {
     Phone,
     Save,
     Shield,
-    User
+    User,
+    UserCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,12 +49,28 @@ export default function MyAccountPage() {
         address: "",
         bio: ""
     });
-    const [passwordData, setPasswordData] = useState({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
+    const [personalityData, setPersonalityData] = useState({
+        nickname: "",
+        age: 18,
+        gender: "Prefer not to say" as string,
+        nationality: "",
+        description: "",
+        contact: "",
+        sleepSchedule: "Flexible" as string,
+        lifestyle: "Moderate" as string,
+        studyHabits: "some_noise" as string,
+        cleanliness: "Moderate" as string,
+        social: "Moderate" as string,
+        mbti: "" as string,
+        goingOut: "Occasional" as string,
+        smoking: false,
+        drinking: "Never" as string,
+        pets: "Flexible" as string,
+        noiseTolerance: "Medium" as string,
+        temperature: "Flexible" as string,
     });
-    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [isEditingPersonality, setIsEditingPersonality] = useState(false);
+    const [isSavingPersonality, setIsSavingPersonality] = useState(false);
 
     const [notifications, setNotifications] = useState({
         emailNotifications: true,
@@ -96,6 +113,38 @@ export default function MyAccountPage() {
             };
             
             fetchUserData();
+            
+            // Fetch personality data
+            const fetchPersonalityData = async () => {
+                try {
+                    const response = await api.get(`/personalities?userId=${user._id || user.id}`);
+                    const personality = response.data;
+                    setPersonalityData({
+                        nickname: personality.nickname || "",
+                        age: personality.age || 18,
+                        gender: personality.gender || "Prefer not to say",
+                        nationality: personality.nationality || "",
+                        description: personality.description || "",
+                        contact: personality.contact || "",
+                        sleepSchedule: personality.sleep_type || "Flexible",
+                        lifestyle: personality.lifestyle?.[0] || "Moderate",
+                        studyHabits: personality.study_habits || "some_noise",
+                        cleanliness: personality.cleanliness || "Moderate",
+                        social: personality.social || "Moderate",
+                        mbti: personality.MBTI || "",
+                        goingOut: personality.going_out || "Occasional",
+                        smoking: personality.smoking || false,
+                        drinking: personality.drinking || "Never",
+                        pets: personality.pets || "Flexible",
+                        noiseTolerance: personality.noise_tolerance || "Medium",
+                        temperature: personality.temperature || "Flexible",
+                    });
+                } catch (error) {
+                    console.log("No existing personality data");
+                }
+            };
+            
+            fetchPersonalityData();
         }
     }, [user, isLoading, navigate]);
 
@@ -103,6 +152,57 @@ export default function MyAccountPage() {
         logout();
         toast.success("Logged out successfully");
         navigate('/');
+    };
+
+    const handlePersonalitySave = async () => {
+        if (!user) return;
+        
+        try {
+            setIsSavingPersonality(true);
+            
+            // Map frontend form data to backend schema
+            const backendData = {
+                userId: user._id || user.id,
+                nickname: personalityData.nickname || user.name,
+                age: personalityData.age,
+                gender: personalityData.gender,
+                nationality: personalityData.nationality,
+                description: personalityData.description || null,
+                contact: personalityData.contact,
+                sleep_schedule: null,
+                lifestyle: [personalityData.lifestyle],
+                sleep_type: personalityData.sleepSchedule,
+                study_habits: personalityData.studyHabits,
+                cleanliness: personalityData.cleanliness,
+                social: personalityData.social,
+                MBTI: personalityData.mbti || null,
+                going_out: personalityData.goingOut,
+                smoking: personalityData.smoking,
+                drinking: personalityData.drinking,
+                pets: personalityData.pets,
+                noise_tolerance: personalityData.noiseTolerance,
+                temperature: personalityData.temperature,
+            };
+
+            // Check if personality already exists
+            try {
+                const existingResponse = await api.get(`/personalities?userId=${user._id || user.id}`);
+                // Update existing personality
+                await api.put(`/personalities/${existingResponse.data._id}`, backendData);
+                toast.success("Personality profile updated successfully!");
+            } catch (error: any) {
+                // Create new personality
+                await api.post("/personalities", backendData);
+                toast.success("Personality profile created successfully!");
+            }
+            
+            setIsEditingPersonality(false);
+        } catch (error: any) {
+            console.error("Error saving personality:", error);
+            toast.error(error.response?.data?.error || "Failed to save personality profile");
+        } finally {
+            setIsSavingPersonality(false);
+        }
     };
 
     const handleSave = async () => {
@@ -138,51 +238,6 @@ export default function MyAccountPage() {
             toast.error(error.response?.data?.error || "Failed to update profile");
         } finally {
             setIsSaving(false);
-        }
-    };
-
-    const handlePasswordChange = async () => {
-        if (!user) return;
-        
-        try {
-            setIsChangingPassword(true);
-            
-            // Validate password fields
-            if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-                toast.error("All password fields are required");
-                return;
-            }
-            
-            if (passwordData.newPassword !== passwordData.confirmPassword) {
-                toast.error("New passwords do not match");
-                return;
-            }
-            
-            if (passwordData.newPassword.length < 6) {
-                toast.error("Password must be at least 6 characters");
-                return;
-            }
-            
-            // Call password change API
-            await api.put(`/users/${user._id || user.id}/password`, {
-                currentPassword: passwordData.currentPassword,
-                newPassword: passwordData.newPassword,
-                confirmPassword: passwordData.confirmPassword
-            });
-            
-            // Clear password fields
-            setPasswordData({
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: ""
-            });
-            
-            toast.success("Password updated successfully");
-        } catch (error: any) {
-            console.error("Error changing password:", error);
-            toast.error(error.response?.data?.error || "Failed to change password");
-        } finally {
-            setIsChangingPassword(false);
         }
     };
 
@@ -280,10 +335,14 @@ export default function MyAccountPage() {
                     {/* Right Content - Tabs */}
                     <div className="lg:col-span-2">
                         <Tabs defaultValue="profile" className="space-y-6">
-                            <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+                            <TabsList className="grid w-full grid-cols-4 h-auto p-1">
                                 <TabsTrigger value="profile" className="py-3">
                                     <User className="w-4 h-4 mr-2" />
                                     Profile
+                                </TabsTrigger>
+                                <TabsTrigger value="personalities" className="py-3">
+                                    <UserCircle className="w-4 h-4 mr-2" />
+                                    Personalities
                                 </TabsTrigger>
                                 <TabsTrigger value="security" className="py-3">
                                     <Shield className="w-4 h-4 mr-2" />
@@ -403,6 +462,382 @@ export default function MyAccountPage() {
                                 </Card>
                             </TabsContent>
 
+                            {/* Personalities Tab */}
+                            <TabsContent value="personalities" className="space-y-6">
+                                <Card className="border-2 border-border">
+                                    <CardHeader className="flex flex-row items-center justify-between">
+                                        <div>
+                                            <CardTitle>Personality Profile</CardTitle>
+                                            <CardDescription>
+                                                Share your personality and lifestyle preferences
+                                            </CardDescription>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsEditingPersonality(!isEditingPersonality)}
+                                        >
+                                            <Edit className="w-4 h-4 mr-2" />
+                                            {isEditingPersonality ? "Cancel" : "Edit"}
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        {/* Basic Information */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Basic Information</h3>
+                                            <Separator />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="nickname">Nickname</Label>
+                                                    <Input
+                                                        id="nickname"
+                                                        value={personalityData.nickname}
+                                                        onChange={(e) => setPersonalityData({ ...personalityData, nickname: e.target.value })}
+                                                        disabled={!isEditingPersonality}
+                                                        className="bg-muted/50"
+                                                        placeholder="Your preferred name"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="age">Age</Label>
+                                                    <Input
+                                                        id="age"
+                                                        type="number"
+                                                        value={personalityData.age}
+                                                        onChange={(e) => setPersonalityData({ ...personalityData, age: parseInt(e.target.value) || 18 })}
+                                                        disabled={!isEditingPersonality}
+                                                        className="bg-muted/50"
+                                                        min="16"
+                                                        max="100"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="p-gender">Gender</Label>
+                                                    <Select
+                                                        value={personalityData.gender}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, gender: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue placeholder="Select gender" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Male">Male</SelectItem>
+                                                            <SelectItem value="Female">Female</SelectItem>
+                                                            <SelectItem value="Non-binary">Non-binary</SelectItem>
+                                                            <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="p-nationality">Nationality</Label>
+                                                    <Input
+                                                        id="p-nationality"
+                                                        value={personalityData.nationality}
+                                                        onChange={(e) => setPersonalityData({ ...personalityData, nationality: e.target.value })}
+                                                        disabled={!isEditingPersonality}
+                                                        className="bg-muted/50"
+                                                        placeholder="Your nationality"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="p-contact">Contact</Label>
+                                                <Input
+                                                    id="p-contact"
+                                                    value={personalityData.contact}
+                                                    onChange={(e) => setPersonalityData({ ...personalityData, contact: e.target.value })}
+                                                    disabled={!isEditingPersonality}
+                                                    className="bg-muted/50"
+                                                    placeholder="Phone or email"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="p-description">Description</Label>
+                                                <Input
+                                                    id="p-description"
+                                                    value={personalityData.description}
+                                                    onChange={(e) => setPersonalityData({ ...personalityData, description: e.target.value })}
+                                                    disabled={!isEditingPersonality}
+                                                    className="bg-muted/50"
+                                                    placeholder="Tell us about yourself"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Lifestyle Preferences */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Lifestyle Preferences</h3>
+                                            <Separator />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="sleepSchedule">Sleep Schedule</Label>
+                                                    <Select
+                                                        value={personalityData.sleepSchedule}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, sleepSchedule: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Early Bird">Early Bird</SelectItem>
+                                                            <SelectItem value="Night Owl">Night Owl</SelectItem>
+                                                            <SelectItem value="Flexible">Flexible</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="lifestyle">Lifestyle</Label>
+                                                    <Select
+                                                        value={personalityData.lifestyle}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, lifestyle: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Active">Active</SelectItem>
+                                                            <SelectItem value="Moderate">Moderate</SelectItem>
+                                                            <SelectItem value="Relaxed">Relaxed</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="studyHabits">Study Habits</Label>
+                                                    <Select
+                                                        value={personalityData.studyHabits}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, studyHabits: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="silent">Silent</SelectItem>
+                                                            <SelectItem value="some_noise">Some Noise</SelectItem>
+                                                            <SelectItem value="flexible">Flexible</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="cleanliness">Cleanliness</Label>
+                                                    <Select
+                                                        value={personalityData.cleanliness}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, cleanliness: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Tidy">Tidy</SelectItem>
+                                                            <SelectItem value="Moderate">Moderate</SelectItem>
+                                                            <SelectItem value="Messy">Messy</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Social Preferences */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Social Preferences</h3>
+                                            <Separator />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="social">Social Level</Label>
+                                                    <Select
+                                                        value={personalityData.social}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, social: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Social">Social</SelectItem>
+                                                            <SelectItem value="Moderate">Moderate</SelectItem>
+                                                            <SelectItem value="Quiet">Quiet</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="mbti">MBTI (Optional)</Label>
+                                                    <Select
+                                                        value={personalityData.mbti}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, mbti: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue placeholder="Select MBTI" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="INTJ">INTJ</SelectItem>
+                                                            <SelectItem value="INTP">INTP</SelectItem>
+                                                            <SelectItem value="ENTJ">ENTJ</SelectItem>
+                                                            <SelectItem value="ENTP">ENTP</SelectItem>
+                                                            <SelectItem value="INFJ">INFJ</SelectItem>
+                                                            <SelectItem value="INFP">INFP</SelectItem>
+                                                            <SelectItem value="ENFJ">ENFJ</SelectItem>
+                                                            <SelectItem value="ENFP">ENFP</SelectItem>
+                                                            <SelectItem value="ISTJ">ISTJ</SelectItem>
+                                                            <SelectItem value="ISFJ">ISFJ</SelectItem>
+                                                            <SelectItem value="ESTJ">ESTJ</SelectItem>
+                                                            <SelectItem value="ESFJ">ESFJ</SelectItem>
+                                                            <SelectItem value="ISTP">ISTP</SelectItem>
+                                                            <SelectItem value="ISFP">ISFP</SelectItem>
+                                                            <SelectItem value="ESTP">ESTP</SelectItem>
+                                                            <SelectItem value="ESFP">ESFP</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="goingOut">Going Out</Label>
+                                                    <Select
+                                                        value={personalityData.goingOut}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, goingOut: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Frequent">Frequent</SelectItem>
+                                                            <SelectItem value="Occasional">Occasional</SelectItem>
+                                                            <SelectItem value="Homebody">Homebody</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Habits */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Habits</h3>
+                                            <Separator />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="smoking">Smoking</Label>
+                                                    <Select
+                                                        value={personalityData.smoking ? "Yes" : "No"}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, smoking: value === "Yes" })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="drinking">Drinking</Label>
+                                                    <Select
+                                                        value={personalityData.drinking}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, drinking: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Never">Never</SelectItem>
+                                                            <SelectItem value="Occasional">Occasional</SelectItem>
+                                                            <SelectItem value="Frequent">Frequent</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="pets">Pets</Label>
+                                                    <Select
+                                                        value={personalityData.pets}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, pets: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Pet Owner">Pet Owner</SelectItem>
+                                                            <SelectItem value="Allergic">Allergic</SelectItem>
+                                                            <SelectItem value="Dog Person">Dog Person</SelectItem>
+                                                            <SelectItem value="Cat Person">Cat Person</SelectItem>
+                                                            <SelectItem value="Flexible">Flexible</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Environmental Preferences */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Environmental Preferences</h3>
+                                            <Separator />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="noiseTolerance">Noise Tolerance</Label>
+                                                    <Select
+                                                        value={personalityData.noiseTolerance}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, noiseTolerance: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="High">High</SelectItem>
+                                                            <SelectItem value="Medium">Medium</SelectItem>
+                                                            <SelectItem value="Low">Low</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="temperature">Temperature Preference</Label>
+                                                    <Select
+                                                        value={personalityData.temperature}
+                                                        onValueChange={(value) => setPersonalityData({ ...personalityData, temperature: value })}
+                                                        disabled={!isEditingPersonality}
+                                                    >
+                                                        <SelectTrigger className="bg-muted/50">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Warm">Warm</SelectItem>
+                                                            <SelectItem value="Cool">Cool</SelectItem>
+                                                            <SelectItem value="Flexible">Flexible</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {isEditingPersonality && (
+                                            <div className="flex justify-end gap-3 pt-4">
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => setIsEditingPersonality(false)}
+                                                    disabled={isSavingPersonality}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button 
+                                                    onClick={handlePersonalitySave} 
+                                                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                                    disabled={isSavingPersonality}
+                                                >
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                    {isSavingPersonality ? "Saving..." : "Save Changes"}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
                             {/* Security Tab */}
                             <TabsContent value="security" className="space-y-6">
                                 <Card className="border-2 border-border">
@@ -420,8 +855,6 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Enter current password"
                                                 className="bg-muted/50"
-                                                value={passwordData.currentPassword}
-                                                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -431,8 +864,6 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Enter new password"
                                                 className="bg-muted/50"
-                                                value={passwordData.newPassword}
-                                                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -442,16 +873,10 @@ export default function MyAccountPage() {
                                                 type="password"
                                                 placeholder="Confirm new password"
                                                 className="bg-muted/50"
-                                                value={passwordData.confirmPassword}
-                                                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                             />
                                         </div>
-                                        <Button 
-                                            className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                                            onClick={handlePasswordChange}
-                                            disabled={isChangingPassword}
-                                        >
-                                            {isChangingPassword ? "Updating..." : "Update Password"}
+                                        <Button className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                                            Update Password
                                         </Button>
                                     </CardContent>
                                 </Card>
