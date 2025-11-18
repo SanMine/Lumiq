@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Star, MapPin, Wifi, Coffee, Dumbbell, Home, Bed, Zap } from "lucide-rea
 
 export default function RoomsDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   
   console.log("Dorm ID:", id);
 
@@ -14,10 +15,10 @@ export default function RoomsDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         
         {/* Main Dorm Info Card */}
-        <Card className="overflow-hidden bg-card mb-8 py-0">
+        <Card className="overflow-hidden border-2 border-border bg-card mb-8 py-0">
           <CardContent className="p-0">
             {/* Hero Image */}
-            <div className="relative h-96 overflow-hidden">
+            <div className="relative h-96 overflow-hidden ">
               <img
                 src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&h=600&fit=crop"
                 alt="Campus Suites"
@@ -43,7 +44,10 @@ export default function RoomsDetail() {
                 <span className="text-foreground font-semibold text-xl">
                   Price Range: ฿800 – ฿1,200 / month
                 </span>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg">
+                <Button 
+                  onClick={() => navigate(`/dorms/${id}/book`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg"
+                >
                   Book / Apply Now
                 </Button>
               </div>
@@ -220,7 +224,10 @@ export default function RoomsDetail() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-foreground text-lg font-semibold">Ready to find your new home?</p>
               <div className="flex flex-wrap gap-3">
-                <Button variant="outline" className="border-2 border-border hover:bg-muted px-6">
+                <Button 
+                  onClick={() => navigate(`/dorms/${id}/book`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+                >
                   Book a Room
                 </Button>
                 <Button variant="outline" className="border-2 border-border hover:bg-muted px-6">

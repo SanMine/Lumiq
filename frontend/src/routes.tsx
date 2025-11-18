@@ -50,6 +50,13 @@ export default function Router() {
           }
         },
         {
+            path: '/dorms/:id/book',
+            lazy: async () => {
+              const { default: RoomBooking } = await import('@/pages/root/room-booking')
+              return { Component: RoomBooking }
+            }
+          },
+        {
           path: "/roommates/:id",
           lazy: async () => {
             const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
