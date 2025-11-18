@@ -384,7 +384,7 @@ export default function RoomBooking() {
         {/* Action Button */}
         <div className="flex justify-end">
           <Button
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-lg"
+            className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
             onClick={handleConfirm}
           >
             Confirm Booking

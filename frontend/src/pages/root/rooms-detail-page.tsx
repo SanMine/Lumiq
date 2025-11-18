@@ -25,7 +25,7 @@ export default function RoomsDetail() {
                 className="w-full h-full object-cover"
               />
               {/* Rating Badge */}
-              <Badge className="absolute top-4 right-4 bg-lime-400 hover:bg-lime-500 text-black font-bold px-4 py-2 flex items-center gap-2 text-lg">
+              <Badge className="absolute top-4 right-4 bg-lime-400 hover:bg-lime-500 text-black rounded-full  w-fit min-h-[40px]  cursor-pointeritems-center ">
                 <Star className="w-5 h-5 fill-black" />
                 4.5 (120 reviews)
               </Badge>
@@ -46,7 +46,7 @@ export default function RoomsDetail() {
                 </span>
                 <Button 
                   onClick={() => navigate(`/dorms/${id}/book`)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg"
+                  className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
                 >
                   Book / Apply Now
                 </Button>
@@ -226,14 +226,14 @@ export default function RoomsDetail() {
               <div className="flex flex-wrap gap-3">
                 <Button 
                   onClick={() => navigate(`/dorms/${id}/book`)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+                  variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
                 >
                   Book a Room
                 </Button>
-                <Button variant="outline" className="border-2 border-border hover:bg-muted px-6">
+                <Button variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                   Contact Dorm
                 </Button>
-                <Button variant="outline" className="border-2 border-border hover:bg-muted px-6">
+                <Button variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                   Save to Wishlist
                 </Button>
               </div>
