@@ -84,13 +84,13 @@ export default function RoomBooking() {
             <div className="flex gap-4 justify-center pt-4">
               <Button
                 variant="outline"
-                className="border-2 border-border hover:bg-muted px-8"
+                className="rounded-full w-fit min-h-[40px] text-black cursor-pointer border-2 border-border hover:bg-muted px-8"
                 onClick={() => navigate("/account")}
               >
                 Go to Dashboard
               </Button>
               <Button
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+                className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
               >
                 Share Confirmation
               </Button>
