@@ -13,7 +13,7 @@ import { User_personality } from '../models/User_personality.js';
 import { Preferred_roommate } from '../models/Preferred_roommate.js';
 
 /**
- * Find compatible roommates for a user using Groq AI
+ * Find compatible roommates for a user using algorithmic bidirectional matching
  * @param {Number} userId - The user ID to find matches for
  * @returns {Promise<Array>} Array of matched users with compatibility scores
  */
@@ -37,7 +37,7 @@ export async function findRoommateMatches(userId) {
       throw new Error(`Roommate preferences not found for user ${userId}`);
     }
 
-    // Get all other users with their personalities
+    // Get all other users
     const allUsers = await User.find({ _id: { $ne: userId } });
     
     // Get personalities for all other users
@@ -45,38 +45,83 @@ export async function findRoommateMatches(userId) {
       userId: { $in: allUsers.map(u => u._id) },
     });
 
-    // Create a map for quick lookup
+    // Get preferences for all other users
+    const allPreferences = await Preferred_roommate.find({
+      userId: { $in: allUsers.map(u => u._id) },
+    });
+
+    // Create maps for quick lookup
     const personalityMap = {};
     personalities.forEach(p => {
       personalityMap[p.userId] = p;
     });
 
-    // Filter users who have personality profiles
-    const usersWithProfiles = allUsers.filter(u => personalityMap[u._id]);
+    const preferenceMap = {};
+    allPreferences.forEach(p => {
+      preferenceMap[p.userId] = p;
+    });
 
-    if (usersWithProfiles.length === 0) {
+    // Filter users who have both personality and preference profiles
+    const candidateUsers = allUsers.filter(u => 
+      personalityMap[u._id] && preferenceMap[u._id]
+    );
+
+    if (candidateUsers.length === 0) {
       return [];
     }
 
-    // Prepare data for Groq AI analysis
-    const targetUserData = {
-      name: targetUser.name,
-      personality: targetPersonality,
-      preferences: targetPreferences,
-    };
+    // Analyze compatibility for each candidate
+    const matches = [];
+    
+    for (const candidate of candidateUsers) {
+      const candidatePersonality = personalityMap[candidate._id];
+      const candidatePreferences = preferenceMap[candidate._id];
 
-    const candidatesData = usersWithProfiles.map(user => ({
-      id: user._id,
-      name: user.name,
-      personality: personalityMap[user._id],
-    }));
+      // STEP 1: Check User A Preferences → User B Personality
+      const preferencesMatch = calculatePreferenceToPersonalityMatch(
+        targetPreferences,
+        candidatePersonality
+      );
 
-    // Call Groq AI to analyze compatibility
-    const matches = await analyzeCompatibilityWithGroq(
-      targetUserData,
-      candidatesData,
-      usersWithProfiles.length
-    );
+      // Only proceed if first check passes 60% threshold
+      if (preferencesMatch.score >= 60) {
+        // STEP 2: Check User A Personality → User B Preferences
+        const personalityMatch = calculatePersonalityToPreferenceMatch(
+          targetPersonality,
+          candidatePreferences
+        );
+
+        // Calculate average match percentage
+        const averageMatchPercentage = Math.round(
+          (preferencesMatch.score + personalityMatch.score) / 2
+        );
+
+        // Create match result
+        matches.push({
+          candidateId: candidate._id,
+          candidateName: candidate.name,
+          matchPercentage: averageMatchPercentage,
+          compatibility: {
+            personalityMatch: personalityMatch.summary,
+            lifestyleMatch: preferencesMatch.summary,
+            preferenceMatch: `Your preferences match their personality at ${preferencesMatch.score}%. Their preferences match your personality at ${personalityMatch.score}%.`,
+            overallReason: generateOverallReason(
+              averageMatchPercentage,
+              preferencesMatch,
+              personalityMatch
+            ),
+          },
+          detailedScores: {
+            yourPreferencesVsTheirPersonality: preferencesMatch.score,
+            yourPersonalityVsTheirPreferences: personalityMatch.score,
+            breakdown: {
+              preferencesMatchDetails: preferencesMatch.details,
+              personalityMatchDetails: personalityMatch.details,
+            },
+          },
+        });
+      }
+    }
 
     // Sort by match percentage (highest first)
     matches.sort((a, b) => b.matchPercentage - a.matchPercentage);
