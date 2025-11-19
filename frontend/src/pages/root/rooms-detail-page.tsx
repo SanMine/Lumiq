@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Wifi, Coffee, Dumbbell, Home, Bed, Zap } from "lucide-react";
+import { FaFacebookF, FaInstagram, FaLinkedin } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 
 export default function RoomsDetail() {
   const { id } = useParams();
@@ -217,7 +219,27 @@ export default function RoomsDetail() {
             </div>
           </CardContent>
         </Card>
+        <Card className="border-2 border-border bg-card mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-foreground text-center mb-4">Contact us</h2>
+            <div className="space-y-4">
+              <Card className="bg-muted/50 border-border items-center">
+                <CardContent className="p-4 ">
+                  
+                  <div className="space-y-2 ">
+                  <div className="flex items-center gap-20">
+                            <a target="_blank" className="flex items-center justify-center hover:text-blue-600" href={'https://www.facebook.com/share/12K662nTcjn/?mibextid=wwXIfr'}><FaFacebookF className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-pink-500" href={'https://www.instagram.com/fisheeeshhh/'}><FaInstagram className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-blue-500" href={'https://www.linkedin.com/in/syp-dev'}><FaLinkedin className="size-5" /></a>
+                            <a target="_blank" className="flex items-center justify-center hover:text-black" href={'https://github.com/fisheeesh'}><FaXTwitter className="size-5" /></a>
+                        </div>
+                  </div>
 
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
         {/* Footer Actions */}
         <Card className="border-2 border-border bg-card">
           <CardContent className="p-6">
@@ -226,12 +248,8 @@ export default function RoomsDetail() {
               <div className="flex flex-wrap gap-3">
                 <Button 
                   onClick={() => navigate(`/dorms/${id}/book`)}
-                  variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                >
+                  variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                   Book a Room
-                </Button>
-                <Button variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
-                  Contact Dorm
                 </Button>
                 <Button variant="outline" className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
                   Save to Wishlist

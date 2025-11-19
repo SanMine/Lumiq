@@ -63,7 +63,7 @@ export default function RoomBooking() {
           <CardContent className="p-12 text-center space-y-6">
             <div className="flex justify-center">
               <div className="w-20 h-20 rounded-full bg-lime-400 flex items-center justify-center">
-                <CheckCircle className="w-12 h-12 text-black" />
+                <CheckCircle className="w-12 h-12 text-white" />
               </div>
             </div>
             
