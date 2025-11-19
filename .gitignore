@@ -1,2 +1,6 @@
 backend/.env
 frontend/.env
+-e 
+# Environment files
+*.env
+*.env.*
