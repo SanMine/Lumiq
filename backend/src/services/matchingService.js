@@ -1,24 +1,16 @@
 /**
- * User Matching Service using Groq AI
+ * User Matching Service using Algorithmic Bidirectional Matching
  * Finds compatible roommates based on personality and preferences
+ * 
+ * Matching Logic:
+ * 1. First Check: User A Preferences → User B Personality (must be >= 60%)
+ * 2. Second Check: User A Personality → User B Preferences (if first check passes)
+ * 3. Final Score: Average of both checks if both pass
  */
 
-import { Groq } from 'groq-sdk';
 import { User } from '../models/User.js';
 import { User_personality } from '../models/User_personality.js';
 import { Preferred_roommate } from '../models/Preferred_roommate.js';
-
-// Initialize Groq client lazily
-let groqClient = null;
-
-function getGroqClient() {
-  if (!groqClient) {
-    groqClient = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    });
-  }
-  return groqClient;
-}
 
 /**
  * Find compatible roommates for a user using Groq AI
