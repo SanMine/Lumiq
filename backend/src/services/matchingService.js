@@ -134,136 +134,298 @@ export async function findRoommateMatches(userId) {
 }
 
 /**
- * Analyze compatibility using Groq AI
- * @param {Object} targetUser - Target user's profile
- * @param {Array} candidates - Array of candidate users
- * @param {Number} totalCandidates - Total number of candidates
- * @returns {Promise<Array>} Array of matched users with scores
+ * Calculate match between User A's Preferences and User B's Personality
+ * This is the FIRST check - must be >= 60% to proceed
+ * @param {Object} preferences - User A's preferences
+ * @param {Object} personality - User B's personality
+ * @returns {Object} Score and detailed reasons
  */
-async function analyzeCompatibilityWithGroq(targetUser, candidates, totalCandidates) {
-  // Create a detailed prompt for the AI
-  const prompt = `You are a roommate matching expert. Analyze compatibility between a target user and candidate roommates based on personality traits, preferences, and lifestyle.
+function calculatePreferenceToPersonalityMatch(preferences, personality) {
+  const scores = [];
+  const details = [];
 
-TARGET USER:
-Name: ${targetUser.name}
-Personality Profile:
-- Age: ${targetUser.personality.age}
-- Gender: ${targetUser.personality.gender}
-- Nationality: ${targetUser.personality.nationality}
-- Sleep Type: ${targetUser.personality.sleep_type}
-- Study Habits: ${targetUser.personality.study_habits}
-- Cleanliness: ${targetUser.personality.cleanliness}
-- Social: ${targetUser.personality.social}
-- MBTI: ${targetUser.personality.MBTI}
-- Going Out: ${targetUser.personality.going_out}
-- Smoking: ${targetUser.personality.smoking}
-- Drinking: ${targetUser.personality.drinking}
-- Pets: ${targetUser.personality.pets}
-- Noise Tolerance: ${targetUser.personality.noise_tolerance}
-- Temperature Preference: ${targetUser.personality.temperature}
-- Lifestyle: ${targetUser.personality.lifestyle.join(', ')}
-
-Roommate Preferences:
-- Preferred Age Range: ${targetUser.preferences.preferred_age_range.min}-${targetUser.preferences.preferred_age_range.max}
-- Preferred Gender: ${targetUser.preferences.preferred_gender}
-- Preferred Sleep Type: ${targetUser.preferences.preferred_sleep_type}
-- Preferred Smoking: ${targetUser.preferences.preferred_smoking}
-- Preferred Pets: ${targetUser.preferences.preferred_pets}
-- Preferred Noise Tolerance: ${targetUser.preferences.preferred_noise_tolerance}
-- Preferred Cleanliness: ${targetUser.preferences.preferred_cleanliness}
-- Preferred MBTI: ${targetUser.preferences.preferred_MBTI}
-- Preferred Temperature: ${targetUser.preferences.preferred_temperature}
-- Additional Preferences: ${targetUser.preferences.additional_preferences}
-
-CANDIDATE ROOMMATES:
-${candidates
-  .map(
-    (cand, idx) => `
-Candidate ${idx + 1} (ID: ${cand.id}):
-Name: ${cand.name}
-- Age: ${cand.personality.age}
-- Gender: ${cand.personality.gender}
-- Nationality: ${cand.personality.nationality}
-- Sleep Type: ${cand.personality.sleep_type}
-- Study Habits: ${cand.personality.study_habits}
-- Cleanliness: ${cand.personality.cleanliness}
-- Social: ${cand.personality.social}
-- MBTI: ${cand.personality.MBTI}
-- Going Out: ${cand.personality.going_out}
-- Smoking: ${cand.personality.smoking}
-- Drinking: ${cand.personality.drinking}
-- Pets: ${cand.personality.pets}
-- Noise Tolerance: ${cand.personality.noise_tolerance}
-- Temperature Preference: ${cand.personality.temperature}
-- Lifestyle: ${cand.personality.lifestyle.join(', ')}
-`
-  )
-  .join('\n')}
-
-TASK:
-Analyze each candidate and provide a compatibility match score for each (0-100%). Consider:
-1. Personality compatibility (MBTI, lifestyle, social compatibility)
-2. Lifestyle alignment (sleep schedule, noise tolerance, cleanliness, going out habits)
-3. How well each candidate matches the target user's specific preferences
-4. Overall living compatibility
-
-Respond ONLY with a JSON array in this exact format. No extra text, markdown, or explanations:
-[
-  {
-    "candidateId": <number>,
-    "candidateName": "<string>",
-    "matchPercentage": <number between 0-100>,
-    "compatibility": {
-      "personalityMatch": "<brief reason>",
-      "lifestyleMatch": "<brief reason>",
-      "preferenceMatch": "<brief reason>",
-      "overallReason": "<brief overall reason>"
-    }
-  },
-  ...
-]`;
-
-  try {
-    // Call Groq API with streaming
-    const groq = getGroqClient();
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      model: 'llama-3.1-8b-instant',
-      temperature: 0.6,
-      max_completion_tokens: 2000,
-      top_p: 1,
-      stream: false, // Set to false to get complete response at once
-      stop: null,
-    });
-
-    // Extract the response
-    const responseText = chatCompletion.choices[0]?.message?.content || '';
-
-    // Parse JSON response from AI
-    let matches = [];
-    try {
-      // Try to extract JSON from the response (in case there's extra text)
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        matches = JSON.parse(jsonMatch[0]);
-      } else {
-        matches = JSON.parse(responseText);
-      }
-    } catch (parseError) {
-      console.error('Failed to parse Groq response as JSON:', responseText);
-      throw new Error('Failed to parse AI response');
-    }
-
-    return matches;
-  } catch (error) {
-    console.error('Error calling Groq API:', error);
-    throw error;
+  // Age Range Check (Weight: 10)
+  const ageInRange = personality.age >= preferences.preferred_age_range.min && 
+                      personality.age <= preferences.preferred_age_range.max;
+  if (ageInRange) {
+    scores.push(10);
+    details.push(`✓ Age ${personality.age} is within your preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Age ${personality.age} is outside your preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
   }
+
+  // Gender Check (Weight: 10)
+  if (preferences.preferred_gender === 'Any' || preferences.preferred_gender === personality.gender) {
+    scores.push(10);
+    details.push(`✓ Gender ${personality.gender} matches your preference`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Gender ${personality.gender} doesn't match your preference (${preferences.preferred_gender})`);
+  }
+
+  // Sleep Type Check (Weight: 10)
+  if (preferences.preferred_sleep_type === 'Any' || preferences.preferred_sleep_type === personality.sleep_type) {
+    scores.push(10);
+    details.push(`✓ Sleep type ${personality.sleep_type} matches your preference`);
+  } else {
+    scores.push(5);
+    details.push(`~ Sleep type ${personality.sleep_type} differs from your preference (${preferences.preferred_sleep_type})`);
+  }
+
+  // MBTI Check (Weight: 10)
+  if (preferences.preferred_MBTI === 'Any' || preferences.preferred_MBTI === personality.MBTI) {
+    scores.push(10);
+    details.push(`✓ MBTI ${personality.MBTI} matches your preference`);
+  } else {
+    scores.push(5);
+    details.push(`~ MBTI ${personality.MBTI} differs from your preference (${preferences.preferred_MBTI})`);
+  }
+
+  // Cleanliness Check (Weight: 10)
+  if (preferences.preferred_cleanliness === personality.cleanliness) {
+    scores.push(10);
+    details.push(`✓ Cleanliness level ${personality.cleanliness} perfectly matches`);
+  } else {
+    const cleanlinessLevels = ['Messy', 'Moderate', 'Tidy'];
+    const prefIndex = cleanlinessLevels.indexOf(preferences.preferred_cleanliness);
+    const persIndex = cleanlinessLevels.indexOf(personality.cleanliness);
+    if (Math.abs(prefIndex - persIndex) === 1) {
+      scores.push(7);
+      details.push(`~ Cleanliness ${personality.cleanliness} is close to your preference (${preferences.preferred_cleanliness})`);
+    } else {
+      scores.push(3);
+      details.push(`✗ Cleanliness ${personality.cleanliness} differs significantly from your preference (${preferences.preferred_cleanliness})`);
+    }
+  }
+
+  // Smoking Check (Weight: 10)
+  const smokingMatch = (preferences.preferred_smoking === personality.smoking);
+  if (smokingMatch) {
+    scores.push(10);
+    details.push(`✓ Smoking preference matches (${personality.smoking ? 'Yes' : 'No'})`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Smoking preference doesn't match (you prefer ${preferences.preferred_smoking ? 'smoker' : 'non-smoker'}, they are ${personality.smoking ? 'smoker' : 'non-smoker'})`);
+  }
+
+  // Pets Check (Weight: 10)
+  // Note: personality.pets is a string, need to convert to boolean logic
+  const hasPets = personality.pets && personality.pets !== 'No Pets' && personality.pets !== 'Allergic' && personality.pets !== 'Do not like pets';
+  const petsMatch = (preferences.preferred_pets === hasPets);
+  if (petsMatch) {
+    scores.push(10);
+    details.push(`✓ Pet preference matches (${personality.pets})`);
+  } else {
+    scores.push(3);
+    details.push(`~ Pet preference differs (you prefer ${preferences.preferred_pets ? 'with pets' : 'no pets'}, they have: ${personality.pets})`);
+  }
+
+  // Noise Tolerance Check (Weight: 10)
+  if (preferences.preferred_noise_tolerance === 'Flexible' || 
+      personality.noise_tolerance === 'Flexible' ||
+      preferences.preferred_noise_tolerance === personality.noise_tolerance) {
+    scores.push(10);
+    details.push(`✓ Noise tolerance ${personality.noise_tolerance} is compatible`);
+  } else {
+    scores.push(5);
+    details.push(`~ Noise tolerance ${personality.noise_tolerance} differs from your preference (${preferences.preferred_noise_tolerance})`);
+  }
+
+  // Temperature Check (Weight: 10)
+  if (preferences.preferred_temperature === 'Flexible' || 
+      personality.temperature === 'Flexible' ||
+      preferences.preferred_temperature === personality.temperature) {
+    scores.push(10);
+    details.push(`✓ Temperature preference ${personality.temperature} is compatible`);
+  } else {
+    scores.push(5);
+    details.push(`~ Temperature preference ${personality.temperature} differs from yours (${preferences.preferred_temperature})`);
+  }
+
+  // Nationality Check (Weight: 10) - Optional
+  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' || 
+      preferences.preferred_nationality === personality.nationality) {
+    scores.push(10);
+    details.push(`✓ Nationality compatible`);
+  } else {
+    scores.push(5);
+    details.push(`~ Nationality differs from your preference`);
+  }
+
+  // Calculate final score
+  const totalScore = scores.reduce((sum, score) => sum + score, 0);
+  const maxScore = scores.length * 10;
+  const finalScore = Math.round((totalScore / maxScore) * 100);
+
+  return {
+    score: finalScore,
+    details: details,
+    summary: `Their personality matches ${finalScore}% of your preferences. ${finalScore >= 80 ? 'Excellent match!' : finalScore >= 60 ? 'Good compatibility.' : 'Some differences exist.'}`
+  };
+}
+
+/**
+ * Calculate match between User A's Personality and User B's Preferences
+ * This is the SECOND check - only called if first check passes
+ * @param {Object} personality - User A's personality
+ * @param {Object} preferences - User B's preferences
+ * @returns {Object} Score and detailed reasons
+ */
+function calculatePersonalityToPreferenceMatch(personality, preferences) {
+  const scores = [];
+  const details = [];
+
+  // Age Range Check
+  const ageInRange = personality.age >= preferences.preferred_age_range.min && 
+                      personality.age <= preferences.preferred_age_range.max;
+  if (ageInRange) {
+    scores.push(10);
+    details.push(`✓ Your age ${personality.age} fits their preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Your age ${personality.age} is outside their preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
+  }
+
+  // Gender Check
+  if (preferences.preferred_gender === 'Any' || preferences.preferred_gender === personality.gender) {
+    scores.push(10);
+    details.push(`✓ Your gender ${personality.gender} matches their preference`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Your gender ${personality.gender} doesn't match their preference (${preferences.preferred_gender})`);
+  }
+
+  // Sleep Type Check
+  if (preferences.preferred_sleep_type === 'Any' || preferences.preferred_sleep_type === personality.sleep_type) {
+    scores.push(10);
+    details.push(`✓ Your sleep type ${personality.sleep_type} matches their preference`);
+  } else {
+    scores.push(5);
+    details.push(`~ Your sleep type ${personality.sleep_type} differs from their preference (${preferences.preferred_sleep_type})`);
+  }
+
+  // MBTI Check
+  if (preferences.preferred_MBTI === 'Any' || preferences.preferred_MBTI === personality.MBTI) {
+    scores.push(10);
+    details.push(`✓ Your MBTI ${personality.MBTI} matches their preference`);
+  } else {
+    scores.push(5);
+    details.push(`~ Your MBTI ${personality.MBTI} differs from their preference (${preferences.preferred_MBTI})`);
+  }
+
+  // Cleanliness Check
+  if (preferences.preferred_cleanliness === personality.cleanliness) {
+    scores.push(10);
+    details.push(`✓ Your cleanliness level ${personality.cleanliness} perfectly matches`);
+  } else {
+    const cleanlinessLevels = ['Messy', 'Moderate', 'Tidy'];
+    const prefIndex = cleanlinessLevels.indexOf(preferences.preferred_cleanliness);
+    const persIndex = cleanlinessLevels.indexOf(personality.cleanliness);
+    if (Math.abs(prefIndex - persIndex) === 1) {
+      scores.push(7);
+      details.push(`~ Your cleanliness ${personality.cleanliness} is close to their preference (${preferences.preferred_cleanliness})`);
+    } else {
+      scores.push(3);
+      details.push(`✗ Your cleanliness ${personality.cleanliness} differs significantly from their preference (${preferences.preferred_cleanliness})`);
+    }
+  }
+
+  // Smoking Check
+  const smokingMatch = (preferences.preferred_smoking === personality.smoking);
+  if (smokingMatch) {
+    scores.push(10);
+    details.push(`✓ Your smoking habit matches their preference (${personality.smoking ? 'Yes' : 'No'})`);
+  } else {
+    scores.push(0);
+    details.push(`✗ Your smoking habit doesn't match their preference (they prefer ${preferences.preferred_smoking ? 'smoker' : 'non-smoker'}, you are ${personality.smoking ? 'smoker' : 'non-smoker'})`);
+  }
+
+  // Pets Check
+  const hasPets = personality.pets && personality.pets !== 'No Pets' && personality.pets !== 'Allergic' && personality.pets !== 'Do not like pets';
+  const petsMatch = (preferences.preferred_pets === hasPets);
+  if (petsMatch) {
+    scores.push(10);
+    details.push(`✓ Your pet situation matches their preference (${personality.pets})`);
+  } else {
+    scores.push(3);
+    details.push(`~ Your pet situation differs from their preference (they prefer ${preferences.preferred_pets ? 'with pets' : 'no pets'}, you have: ${personality.pets})`);
+  }
+
+  // Noise Tolerance Check
+  if (preferences.preferred_noise_tolerance === 'Flexible' || 
+      personality.noise_tolerance === 'Flexible' ||
+      preferences.preferred_noise_tolerance === personality.noise_tolerance) {
+    scores.push(10);
+    details.push(`✓ Your noise tolerance ${personality.noise_tolerance} is compatible with their preference`);
+  } else {
+    scores.push(5);
+    details.push(`~ Your noise tolerance ${personality.noise_tolerance} differs from their preference (${preferences.preferred_noise_tolerance})`);
+  }
+
+  // Temperature Check
+  if (preferences.preferred_temperature === 'Flexible' || 
+      personality.temperature === 'Flexible' ||
+      preferences.preferred_temperature === personality.temperature) {
+    scores.push(10);
+    details.push(`✓ Your temperature preference ${personality.temperature} is compatible with theirs`);
+  } else {
+    scores.push(5);
+    details.push(`~ Your temperature preference ${personality.temperature} differs from theirs (${preferences.preferred_temperature})`);
+  }
+
+  // Nationality Check - Optional
+  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' || 
+      preferences.preferred_nationality === personality.nationality) {
+    scores.push(10);
+    details.push(`✓ Nationality compatible`);
+  } else {
+    scores.push(5);
+    details.push(`~ Nationality differs from their preference`);
+  }
+
+  // Calculate final score
+  const totalScore = scores.reduce((sum, score) => sum + score, 0);
+  const maxScore = scores.length * 10;
+  const finalScore = Math.round((totalScore / maxScore) * 100);
+
+  return {
+    score: finalScore,
+    details: details,
+    summary: `Your personality matches ${finalScore}% of their preferences. ${finalScore >= 80 ? 'Excellent mutual match!' : finalScore >= 60 ? 'Good mutual compatibility.' : 'Some differences exist.'}`
+  };
+}
+
+/**
+ * Generate overall compatibility reason
+ * @param {Number} averageScore - Average match percentage
+ * @param {Object} preferencesMatch - Preferences to personality match result
+ * @param {Object} personalityMatch - Personality to preferences match result
+ * @returns {String} Overall reason
+ */
+function generateOverallReason(averageScore, preferencesMatch, personalityMatch) {
+  let reason = '';
+  
+  if (averageScore >= 90) {
+    reason = `Exceptional match! This is a highly compatible roommate with ${averageScore}% overall compatibility. `;
+  } else if (averageScore >= 80) {
+    reason = `Excellent match! Strong compatibility at ${averageScore}% with aligned preferences and lifestyle. `;
+  } else if (averageScore >= 70) {
+    reason = `Very good match at ${averageScore}%. Most key preferences align well. `;
+  } else if (averageScore >= 60) {
+    reason = `Good match at ${averageScore}%. Core compatibility exists with some minor differences. `;
+  }
+
+  // Add key highlights
+  const strongPoints = [];
+  if (preferencesMatch.score >= 75) strongPoints.push('their personality fits your preferences excellently');
+  if (personalityMatch.score >= 75) strongPoints.push('your personality fits their preferences excellently');
+  
+  if (strongPoints.length > 0) {
+    reason += `Key strengths: ${strongPoints.join(' and ')}.`;
+  }
+
+  return reason;
 }
 
 /**
