@@ -12,6 +12,8 @@ import Spinner from '../shared/spinner';
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Label } from "../ui/label";
 
 interface AuthFormProps<T extends z.ZodType<any, any, any>> {
     formType: "SIGNIN" | "SIGNUP",
@@ -40,11 +42,22 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
             if (formType === 'SIGNIN') {
                 await login(values.email, values.password)
                 toast.success('Login successful!')
-                navigate('/')
+                // Role-based redirect after login
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                if (user.role === 'dorm_admin') {
+                    navigate('/admin-dashboard')
+                } else {
+                    navigate('/')
+                }
             } else {
-                await register(values.name, values.email, values.password)
+                await register(values.name, values.email, values.password, values.role)
                 toast.success('Registration successful!')
-                navigate('/')
+                // Role-based redirect after registration
+                if (values.role === 'dorm_admin') {
+                    navigate('/admin-dashboard')
+                } else {
+                    navigate('/')
+                }
             }
         } catch (error: any) {
             const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred'
@@ -77,7 +90,7 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                                     <FormItem className="grid gap-3">
                                         <div className="flex items-center gap-1 justify-between">
                                             <FormLabel>
-                                                {field.name.charAt(0).toUpperCase() + field.name.slice(1)}
+                                                {field.name === 'confirmPassword' ? 'Confirm Password' : field.name.charAt(0).toUpperCase() + field.name.slice(1)}
                                                 <span className="text-red-600"> *</span>
                                             </FormLabel>
                                             {formType === 'SIGNIN' && field.name === 'password' && <Link
@@ -88,30 +101,51 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                                             </Link>}
                                         </div>
                                         <FormControl>
-                                            <div className="relative">
-                                                <Input
-                                                    className="min-h-[44px] pr-10"
-                                                    disabled={isWorking}
-                                                    placeholder={field.name === 'email' ? 'Email' : field.name.charAt(0).toUpperCase() + field.name.slice(1)}
-                                                    inputMode="numeric"
-                                                    type={(field.name === 'password' || field.name === 'confirmPassword') && showPassword[field.name] ? 'text' : (field.name === 'password' || field.name === 'confirmPassword') ? 'password' : 'text'}
-                                                    {...field}
-                                                />
-                                                {(field.name === 'password' || field.name === 'confirmPassword') && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setShowPassword(prev => ({
-                                                                ...prev,
-                                                                [field.name]: !prev[field.name]
-                                                            }))
-                                                        }
-                                                        className="absolute cursor-pointer right-3 top-3.5 text-muted-foreground"
-                                                    >
-                                                        {showPassword[field.name] ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                                    </button>
-                                                )}
-                                            </div>
+                                            {field.name === 'role' ? (
+                                                <RadioGroup
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                    className="flex flex-col space-y-3"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="student" id="student" />
+                                                        <Label htmlFor="student" className="cursor-pointer">
+                                                            Student - Find roommates and book dorms
+                                                        </Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="dorm_admin" id="dorm_admin" />
+                                                        <Label htmlFor="dorm_admin" className="cursor-pointer">
+                                                            Dorm Admin - Manage dormitories and rooms
+                                                        </Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            ) : (
+                                                <div className="relative">
+                                                    <Input
+                                                        className="min-h-[44px] pr-10"
+                                                        disabled={isWorking}
+                                                        placeholder={field.name === 'email' ? 'Email' : field.name.charAt(0).toUpperCase() + field.name.slice(1)}
+                                                        inputMode="numeric"
+                                                        type={(field.name === 'password' || field.name === 'confirmPassword') && showPassword[field.name] ? 'text' : (field.name === 'password' || field.name === 'confirmPassword') ? 'password' : 'text'}
+                                                        {...field}
+                                                    />
+                                                    {(field.name === 'password' || field.name === 'confirmPassword') && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setShowPassword(prev => ({
+                                                                    ...prev,
+                                                                    [field.name]: !prev[field.name]
+                                                                }))
+                                                            }
+                                                            className="absolute cursor-pointer right-3 top-3.5 text-muted-foreground"
+                                                        >
+                                                            {showPassword[field.name] ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

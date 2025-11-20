@@ -47,12 +47,12 @@ export const authService = {
         return response.data
     },
     
-    register: async (name: string, email: string, password: string) => {
+    register: async (name: string, email: string, password: string, role: string = 'student') => {
         const response = await authApi.post('/auth/register', { 
             name, 
             email, 
             password,
-            role: 'student'
+            role
         })
         return response.data
     },

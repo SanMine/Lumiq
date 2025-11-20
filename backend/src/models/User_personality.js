@@ -133,6 +133,11 @@ const UserPersonalitySchema = new mongoose.Schema(
       enum: ["Cold", "Cool", "Warm", "Hot", "Flexible"],
       default: "Flexible",
     },
+    openForRoommateMatching: {
+      type: Boolean,
+      default: false,
+      comment: "Whether the user is open to roommate matching",
+    },
   },
   {
     timestamps: true,

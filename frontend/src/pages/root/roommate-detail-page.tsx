@@ -50,6 +50,14 @@ interface CompatibilityDetails {
         preferenceMatch: string;
         overallReason: string;
     };
+    detailedScores?: {
+        yourPreferencesVsTheirPersonality: number;
+        yourPersonalityVsTheirPreferences: number;
+        breakdown: {
+            preferencesMatchDetails: string[];
+            personalityMatchDetails: string[];
+        };
+    };
 }
 
 export default function RoommateDetailPage() {
@@ -147,38 +155,37 @@ export default function RoommateDetailPage() {
 
     const formatStudyHabits = () => {
         const habits = personality.study_habits;
-        if (habits === "silent") return "Focused, prefers quiet study environment";
-        if (habits === "some_noise") return "Can study with some background noise";
-        return "Flexible study environment";
+        if (habits === "silent") return "Needs quiet for studying";
+        if (habits === "some_noise") return "Okay with some noise while studying";
+        return "Flexible with study environment";
     };
 
     const formatCleanliness = () => {
         const clean = personality.cleanliness;
-        if (clean === "Tidy") return "Very tidy, prefers a clean living space";
-        if (clean === "Moderate") return "Moderately tidy, balanced approach";
+        if (clean === "Tidy") return "Very clean and organized";
+        if (clean === "Moderate") return "Moderately clean";
         return "Relaxed about cleanliness";
     };
 
     const formatSocialHabits = () => {
         const social = personality.social;
         const goingOut = personality.going_out;
-        if (social === "Social" && goingOut === "Frequent") return "Very social, enjoys frequent gatherings";
-        if (social === "Social") return "Enjoys occasional social gatherings";
-        if (social === "Moderate") return "Moderately social, enjoys company sometimes";
-        return "Prefers quiet time, occasional socializing";
+        if (social === "Social" && goingOut === "Frequent") return "Very social, goes out often";
+        if (social === "Social") return "Social, enjoys gatherings";
+        if (social === "Moderate") return "Moderately social";
+        return "Prefers quiet time";
     };
 
     const formatSleepSchedule = () => {
         const sleep = personality.sleep_type;
-        if (sleep === "Early Bird") return "Early riser, goes to bed early";
-        if (sleep === "Night Owl") return "Night owl, stays up late";
+        if (sleep === "Early Bird") return "Early riser";
+        if (sleep === "Night Owl") return "Night owl";
         return "Flexible sleep schedule";
     };
 
     const formatHobbies = () => {
         const lifestyle = personality.lifestyle.join(", ");
-        const description = personality.description || "Various interests";
-        return `${lifestyle}, ${description}`;
+        return lifestyle || "Various interests";
     };
 
     return (
@@ -225,20 +232,16 @@ export default function RoommateDetailPage() {
                                         {getYear()}
                                     </Badge>
 
-                                    {/* Contact Information */}
-                                    <div className="w-full">
-                                        <h3 className="text-lg font-semibold mb-4 text-foreground">
-                                            Contact Information
-                                        </h3>
-                                        <div className="bg-muted/50 border border-border rounded-lg p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-                                            <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
-                                                <Mail className="w-5 h-5 text-white" />
-                                            </div>
-                                            <span className="text-sm text-foreground break-all">
-                                                {personality.contact || roommate.email}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    {/* Knock Knock Button */}
+                                    <Button
+                                        className="w-full mt-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                        onClick={() => {
+                                            // TODO: Implement knock functionality
+                                            toast.success("Knock sent!");
+                                        }}
+                                    >
+                                        Knock Knock
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -259,10 +262,10 @@ export default function RoommateDetailPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Major */}
+                                    {/* Nationality */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Major
+                                            Nationality
                                         </p>
                                         <p className="font-semibold text-foreground">
                                             {personality.nationality || "Not specified"}
@@ -305,13 +308,13 @@ export default function RoommateDetailPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Hobbies */}
+                                    {/* Sleep Schedule */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Hobbies
+                                            Sleep Schedule
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {formatHobbies()}
+                                            {formatSleepSchedule()}
                                         </p>
                                     </div>
 
@@ -325,18 +328,141 @@ export default function RoommateDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Sleep Schedule */}
+                                    {/* Hobbies */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Sleep Schedule
+                                            Hobbies & Interests
                                         </p>
                                         <p className="font-semibold text-foreground">
-                                            {formatSleepSchedule()}
+                                            {formatHobbies()}
                                         </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Compatibility Analysis */}
+                        {compatibility && compatibility.detailedScores && (
+                            <Card className="border-2 border-border bg-card shadow-lg">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center gap-2 mb-6">
+                                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                                            <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-foreground">
+                                            Compatibility Analysis
+                                        </h3>
+                                        <Badge variant="secondary" className="ml-auto">
+                                            {compatibility.matchPercentage}% Match
+                                        </Badge>
+                                    </div>
+
+                                    {/* Overall Summary */}
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                                        <p className="text-sm text-foreground font-medium">
+                                            {compatibility.compatibility.overallReason}
+                                        </p>
+                                    </div>
+
+                                    {/* Detailed Scores */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <div className="bg-muted/50 border border-border rounded-lg p-4">
+                                            <p className="text-muted-foreground text-sm mb-2 font-medium">
+                                                Your Preferences vs Their Personality
+                                            </p>
+                                            <p className="font-semibold text-foreground text-lg">
+                                                {compatibility.detailedScores.yourPreferencesVsTheirPersonality}%
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                How well their traits match what you want
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-muted/50 border border-border rounded-lg p-4">
+                                            <p className="text-muted-foreground text-sm mb-2 font-medium">
+                                                Your Personality vs Their Preferences
+                                            </p>
+                                            <p className="font-semibold text-foreground text-lg">
+                                                {compatibility.detailedScores.yourPersonalityVsTheirPreferences}%
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                How well your traits match what they want
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Stage 1: Your Preferences → Their Personality */}
+                                    <div className="mb-6">
+                                        <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                                            <div className="w-6 h-6 bg-green-500/10 rounded flex items-center justify-center">
+                                                <span className="text-green-600 dark:text-green-400 text-sm font-bold">1</span>
+                                            </div>
+                                            Your Preferences → Their Personality
+                                            <Badge variant="outline" className="text-xs">
+                                                {compatibility.detailedScores.yourPreferencesVsTheirPersonality}%
+                                            </Badge>
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {compatibility.detailedScores.breakdown.preferencesMatchDetails.map((reason, index) => (
+                                                <div key={index} className="bg-muted/30 border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                                    <p className="text-sm text-foreground">{reason}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Stage 2: Your Personality → Their Preferences */}
+                                    <div className="mb-6">
+                                        <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                                            <div className="w-6 h-6 bg-purple-500/10 rounded flex items-center justify-center">
+                                                <span className="text-purple-600 dark:text-purple-400 text-sm font-bold">2</span>
+                                            </div>
+                                            Your Personality → Their Preferences
+                                            <Badge variant="outline" className="text-xs">
+                                                {compatibility.detailedScores.yourPersonalityVsTheirPreferences}%
+                                            </Badge>
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {compatibility.detailedScores.breakdown.personalityMatchDetails.map((reason, index) => (
+                                                <div key={index} className="bg-muted/30 border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                                    <p className="text-sm text-foreground">{reason}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Summary Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                                            <p className="text-green-700 dark:text-green-300 text-sm font-medium mb-1">
+                                                Personality Match
+                                            </p>
+                                            <p className="text-green-800 dark:text-green-200 text-xs">
+                                                {compatibility.compatibility.personalityMatch}
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+                                            <p className="text-blue-700 dark:text-blue-300 text-sm font-medium mb-1">
+                                                Lifestyle Match
+                                            </p>
+                                            <p className="text-blue-800 dark:text-blue-200 text-xs">
+                                                {compatibility.compatibility.lifestyleMatch}
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
+                                            <p className="text-purple-700 dark:text-purple-300 text-sm font-medium mb-1">
+                                                Preference Match
+                                            </p>
+                                            <p className="text-purple-800 dark:text-purple-200 text-xs">
+                                                {compatibility.compatibility.preferenceMatch}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>

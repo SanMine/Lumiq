@@ -53,6 +53,20 @@ const DormSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    waterBillingType: {
+      type: String,
+      enum: ['per-month', 'per-unit'],
+      default: 'per-month',
+    },
+    electricityBillingType: {
+      type: String,
+      enum: ['per-month', 'per-unit'],
+      default: 'per-month',
+    },
+    admin_id: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,

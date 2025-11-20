@@ -95,6 +95,26 @@ export function requireDormOwner(req, res, next) {
   });
 }
 
+// 🏢 DORM ADMIN CHECKPOINT: Only allow dorm admins through
+// Use this for routes where dorm admins manage dorms
+export function requireDormAdmin(req, res, next) {
+  // First check if they have any valid badge at all
+  requireAuth(req, res, (err) => {
+    if (err) return next(err);  // If authentication failed, stop here
+    
+    // Check if they're a dorm admin
+    if (req.user.role !== 'dorm_admin') {
+      return res.status(403).json({ 
+        error: 'Dorm admin access required',
+        message: 'This feature is only available to dorm administrators' 
+      });
+    }
+    
+    // They're an authenticated dorm admin, let them through
+    next();
+  });
+}
+
 // 🔓 OPTIONAL AUTHENTICATION: Check badge if present, but don't require it
 // Use this for routes where login enhances the experience but isn't required
 export function optionalAuth(req, res, next) {

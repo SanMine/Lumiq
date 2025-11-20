@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getNextId } from "../db/counter.js";
 
 const RoomSchema = new mongoose.Schema(
   {
@@ -39,6 +40,11 @@ const RoomSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    zone: {
+      type: String,
+      default: null,
+      comment: "Building or zone identifier (e.g., Building A, Zone 2)",
+    },
     amenities: {
       type: String,
       default: null,
@@ -77,5 +83,17 @@ const RoomSchema = new mongoose.Schema(
 
 // Add compound index for unique room_number per dorm
 RoomSchema.index({ room_number: 1, dormId: 1 }, { unique: true });
+
+// Pre-save hook to auto-increment _id
+RoomSchema.pre("save", async function (next) {
+  if (!this._id) {
+    try {
+      this._id = await getNextId("rooms");
+    } catch (error) {
+      return next(error);
+    }
+  }
+  next();
+});
 
 export const Room = mongoose.model("Room", RoomSchema);

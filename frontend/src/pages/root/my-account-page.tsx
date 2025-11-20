@@ -68,6 +68,7 @@ export default function MyAccountPage() {
         pets: "Flexible" as string,
         noiseTolerance: "Medium" as string,
         temperature: "Flexible" as string,
+        openForRoommateMatching: false,
     });
     const [isEditingPersonality, setIsEditingPersonality] = useState(false);
     const [isSavingPersonality, setIsSavingPersonality] = useState(false);
@@ -138,6 +139,7 @@ export default function MyAccountPage() {
                         pets: personality.pets || "Flexible",
                         noiseTolerance: personality.noise_tolerance || "Medium",
                         temperature: personality.temperature || "Flexible",
+                        openForRoommateMatching: personality.openForRoommateMatching || false,
                     });
                 } catch (error) {
                     console.log("No existing personality data");
@@ -182,6 +184,7 @@ export default function MyAccountPage() {
                 pets: personalityData.pets,
                 noise_tolerance: personalityData.noiseTolerance,
                 temperature: personalityData.temperature,
+                openForRoommateMatching: personalityData.openForRoommateMatching,
             };
 
             // Check if personality already exists
@@ -812,6 +815,30 @@ export default function MyAccountPage() {
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Roommate Matching Availability */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-foreground">Roommate Matching</h3>
+                                            <Separator />
+                                            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="openForRoommateMatching" className="text-base font-medium cursor-pointer">
+                                                        Open for Roommate Matching
+                                                    </Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Allow others to see your profile in roommate search results
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    id="openForRoommateMatching"
+                                                    checked={personalityData.openForRoommateMatching}
+                                                    onCheckedChange={(checked) => 
+                                                        setPersonalityData({ ...personalityData, openForRoommateMatching: checked })
+                                                    }
+                                                    disabled={!isEditingPersonality}
+                                                />
                                             </div>
                                         </div>
 

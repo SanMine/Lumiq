@@ -108,12 +108,10 @@ export default function AllDorms() {
                     className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-300"
                   />
                   {/* Rating Badge */}
-                  {getRating(dorm) > 0 && (
-                    <Badge className="absolute top-3 right-3 bg-lime-400 hover:bg-lime-500 text-black font-bold px-3 py-1 flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-black" />
-                      {getRating(dorm).toFixed(1)}
-                    </Badge>
-                  )}
+                  <Badge className="absolute top-3 right-3 bg-lime-400 hover:bg-lime-500 text-black font-bold px-3 py-1 flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-black" />
+                    {getRating(dorm).toFixed(1)}
+                  </Badge>
                 </div>
 
                 {/* Content */}
@@ -149,12 +147,10 @@ export default function AllDorms() {
         </div>
 
         {/* No Results */}
-        {filteredDorms.length === 0 && !isLoading && (
+        {filteredDorms.length === 0 && (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">
-              {searchQuery 
-                ? `No dorms found matching "${searchQuery}"`
-                : "No dorms available at the moment"}
+              No dorms found matching "{searchQuery}"
             </p>
           </div>
         )}

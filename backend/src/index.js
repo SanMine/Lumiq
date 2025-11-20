@@ -27,7 +27,7 @@ const app = express();
 
 // CORS Configuration - Allow credentials and auth headers
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+  origin: process.env.CORS_ORIGIN?.split(',').map(url => url.trim()) || ['http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

@@ -40,9 +40,10 @@ export async function findRoommateMatches(userId) {
     // Get all other users
     const allUsers = await User.find({ _id: { $ne: userId } });
     
-    // Get personalities for all other users
+    // Get personalities for all other users who are open for roommate matching
     const personalities = await User_personality.find({
       userId: { $in: allUsers.map(u => u._id) },
+      openForRoommateMatching: true, // Only include users open for matching
     });
 
     // Get preferences for all other users

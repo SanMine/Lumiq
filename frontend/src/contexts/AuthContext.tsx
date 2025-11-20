@@ -18,7 +18,7 @@ interface AuthContextType {
     token: string | null
     isLoading: boolean
     login: (email: string, password: string) => Promise<void>
-    register: (name: string, email: string, password: string) => Promise<void>
+    register: (name: string, email: string, password: string, role?: string) => Promise<void>
     logout: () => void
     setUser: (user: User | null) => void
 }
@@ -72,9 +72,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
     }
 
-    const register = async (name: string, email: string, password: string) => {
+    const register = async (name: string, email: string, password: string, role: string = 'student') => {
         try {
-            const response = await authService.register(name, email, password)
+            const response = await authService.register(name, email, password, role)
             
             if (response.success && response.token && response.user) {
                 setToken(response.token)

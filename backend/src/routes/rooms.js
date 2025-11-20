@@ -1,16 +1,20 @@
 import { Router } from "express";
 import { RoomService } from "../services/roomService.js";
+import { requireAuth, requireDormAdmin } from "../middlewares/auth.js";
 
 export const rooms = Router();
 
-rooms.get("/", async (req, res, next) => {
+// Get all rooms or filter by dormId
+rooms.get("/", requireAuth, async (req, res, next) => {
   try {
     const { dormId } = req.query;
     if (dormId) {
       const roomsByDorm = await RoomService.getRoomsByDorm(dormId);
       res.json(roomsByDorm);
     } else {
-      const allRooms = await RoomService.getAllRooms();
+      // pass any query filters (e.g., zone, status) through to the service
+      const filters = req.query || {};
+      const allRooms = await RoomService.getAllRooms(filters);
       res.json(allRooms);
     }
   } catch (error) {
@@ -18,7 +22,8 @@ rooms.get("/", async (req, res, next) => {
   }
 });
 
-rooms.get("/:id", async (req, res, next) => {
+// Get single room by ID
+rooms.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
     const room = await RoomService.getRoomById(id);
@@ -28,7 +33,8 @@ rooms.get("/:id", async (req, res, next) => {
   }
 });
 
-rooms.post("/", async (req, res, next) => {
+// Create new room - RBAC: Only dorm_admin can create
+rooms.post("/", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const roomData = req.body;
     if (!roomData.dormId || !roomData.room_number || !roomData.price_per_month) {
@@ -44,7 +50,8 @@ rooms.post("/", async (req, res, next) => {
   }
 });
 
-rooms.put("/:id", async (req, res, next) => {
+// Update room - RBAC: Only dorm_admin can update
+rooms.put("/:id", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -55,7 +62,8 @@ rooms.put("/:id", async (req, res, next) => {
   }
 });
 
-rooms.patch("/:id/availability", async (req, res, next) => {
+// Update room availability - RBAC: Only dorm_admin can update
+rooms.patch("/:id/availability", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { available } = req.body;
@@ -72,7 +80,8 @@ rooms.patch("/:id/availability", async (req, res, next) => {
   }
 });
 
-rooms.post("/:id/reserve", async (req, res, next) => {
+// Reserve room - RBAC: Only dorm_admin can reserve
+rooms.post("/:id/reserve", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId, moveInDate } = req.body;
@@ -89,7 +98,8 @@ rooms.post("/:id/reserve", async (req, res, next) => {
   }
 });
 
-rooms.post("/:id/move-in", async (req, res, next) => {
+// Move student in - RBAC: Only dorm_admin can move in
+rooms.post("/:id/move-in", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
@@ -106,7 +116,8 @@ rooms.post("/:id/move-in", async (req, res, next) => {
   }
 });
 
-rooms.patch("/:id/move-out-date", async (req, res, next) => {
+// Set move-out date - RBAC: Only dorm_admin can set
+rooms.patch("/:id/move-out-date", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId, moveOutDate } = req.body;
@@ -123,7 +134,8 @@ rooms.patch("/:id/move-out-date", async (req, res, next) => {
   }
 });
 
-rooms.post("/:id/move-out", async (req, res, next) => {
+// Move student out - RBAC: Only dorm_admin can move out
+rooms.post("/:id/move-out", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
@@ -140,7 +152,8 @@ rooms.post("/:id/move-out", async (req, res, next) => {
   }
 });
 
-rooms.delete("/:id", async (req, res, next) => {
+// Delete room - RBAC: Only dorm_admin can delete
+rooms.delete("/:id", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     await RoomService.deleteRoom(id);
@@ -150,7 +163,8 @@ rooms.delete("/:id", async (req, res, next) => {
   }
 });
 
-rooms.get("/dorm/:dormId/statistics", async (req, res, next) => {
+// Get dorm room statistics
+rooms.get("/dorm/:dormId/statistics", requireAuth, async (req, res, next) => {
   try {
     const { dormId } = req.params;
     const stats = await RoomService.getDormRoomStatistics(dormId);
@@ -160,7 +174,8 @@ rooms.get("/dorm/:dormId/statistics", async (req, res, next) => {
   }
 });
 
-rooms.get("/dorm/:dormId/by-floor", async (req, res, next) => {
+// Get rooms by floor for a dorm
+rooms.get("/dorm/:dormId/by-floor", requireAuth, async (req, res, next) => {
   try {
     const { dormId } = req.params;
     const roomsByFloor = await RoomService.getRoomsByFloor(dormId);
@@ -170,7 +185,8 @@ rooms.get("/dorm/:dormId/by-floor", async (req, res, next) => {
   }
 });
 
-rooms.get("/upcoming-available/:days", async (req, res, next) => {
+// Get upcoming available rooms
+rooms.get("/upcoming-available/:days", requireAuth, async (req, res, next) => {
   try {
     const { days } = req.params;
     const upcomingRooms = await RoomService.getUpcomingAvailableRooms(parseInt(days));

@@ -15,8 +15,8 @@ users.get("/", async (_req, res, next) => {
   }
 });
 
-// Public route - Get single user (for viewing profiles)
-users.get("/:id", async (req, res, next) => {
+// Protected route - Get single user (requires authentication)
+users.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });

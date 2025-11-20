@@ -1,6 +1,7 @@
 import { Room } from "../models/Room.js";
 import { User } from "../models/User.js";
 import { Dorm } from "../models/Dorm.js";
+import { getNextId } from "../db/counter.js";
 
 export class RoomService {
   static async getAllRooms(filters = {}) {
@@ -8,6 +9,7 @@ export class RoomService {
       let query = Room.find().populate("dormId").populate("current_resident_id");
       if (filters.dormId) query = query.where("dormId").equals(filters.dormId);
       if (filters.status) query = query.where("status").equals(filters.status);
+      if (filters.zone) query = query.where("zone").equals(filters.zone);
       if (filters.room_type) query = query.where("room_type").equals(filters.room_type);
       if (filters.minPrice) query = query.where("price_per_month").gte(filters.minPrice);
       if (filters.maxPrice) query = query.where("price_per_month").lte(filters.maxPrice);
@@ -46,7 +48,12 @@ export class RoomService {
     try {
       const dorm = await Dorm.findById(dormId);
       if (!dorm) throw new Error("Dorm not found");
-      const newRoom = await Room.create({ dormId, ...roomData });
+      
+      // Generate auto-increment ID
+      const _id = await getNextId("rooms");
+      
+      // Create room with explicit _id
+      const newRoom = await Room.create({ _id, dormId, ...roomData });
       return await this.getRoomById(newRoom._id);
     } catch (error) {
       throw new Error(`Failed to create room: ${error.message}`);

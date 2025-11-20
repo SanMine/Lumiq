@@ -3,15 +3,17 @@ import { Dorm } from "../models/Dorm.js";
 import { Rating } from "../models/Rating.js";
 import { User } from "../models/User.js";
 import { RatingService } from "../services/ratingService.js";
+import { requireAuth, requireDormAdmin } from "../middlewares/auth.js";
+import { getNextId } from "../db/counter.js";
 
 export const dorms = Router();
 
-// Get all dorms with calculated average ratings
-dorms.get("/", async (req, res, next) => {
+// Get dorms for authenticated admin (only their own dorms)
+dorms.get("/", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
-    const allDorms = await Dorm.find().sort({ _id: 1 });
+    const adminDorms = await Dorm.find({ admin_id: req.user.id }).sort({ _id: 1 });
     const dormsWithRatings =
-      await RatingService.calculateMultipleDormRatings(allDorms);
+      await RatingService.calculateMultipleDormRatings(adminDorms);
     res.json(dormsWithRatings);
   } catch (error) {
     next(error);
@@ -46,9 +48,26 @@ dorms.get("/:id", async (req, res, next) => {
 });
 
 // Create new dorm
-dorms.post("/", async (req, res, next) => {
+dorms.post("/", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
-    const dorm = await Dorm.create(req.body);
+    // Check if admin already has a dorm
+    const existingDorm = await Dorm.findOne({ admin_id: req.user.id });
+    if (existingDorm) {
+      return res.status(400).json({ 
+        error: "You can only create one dorm. Please update your existing dorm or delete it first." 
+      });
+    }
+
+    // Generate next ID
+    const dormId = await getNextId('dorms');
+    
+    // Create dorm with admin_id and generated _id
+    const dorm = await Dorm.create({
+      ...req.body,
+      _id: dormId,
+      admin_id: req.user.id,
+    });
+    
     res.status(201).json(dorm);
   } catch (error) {
     next(error);
@@ -111,7 +130,7 @@ dorms.get("/:id/rating-distribution", async (req, res, next) => {
 });
 
 // Update dorm
-dorms.put("/:id", async (req, res, next) => {
+dorms.put("/:id", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const updatedDorm = await Dorm.findByIdAndUpdate(
       req.params.id,
@@ -130,7 +149,7 @@ dorms.put("/:id", async (req, res, next) => {
 });
 
 // Delete dorm
-dorms.delete("/:id", async (req, res, next) => {
+dorms.delete("/:id", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const deletedDorm = await Dorm.findByIdAndDelete(req.params.id);
 

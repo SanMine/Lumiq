@@ -6,6 +6,7 @@ import SignUpPage from './pages/auth/sign-up-page'
 import ErrorElement from './pages/not-found/error-element'
 import NotFoundPage from './pages/not-found/not-found-page'
 import RootLayout from './pages/root/root-layout'
+import ProtectedRoute from './components/shared/protected-route'
 
 export default function Router() {
   const router = createBrowserRouter([
@@ -61,6 +62,19 @@ export default function Router() {
           lazy: async () => {
             const { default: MyAccountPage } = await import('@/pages/root/my-account-page')
             return { Component: MyAccountPage }
+          }
+        },
+        {
+          path: "/admin-dashboard",
+          lazy: async () => {
+            const { default: AdminDashboard } = await import('@/pages/root/admin-dashboard')
+            return { 
+              Component: () => (
+                <ProtectedRoute requiredRole="dorm_admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              )
+            }
           }
         }
       ]
