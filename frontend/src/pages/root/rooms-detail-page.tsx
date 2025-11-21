@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Wifi, Coffee, Dumbbell, Home, Bed, Zap } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { Link } from "react-router-dom";
+
 
 export default function RoomsDetail() {
   const { id } = useParams();
@@ -113,7 +115,12 @@ export default function RoomsDetail() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   <tr className="hover:bg-muted/50 transition-colors">
-                    <td className="py-4 text-foreground font-medium">Single Room</td>
+                  <td className="py-4 text-foreground font-medium">
+                  <Link to={`/dorms/${id}/rooms/single`} className="hover:underline">
+                      Single Room
+                    </Link>
+                </td>
+
                     <td className="py-4 text-muted-foreground">150 sq ft</td>
                     <td className="py-4 text-foreground">฿800/month</td>
                     <td className="py-4">

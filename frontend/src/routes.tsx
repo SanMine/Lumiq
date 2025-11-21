@@ -69,6 +69,13 @@ export default function Router() {
             const { default: MyAccountPage } = await import('@/pages/root/my-account-page')
             return { Component: MyAccountPage }
           }
+        },
+        {
+          path: '/dorms/:id/rooms/single',
+          lazy: async () => {
+            const { default: SingleRoomDetail } = await import('@/pages/root/single-room-detail')
+            return { Component: SingleRoomDetail }
+          }
         }
       ]
     },
