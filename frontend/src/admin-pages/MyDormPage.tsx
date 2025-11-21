@@ -1,3 +1,5 @@
+//MyDormPage.tsx(Admin side)
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
@@ -63,7 +65,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
       setDormsLoading(true);
       setDormsError(null);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(`${apiUrl}/dorms`, {
+      const response = await axios.get(`${apiUrl}/dorms/my`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',

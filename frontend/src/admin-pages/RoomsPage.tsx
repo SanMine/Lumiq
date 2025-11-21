@@ -104,7 +104,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     try {
       setLoading(true);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(`${apiUrl}/dorms`, {
+      const response = await axios.get(`${apiUrl}/dorms/my`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
 

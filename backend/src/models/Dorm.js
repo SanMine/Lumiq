@@ -1,3 +1,4 @@
+//backend/src/models/Dorm.js
 import mongoose from "mongoose";
 
 const DormSchema = new mongoose.Schema(

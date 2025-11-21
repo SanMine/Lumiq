@@ -1,3 +1,5 @@
+//backend/src/routes/dorms.js
+
 import { Router } from "express";
 import { Dorm } from "../models/Dorm.js";
 import { Rating } from "../models/Rating.js";
@@ -9,11 +11,23 @@ import { getNextId } from "../db/counter.js";
 export const dorms = Router();
 
 // Get dorms for authenticated admin (only their own dorms)
-dorms.get("/", requireAuth, requireDormAdmin, async (req, res, next) => {
+dorms.get("/my", requireAuth, requireDormAdmin, async (req, res, next) => {
   try {
     const adminDorms = await Dorm.find({ admin_id: req.user.id }).sort({ _id: 1 });
     const dormsWithRatings =
       await RatingService.calculateMultipleDormRatings(adminDorms);
+    res.json(dormsWithRatings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Public: get all dorms with ratings
+dorms.get("/", async (req, res, next) => {
+  try {
+    const allDorms = await Dorm.find().sort({ _id: 1 });
+    const dormsWithRatings =
+      await RatingService.calculateMultipleDormRatings(allDorms);
     res.json(dormsWithRatings);
   } catch (error) {
     next(error);
