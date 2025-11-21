@@ -71,8 +71,6 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     | null
     | { title?: string; description?: string; variant?: 'default' | 'destructive' }
   >(null);
-  const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false);
-  const [submitAction, setSubmitAction] = useState<null | 'create' | 'update'>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedDormId, setSelectedDormId] = useState<number | null>(null);
 
@@ -90,6 +88,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     status: 'Available',
   });
   const [amenitiesChips, setAmenitiesChips] = useState<string[]>([]);
+  const [roomNumberTo, setRoomNumberTo] = useState<string>(''); // For bulk room creation
 
   // Fetch user's default dorm on mount
   useEffect(() => {
@@ -148,6 +147,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     if (room) {
       setEditingRoom(room);
       setFormData(room);
+      setRoomNumberTo(''); // Reset range input when editing
       // parse amenities string into chips array
       const chips = room.amenities ? room.amenities.split(',').map((s) => s.trim()).filter(Boolean) : [];
       setAmenitiesChips(chips);
@@ -157,6 +157,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       }
     } else {
       setEditingRoom(null);
+      setRoomNumberTo(''); // Reset range input for new rooms
       setFormData({
         room_number: '',
         room_type: 'Single',
@@ -176,6 +177,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingRoom(null);
+    setRoomNumberTo(''); // Reset range input
     setFormData({
       room_number: '',
       room_type: 'Single',
@@ -200,9 +202,15 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     }));
   };
 
-  const submitForm = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!formData.room_number || !formData.price_per_month) {
-      setPageAlert({ title: 'Missing fields', description: 'Room number and price are required', variant: 'destructive' });
+      setPageAlert({
+        title: 'Validation Error',
+        description: 'Room number and price are required fields.',
+        variant: 'destructive',
+      });
       window.setTimeout(() => setPageAlert(null), 4000);
       return;
     }
@@ -211,44 +219,105 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       setIsSubmitting(true);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-      const submitData = {
+      const baseSubmitData = {
         ...formData,
         dormId: selectedDormId,
-        // convert chips array to a comma-separated string for backend
         amenities: amenitiesChips.join(', '),
-      } as any;
+      };
 
       if (editingRoom) {
-        // Update room
-        await axios.put(`${apiUrl}/rooms/${editingRoom._id}`, submitData, {
+        // Update single room
+        await axios.put(`${apiUrl}/rooms/${editingRoom._id}`, baseSubmitData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-        setPageAlert({ title: 'Update Completed.', description: 'The room was updated successfully.', variant: 'default' });
+        setPageAlert({
+          title: 'Completed.',
+          description: 'The room was updated successfully.',
+          variant: 'default',
+        });
       } else {
-        // Create new room
-        await axios.post(`${apiUrl}/rooms`, submitData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        setPageAlert({ title: 'Create Completed.', description: 'The room was created successfully.', variant: 'default' });
+        // Check if bulk creation is needed
+        if (roomNumberTo && roomNumberTo.trim() !== '') {
+          // Bulk room creation
+          const startNum = parseInt(formData.room_number || '0');
+          const endNum = parseInt(roomNumberTo);
+
+          if (isNaN(startNum) || isNaN(endNum)) {
+            setPageAlert({
+              title: 'Validation Error',
+              description: 'Room numbers must be valid numbers for bulk creation.',
+              variant: 'destructive',
+            });
+            window.setTimeout(() => setPageAlert(null), 4000);
+            setIsSubmitting(false);
+            return;
+          }
+
+          if (endNum < startNum) {
+            setPageAlert({
+              title: 'Validation Error',
+              description: 'End room number must be greater than or equal to start room number.',
+              variant: 'destructive',
+            });
+            window.setTimeout(() => setPageAlert(null), 4000);
+            setIsSubmitting(false);
+            return;
+          }
+
+          // Create multiple rooms
+          const roomCount = endNum - startNum + 1;
+          const creationPromises = [];
+
+          for (let i = startNum; i <= endNum; i++) {
+            const roomData = {
+              ...baseSubmitData,
+              room_number: i.toString(),
+            };
+            creationPromises.push(
+              axios.post(`${apiUrl}/rooms`, roomData, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              })
+            );
+          }
+
+          await Promise.all(creationPromises);
+          setPageAlert({
+            title: 'Completed.',
+            description: `${roomCount} rooms were created successfully (${startNum} to ${endNum}).`,
+            variant: 'default',
+          });
+        } else {
+          // Single room creation
+          await axios.post(`${apiUrl}/rooms`, baseSubmitData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          setPageAlert({
+            title: 'Completed.',
+            description: 'The room was created successfully.',
+            variant: 'default',
+          });
+        }
       }
 
-      // auto-dismiss
       window.setTimeout(() => setPageAlert(null), 4000);
-
-      // close confirm + dialog
-      setIsSubmitConfirmOpen(false);
-      setSubmitAction(null);
       handleCloseDialog();
       await fetchRooms();
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to save room';
-      setPageAlert({ title: 'Unable to save', description: errorMsg, variant: 'destructive' });
+      setPageAlert({
+        title: 'Unable to save',
+        description: errorMsg,
+        variant: 'destructive',
+      });
       window.setTimeout(() => setPageAlert(null), 6000);
       console.error('Error saving room:', err);
     } finally {
@@ -296,9 +365,6 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
       // Optimistically update local state
       setRooms((prev) => prev.map((r) => (r._id === roomId ? { ...r, status } : r)));
-      // show brief success callout
-      setPageAlert({ title: 'Status Updated', description: 'Room status was updated.', variant: 'default' });
-      window.setTimeout(() => setPageAlert(null), 3000);
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to update status';
       alert(`Error: ${errorMsg}`);
@@ -359,7 +425,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
               Create and manage rooms for your dorm
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => handleOpenDialog()}
             className="w-full sm:w-auto"
             size="sm"
@@ -388,14 +454,14 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                     {pageAlert.title}
                   </h2>
                   <p className="text-sm text-center text-muted-foreground">
-                    {pageAlert.description?.split('deleted').map((part, index, array) => (
-                      <React.Fragment key={index}>
-                        {part}
-                        {index < array.length - 1 && (
-                          <span className="text-destructive font-medium">deleted</span>
-                        )}
-                      </React.Fragment>
-                    )) || pageAlert.description}
+                    {pageAlert.description?.split(/(deleted|updated|created)/).map((part, index) => {
+                      if (part === 'deleted' || part === 'updated' || part === 'created') {
+                        return (
+                          <span key={index} className="text-destructive font-medium">{part}</span>
+                        );
+                      }
+                      return <React.Fragment key={index}>{part}</React.Fragment>;
+                    }) || pageAlert.description}
                   </p>
                 </div>
               </div>
@@ -507,14 +573,14 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1 flex-1 min-w-0">
-                        <CardTitle className="text-lg truncate">
+                        <CardTitle className="text-lg sm:text-xl truncate">
                           Room {room.room_number}
                         </CardTitle>
-                        <CardDescription className="text-xs">
+                        <CardDescription className="text-xs sm:text-sm">
                           {room.room_type} • Floor {room.floor}
                         </CardDescription>
                         {room.zone && (
-                          <div className="text-xs text-muted-foreground truncate">
+                          <div className="text-xs sm:text-sm text-muted-foreground truncate">
                             <span className="font-medium">Building/Zone:</span> {room.zone}
                           </div>
                         )}
@@ -527,7 +593,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                             variant="outline"
                             size="sm"
                             className={
-                              `text-xs whitespace-nowrap bg-white border ` +
+                              `text-xs sm:text-sm whitespace-nowrap bg-white border ` +
                               (room.status === 'Available'
                                 ? 'text-green-600 border-green-200 hover:bg-white'
                                 : room.status === 'Reserved'
@@ -557,30 +623,30 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                   </CardHeader>
 
                   {/* Card Body */}
-                  <CardContent className="flex-1 pt-3 space-y-2">
+                  <CardContent className="flex-1 pt-3 space-y-2 sm:space-y-3">
                     {/* Capacity and Floor */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">Capacity</p>
-                        <p className="text-xl font-bold">{room.capacity}</p>
+                      <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Capacity</p>
+                        <p className="text-2xl sm:text-3xl font-bold">{room.capacity}</p>
                       </div>
-                      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">Floor</p>
-                        <p className="text-xl font-bold">{room.floor}</p>
+                      <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Floor</p>
+                        <p className="text-2xl sm:text-3xl font-bold">{room.floor}</p>
                       </div>
                     </div>
 
                     {/* Price */}
-                    <div className="bg-muted rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Monthly Rate</p>
-                      <p className="text-2xl font-bold break-words">฿{room.price_per_month.toLocaleString()}</p>
+                    <div className="bg-muted rounded-lg p-3 sm:p-4">
+                      <p className="text-xs sm:text-sm text-muted-foreground font-medium mb-1">Price Per Month</p>
+                      <p className="text-2xl sm:text-3xl font-bold break-words">฿{room.price_per_month.toLocaleString()}</p>
                     </div>
 
                     {/* Description */}
                     {room.description && (
-                      <div className="bg-muted/30 rounded-lg p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">Description</p>
-                        <p className="text-sm line-clamp-2">
+                      <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Description</p>
+                        <p className="text-sm sm:text-base line-clamp-2">
                           {room.description}
                         </p>
                       </div>
@@ -588,9 +654,9 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
                     {/* Amenities */}
                     {room.amenities && (
-                      <div className="bg-muted/30 rounded-lg p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">Amenities</p>
-                        <p className="text-sm line-clamp-1">
+                      <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Amenities</p>
+                        <p className="text-sm sm:text-base line-clamp-1">
                           {room.amenities}
                         </p>
                       </div>
@@ -600,12 +666,11 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                   {/* Card Footer */}
                   <div className="px-6 py-3 border-t flex gap-2">
                     <Button
-                      variant="ghost"
                       size="sm"
-                      className="flex-1 text-xs bg-white text-black hover:bg-gray-100 border border-gray-200 shadow-sm"
+                      className="flex-1 text-xs sm:text-sm"
                       onClick={() => handleOpenDialog(room)}
                     >
-                      <Edit2 className="mr-2 h-3 w-3" />
+                      <Edit2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                       Edit
                     </Button>
                     <AlertDialog
@@ -619,10 +684,10 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="flex-1 text-xs"
+                          className="flex-1 text-xs sm:text-sm"
                           onClick={() => setDeleteTarget(room._id)}
                         >
-                          <Trash2 className="mr-2 h-3 w-3" />
+                          <Trash2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                           Delete
                         </Button>
                       </AlertDialogTrigger>
@@ -663,44 +728,67 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[60vw] h-[90vh] min-w-[50vw] min-h-[80vh] overflow-y-auto p-10">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl sm:text-2xl">
               {editingRoom ? 'Edit Room' : 'Add New Room'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm sm:text-base">
               {editingRoom
                 ? 'Update room details and settings'
                 : 'Create a new room for your dorm'}
             </DialogDescription>
           </DialogHeader>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSubmitAction(editingRoom ? 'update' : 'create');
-              setIsSubmitConfirmOpen(true);
-            }}
-            className="space-y-6"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Basic Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="room_number" className="text-sm font-medium">Room Number *</Label>
-                  <Input
-                    id="room_number"
-                    name="room_number"
-                    value={formData.room_number}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 101, A-201"
-                    disabled={isSubmitting}
-                    className="text-base"
-                    required
-                  />
-                </div>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase tracking-wide text-muted-foreground">Basic Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {/* Room Number Range - Only show for new rooms */}
+                {!editingRoom ? (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label className="text-xs sm:text-sm font-medium">Room Number *</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        id="room_number"
+                        name="room_number"
+                        value={formData.room_number}
+                        onChange={handleInputChange}
+                        placeholder="From (e.g., 101)"
+                        disabled={isSubmitting}
+                        className="text-sm sm:text-base h-9 sm:h-10 flex-1"
+                        required
+                      />
+                      <span className="text-muted-foreground text-sm">to</span>
+                      <Input
+                        id="room_number_to"
+                        name="room_number_to"
+                        value={roomNumberTo}
+                        onChange={(e) => setRoomNumberTo(e.target.value)}
+                        placeholder="To (Optional, e.g., 109)"
+                        disabled={isSubmitting}
+                        className="text-sm sm:text-base h-9 sm:h-10 flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Leave "To" empty to create single room</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="room_number" className="text-xs sm:text-sm font-medium">Room Number *</Label>
+                    <Input
+                      id="room_number"
+                      name="room_number"
+                      value={formData.room_number}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 101, A-201"
+                      disabled={isSubmitting}
+                      className="text-sm sm:text-base h-9 sm:h-10"
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="room_type" className="text-sm font-medium">Room Type *</Label>
+                  <Label htmlFor="room_type" className="text-xs sm:text-sm font-medium">Room Type *</Label>
                   <Select
                     value={formData.room_type}
                     onValueChange={(value) =>
@@ -710,7 +798,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                       }))
                     }
                   >
-                    <SelectTrigger id="room_type">
+                    <SelectTrigger id="room_type" className="text-sm sm:text-base h-9 sm:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -722,38 +810,59 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="capacity" className="text-sm font-medium">Capacity *</Label>
+                  <Label htmlFor="capacity" className="text-xs sm:text-sm font-medium">Capacity *</Label>
                   <Input
                     id="capacity"
                     name="capacity"
                     type="number"
                     min="1"
                     max="3"
-                    value={formData.capacity}
+                    value={formData.capacity === 0 ? '' : formData.capacity}
                     onChange={handleInputChange}
+                    placeholder="0"
                     disabled={isSubmitting}
-                    className="text-base"
+                    className="text-sm sm:text-base h-9 sm:h-10"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="floor" className="text-sm font-medium">Floor *</Label>
+                  <Label htmlFor="floor" className="text-xs sm:text-sm font-medium">Floor *</Label>
                   <Input
                     id="floor"
                     name="floor"
                     type="number"
                     min="1"
-                    value={formData.floor}
+                    value={formData.floor === 0 ? '' : formData.floor}
                     onChange={handleInputChange}
+                    placeholder="0"
                     disabled={isSubmitting}
-                    className="text-base"
+                    className="text-sm sm:text-base h-9 sm:h-10"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="price_per_month" className="text-sm font-medium">Monthly Rate (฿) *</Label>
+                  <Label htmlFor="zone" className="text-xs sm:text-sm font-medium">Building / Zone</Label>
+                  <Input
+                    id="zone"
+                    name="zone"
+                    value={formData.zone || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Building A, Zone 2"
+                    disabled={isSubmitting}
+                    className="text-sm sm:text-base h-9 sm:h-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase tracking-wide text-muted-foreground">Price Per Month</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price_per_month" className="text-xs sm:text-sm font-medium">Price (฿) *</Label>
                   <Input
                     id="price_per_month"
                     name="price_per_month"
@@ -763,32 +872,19 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                     onChange={handleInputChange}
                     placeholder="0"
                     disabled={isSubmitting}
-                    className="text-base"
+                    className="text-sm sm:text-base h-9 sm:h-10"
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="zone" className="text-sm font-medium">Building / Zone</Label>
-                  <Input
-                    id="zone"
-                    name="zone"
-                    value={formData.zone || ''}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Building A, Zone 2"
-                    disabled={isSubmitting}
-                    className="text-base"
                   />
                 </div>
               </div>
             </div>
 
             {/* Additional Information */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Additional Information</h3>
+            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase tracking-wide text-muted-foreground">Additional Information</h3>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                <Label htmlFor="description" className="text-xs sm:text-sm font-medium">Description</Label>
                 <Textarea
                   id="description"
                   name="description"
@@ -797,13 +893,13 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                   placeholder="Add room details, views, or special features..."
                   rows={3}
                   disabled={isSubmitting}
-                  className="resize-none text-base"
+                  className="resize-none text-sm sm:text-base"
                 />
                 <p className="text-xs text-muted-foreground">Optional field</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amenities" className="text-sm font-medium">Amenities</Label>
+                <Label htmlFor="amenities" className="text-xs sm:text-sm font-medium">Amenities</Label>
                 <ChipsInput
                   id="amenities"
                   value={amenitiesChips}
@@ -816,63 +912,30 @@ export default function RoomsPage({ token }: RoomsPageProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
-                className="sm:flex-1"
+                className="w-full sm:flex-1 h-9 sm:h-10 text-sm"
               >
                 Cancel
               </Button>
               <Button
-                type="button"
+                type="submit"
                 variant={editingRoom ? 'secondary' : 'default'}
                 disabled={isSubmitting}
-                className="sm:flex-1"
-                onClick={() => {
-                  setSubmitAction(editingRoom ? 'update' : 'create');
-                  setIsSubmitConfirmOpen(true);
-                }}
+                className="w-full sm:flex-1 h-9 sm:h-10 text-sm"
               >
-                {isSubmitting ? (editingRoom ? 'Updating...' : 'Creating...') : editingRoom ? 'Update Room' : 'Create Room'}
+                {isSubmitting ? (
+                  editingRoom ? 'Updating...' : 'Creating...'
+                ) : (
+                  editingRoom ? 'Update Room' : 'Create Room'
+                )}
               </Button>
             </div>
           </form>
-
-          {/* Create/Update confirmation dialog */}
-          <AlertDialog
-            open={isSubmitConfirmOpen}
-            onOpenChange={(open) => {
-              setIsSubmitConfirmOpen(open);
-              if (!open) setSubmitAction(null);
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {submitAction === 'update' ? 'Update Room' : 'Create Room'}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {submitAction === 'update'
-                    ? 'Are you sure you want to update this room? Changes will be saved.'
-                    : 'Are you sure you want to create this room?'}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div />
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => { setIsSubmitConfirmOpen(false); setSubmitAction(null); }}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction className={buttonVariants({ variant: 'default' })} onClick={async () => {
-                  await submitForm();
-                }}>
-                  {isSubmitting ? 'Processing...' : submitAction === 'update' ? 'Update' : 'Create'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </DialogContent>
       </Dialog>
     </div>

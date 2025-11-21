@@ -623,7 +623,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                     {dorm.price !== undefined && (
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground font-medium">Price/Month</p>
-                        <p className="text-lg sm:text-2xl font-bold text-foreground">฿{dorm.price}</p>
+                        <p className="text-lg sm:text-2xl font-bold text-foreground">฿{dorm.price.toLocaleString()}</p>
                       </div>
                     )}
                     {dorm.rating !== undefined && (
@@ -635,14 +635,14 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                     {dorm.insurance_policy !== undefined && (
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground font-medium">Insurance</p>
-                        <p className="text-lg sm:text-xl font-bold text-foreground">฿{dorm.insurance_policy}</p>
+                        <p className="text-lg sm:text-xl font-bold text-foreground">฿{dorm.insurance_policy.toLocaleString()}</p>
                       </div>
                     )}
                     {dorm.Water_fee !== undefined && (
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground font-medium">Water</p>
                         <p className="text-lg sm:text-xl font-bold text-foreground">
-                          ฿{dorm.Water_fee} <span className="text-xs">/ {dorm.waterBillingType === 'per-unit' ? 'unit' : 'month'}</span>
+                          ฿{dorm.Water_fee.toLocaleString()} <span className="text-xs">/ {dorm.waterBillingType === 'per-unit' ? 'unit' : 'month'}</span>
                         </p>
                       </div>
                     )}
@@ -650,7 +650,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground font-medium">Electricity</p>
                         <p className="text-lg sm:text-xl font-bold text-foreground">
-                          ฿{dorm.Electricity_fee} <span className="text-xs">/ {dorm.electricityBillingType === 'per-unit' ? 'unit' : 'month'}</span>
+                          ฿{dorm.Electricity_fee.toLocaleString()} <span className="text-xs">/ {dorm.electricityBillingType === 'per-unit' ? 'unit' : 'month'}</span>
                         </p>
                       </div>
                     )}
