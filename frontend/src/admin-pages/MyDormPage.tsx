@@ -310,6 +310,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               onClick={() => handleOpenDialog()}
               disabled={dorms.length > 0 && !editingDorm}
               title={dorms.length > 0 ? "You can only create one dorm" : ""}
+              className='rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer'
             >
               <Plus className="mr-2 h-4 w-4" />
               Add New Dorm
@@ -598,7 +599,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground truncate">{dorm.name}</h2>
                         <p className="text-sm sm:text-base text-muted-foreground mt-1 truncate">{dorm.location}</p>
                       </div>
-                      <Badge variant={dorm.availibility ? 'default' : 'secondary'} className="text-xs sm:text-sm px-2 sm:px-3 py-1 flex-shrink-0">
+                      <Badge variant={dorm.availibility ? 'default' : 'secondary'} className="bg-lime-400 text-black hover:bg-lime-500">
                         {dorm.availibility ? 'Available' : 'Unavailable'}
                       </Badge>
                     </div>
@@ -657,17 +658,17 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4 border-t mt-auto">
+                  <div className="flex justify-around pt-2">
                     <Button
                       onClick={() => handleOpenDialog(dorm)}
-                      className="w-full sm:flex-1 text-sm sm:text-base"
+                      className="rounded-full bg-gradient w-fit text-lg min-h-[40px] text-white cursor-pointer"
                     >
                       <Edit2 className="mr-1 sm:mr-2 h-4 w-4" />
                       Edit
                     </Button>
                     <AlertDialog
                       open={isDeleteAlertOpen && deleteTarget === dorm._id}
-                      onOpenChange={(open) => {
+                      onOpenChange={(open: boolean | ((prevState: boolean) => boolean)) => {
                         setIsDeleteAlertOpen(open);
                         if (!open) setDeleteTarget(null);
                       }}
@@ -679,7 +680,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                             setDeleteTarget(dorm._id);
                             setIsDeleteAlertOpen(true);
                           }}
-                          className="w-full sm:w-auto text-sm sm:text-base"
+                          className="rounded-full bg-red-600 w-fit text-lg min-h-[40px] text-white cursor-pointer"
                         >
                           <Trash2 className="mr-1 sm:mr-2 h-4 w-4" />
                           Delete

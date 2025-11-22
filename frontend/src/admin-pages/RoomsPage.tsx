@@ -427,7 +427,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
           </div>
           <Button
             onClick={() => handleOpenDialog()}
-            className="w-full sm:w-auto"
+            className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -516,20 +516,24 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
       {/* Filters */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium">Filter by Status</p>
-        <div className="flex flex-wrap gap-2">
-          {['All', 'Available', 'Occupied', 'Reserved', 'Maintenance'].map((status) => (
-            <Button
-              key={status}
-              variant={filterStatus === status ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterStatus(status)}
-            >
-              {status}
-            </Button>
-          ))}
-        </div>
+  <p className="text-sm font-medium">Filter by Status</p>
+      <div className="flex flex-wrap gap-2">
+        {['All', 'Available', 'Occupied', 'Reserved', 'Maintenance'].map((status) => (
+          <Button
+            key={status}
+            variant={filterStatus === status ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilterStatus(status)}
+            className={filterStatus === status 
+              ? ' rounded-full bg-gradient w-fit min-h-[40px] text-white' 
+              : 'rounded-full min-h-[40px] w-fit '
+            }
+          >
+            {status}
+          </Button>
+        ))}
       </div>
+    </div>
 
       {/* Loading State */}
       {loading && selectedDormId && (
@@ -595,7 +599,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                             className={
                               `text-xs sm:text-sm whitespace-nowrap bg-white border ` +
                               (room.status === 'Available'
-                                ? 'text-green-600 border-green-200 hover:bg-white'
+                                ? 'bg-lime-400 text-black hover:bg-lime-500'
                                 : room.status === 'Reserved'
                                 ? 'text-amber-600 border-amber-200 hover:bg-white'
                                 : room.status === 'Occupied'
