@@ -1,5 +1,5 @@
 //room-booking.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import api, { authService } from "@/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,7 @@ import {
   MessageSquare,
   Facebook,
 } from "lucide-react";
-import { downloadInvoice } from "@/components/ui/InvoiceTemplate";
+import { generateInvoiceHTML, downloadInvoice } from "@/components/ui/InvoiceTemplate";
 
 export default function RoomBooking() {
   const { id } = useParams();
@@ -155,6 +155,16 @@ export default function RoomBooking() {
     fetchData();
   }, [id, location]);
 
+  // Ensure the page is scrolled to top when this booking page mounts
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (e) {
+      // fallback
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
   // Helper to safely parse amenities which may be stored as string, array, or missing
   const parseAmenities = (value: any): string[] => {
     if (!value) return [];
@@ -216,11 +226,19 @@ export default function RoomBooking() {
         bookingFeePaid: prices.bookingFee || 0,
         totalAmount: Math.max(0, firstMonthTotal) || 0,
       };
+      // Add additional metadata fields that backend also accepts (aliases)
+      const now = new Date();
+      const booked_date = now.toISOString().slice(0,10); // YYYY-MM-DD
+      const booked_time = now.toTimeString().slice(0,8); // HH:MM:SS
+      payloadBase.booking_fees = prices.bookingFee || 0;
+      payloadBase.booked_date = booked_date;
+      payloadBase.booked_time = booked_time;
+      payloadBase.expected_move_in_date = formData.moveInDate || null;
 
       let resp;
       if (formData.paymentMethod === "slip" && formData.paymentSlip) {
         const fd = new FormData();
-        Object.keys(payloadBase).forEach((k) => fd.append(k, payloadBase[k]));
+        Object.keys(payloadBase).forEach((k) => fd.append(k, payloadBase[k] as any));
         fd.append("paymentSlip", formData.paymentSlip as File);
 
         resp = await api.post(`/bookings`, fd, {
@@ -272,6 +290,61 @@ export default function RoomBooking() {
     });
   };
 
+  // Prepare invoice data for rendering inside dialog
+  const stayDurationText = formData.stayDuration 
+    ? `${formData.stayDuration} ${formData.durationType}` 
+    : 'Not specified';
+
+  const invoiceData = {
+    bookingId,
+    invoiceDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    customerName: formData.name,
+    customerEmail: formData.email,
+    customerPhone: formData.phone,
+    dormName: dorm?.name || 'N/A',
+    dormAddress: formatAddress(dorm?.address) || dorm?.location || 'N/A',
+    dormPhone: dorm?.contact_phone || dorm?.phone || dorm?.contact_number || '',
+    dormEmail: dorm?.contact_gmail || dorm?.contact_email || dorm?.email || '',
+    dormLine: dorm?.contact_line || dorm?.line || dorm?.line_id || '',
+    dormFacebook: dorm?.contact_facebook || dorm?.facebook || '',
+    roomNumber: room?.room_number || 'N/A',
+    roomType: room?.room_type || 'N/A',
+    floor: room?.floor || 'N/A',
+    moveInDate: formData.moveInDate,
+    stayDuration: stayDurationText,
+    bookingFee: prices.bookingFee,
+    roomPerMonth: prices.roomPerMonth,
+    insurance: prices.insurance,
+    waterFees: prices.waterFees,
+    electricityFees: prices.electricityFees,
+    firstMonthTotal,
+  };
+
+  const invoiceHtml = generateInvoiceHTML(invoiceData);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    if (!showInvoicePreview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowInvoicePreview(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showInvoicePreview]);
+
+  // When the success dialog closes (and we're NOT opening the invoice preview),
+  // navigate the user to the dorm detail page.
+  const prevSuccessRef = useRef<boolean>(false);
+  useEffect(() => {
+    const prev = prevSuccessRef.current;
+    if (prev && !showSuccessDialog && !showInvoicePreview) {
+      // navigate to dorm detail
+      const dormId = dorm?._id || id;
+      if (dormId) navigate(`/dorms/${dormId}`);
+    }
+    prevSuccessRef.current = showSuccessDialog;
+  }, [showSuccessDialog, showInvoicePreview, dorm, id, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -287,7 +360,7 @@ export default function RoomBooking() {
     <div className="min-h-screen bg-background">
       {/* Success Dialog */}
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent className="max-w-2xl animate-in zoom-in-95 duration-300">
+        <AlertDialogContent className="max-w-2xl animate-in zoom-in-95 duration-300 z-60">
           <AlertDialogHeader>
             <div className="flex justify-center mb-4">
               <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center animate-in zoom-in-50 duration-500">
@@ -320,20 +393,16 @@ export default function RoomBooking() {
 
               <Separator />
 
-              <div className="bg-white dark:bg-gray-900 p-6 rounded-lg inline-block">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=BookingID:${bookingId}`}
-                  alt="Booking QR Code"
-                  className="w-48 h-48"
-                />
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Scan for booking details
-                </p>
-              </div>
+              {/* QR code removed - display Booking ID and Booking Fee only */}
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
                 <Button
-                  onClick={() => setShowInvoicePreview(true)}
+                  onClick={() => {
+                    // Close the success dialog first to avoid Radix focus/overlay blocking interaction,
+                    // then open the invoice preview overlay.
+                    setShowSuccessDialog(false);
+                    setShowInvoicePreview(true);
+                  }}
                   variant="outline"
                   className="rounded-full border-2"
                 >
@@ -352,185 +421,99 @@ export default function RoomBooking() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Invoice Preview Dialog */}
-      <AlertDialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
-        <AlertDialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
-          <AlertDialogHeader>
-            <div className="flex justify-between items-center mb-4">
-              <AlertDialogTitle className="text-2xl">Payment Invoice</AlertDialogTitle>
-              <Button
-                onClick={handleDownloadInvoice}
-                className="rounded-full bg-gradient text-white"
-                size="sm"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-            </div>
-          </AlertDialogHeader>
-          
-          {/* Invoice Preview */}
-          <div className="border-2 border-border rounded-lg overflow-hidden">
+      {/* Invoice Preview Dialog - Full Screen */}
+      {showInvoicePreview && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={(e) => { if (e.currentTarget === e.target) setShowInvoicePreview(false); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full h-full max-w-[1400px] max-h-[95vh] bg-background rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary via-purple-600 to-primary p-8 text-white">
-              <h1 className="text-3xl font-bold mb-2">PAYMENT INVOICE</h1>
-              <p className="text-sm opacity-90">Booking Confirmation & Payment Receipt</p>
-            </div>
-
-            {/* Invoice Info */}
-            <div className="grid grid-cols-2 gap-6 p-6 bg-muted/30 border-b-2 border-border">
-              <div className="space-y-2">
-                <h3 className="text-xs text-muted-foreground uppercase tracking-wide">Invoice Details</h3>
-                <p className="text-sm"><strong>Invoice Number:</strong> {bookingId}</p>
-                <p className="text-sm"><strong>Invoice Date:</strong> {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                <Badge className="bg-green-600 hover:bg-green-700">PAID</Badge>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xs text-muted-foreground uppercase tracking-wide">Customer Information</h3>
-                <p className="text-sm"><strong>Name:</strong> {formData.name || 'N/A'}</p>
-                <p className="text-sm"><strong>Email:</strong> {formData.email || 'N/A'}</p>
-                <p className="text-sm"><strong>Phone:</strong> {formData.phone || 'N/A'}</p>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Dorm & Room Info */}
-              <div>
-                <h2 className="text-lg font-bold mb-3 pb-2 border-b-2 border-border">
-                  Dormitory & Room Information
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Dormitory Name</label>
-                    <span className="text-sm font-medium">{dorm?.name || 'N/A'}</span>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Room Number</label>
-                    <span className="text-sm font-medium">{room?.room_number || 'N/A'}</span>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Room Type</label>
-                    <span className="text-sm font-medium">{room?.room_type || 'N/A'}</span>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Floor</label>
-                    <span className="text-sm font-medium">Floor {room?.floor || 'N/A'}</span>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Move-in Date</label>
-                    <span className="text-sm font-medium">{formData.moveInDate || 'N/A'}</span>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <label className="text-xs text-muted-foreground uppercase block mb-1">Stay Duration</label>
-                    <span className="text-sm font-medium">
-                      {formData.stayDuration ? `${formData.stayDuration} ${formData.durationType}` : 'Not specified'}
-                    </span>
-                  </div>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Payment Invoice</h2>
+                  <p className="text-sm text-muted-foreground">Booking ID: {bookingId}</p>
                 </div>
               </div>
-
-              {/* Payment Breakdown */}
-              <div>
-                <h2 className="text-lg font-bold mb-3 pb-2 border-b-2 border-border">
-                  Payment Breakdown
-                </h2>
-                <div className="border-2 border-border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr className="border-b-2 border-border">
-                        <th className="text-left p-3 text-xs text-muted-foreground uppercase">Description</th>
-                        <th className="text-left p-3 text-xs text-muted-foreground uppercase">Type</th>
-                        <th className="text-right p-3 text-xs text-muted-foreground uppercase">Amount (฿)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Booking Fee (Reservation)</td>
-                        <td className="p-3 text-sm">One-time</td>
-                        <td className="p-3 text-sm text-right font-semibold">{prices.bookingFee.toLocaleString()}</td>
-                      </tr>
-                      <tr className="bg-muted/30">
-                        <td className="p-3 font-bold" colSpan={2}>Total Paid</td>
-                        <td className="p-3 text-right font-bold text-lg text-primary">
-                          ฿{prices.bookingFee.toLocaleString()}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleDownloadInvoice}
+                  className="rounded-full bg-gradient text-white hover:scale-105 transition-transform"
+                  size="lg"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowInvoicePreview(false);
+                    const dormId = dorm?._id || id;
+                    if (dormId) navigate(`/dorms/${dormId}`);
+                  }}
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <span className="text-2xl">×</span>
+                </Button>
+                
               </div>
+            </div>
 
-              {/* Upcoming Payments */}
-              <div>
-                <h2 className="text-lg font-bold mb-3 pb-2 border-b-2 border-border">
-                  Upcoming Payments (First Month)
-                </h2>
-                <div className="border-2 border-border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr className="border-b-2 border-border">
-                        <th className="text-left p-3 text-xs text-muted-foreground uppercase">Description</th>
-                        <th className="text-left p-3 text-xs text-muted-foreground uppercase">Type</th>
-                        <th className="text-right p-3 text-xs text-muted-foreground uppercase">Amount (฿)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Room Price</td>
-                        <td className="p-3 text-sm">Monthly</td>
-                        <td className="p-3 text-sm text-right font-semibold">{prices.roomPerMonth.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Booking Fee (Already Paid)</td>
-                        <td className="p-3 text-sm">Deduction</td>
-                        <td className="p-3 text-sm text-right font-semibold text-green-600">
-                          -{prices.bookingFee.toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Dorm Insurance</td>
-                        <td className="p-3 text-sm">One-time</td>
-                        <td className="p-3 text-sm text-right font-semibold">{prices.insurance.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Water Fees (Estimated)</td>
-                        <td className="p-3 text-sm">Monthly</td>
-                        <td className="p-3 text-sm text-right font-semibold">~{prices.waterFees.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b border-border">
-                        <td className="p-3 text-sm">Electricity Fees (Estimated)</td>
-                        <td className="p-3 text-sm">Monthly</td>
-                        <td className="p-3 text-sm text-right font-semibold">~{prices.electricityFees.toLocaleString()}</td>
-                      </tr>
-                      <tr className="bg-muted/30">
-                        <td className="p-3 font-bold" colSpan={2}>Estimated First Month Total</td>
-                        <td className="p-3 text-right font-bold text-lg text-primary">
-                          ฿{firstMonthTotal.toLocaleString()}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+            {/* Invoice Content */}
+            <div className="flex-1 overflow-auto bg-muted/20 p-6">
+              <div className="flex justify-center">
+                <div className="bg-white rounded-lg shadow-xl" style={{ width: '210mm', minHeight: '297mm' }}>
+                  <iframe
+                    ref={iframeRef}
+                    title="Invoice"
+                    srcDoc={invoiceHtml}
+                    className="block border-0 rounded-lg"
+                    style={{
+                      width: '210mm',
+                      height: '297mm',
+                      background: 'white',
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-6 bg-muted/30 border-t-2 border-border text-center space-y-2">
-              <p className="font-semibold">Thank you for your booking!</p>
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/30">
               <p className="text-sm text-muted-foreground">
-                This is an official invoice for booking ID: {bookingId}
+                Press ESC or click outside to close
               </p>
-              <p className="text-sm text-muted-foreground">
-                For questions or support, contact us at support@dormbooking.com
-              </p>
-              <p className="text-xs text-muted-foreground mt-3">
-                Generated on {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setShowInvoicePreview(false);
+                    const dormId = dorm?._id || id;
+                    if (dormId) navigate(`/dorms/${dormId}`);
+                  }}
+                  variant="outline"
+                  className="rounded-full"
+                >
+                  Close Preview
+                </Button>
+                <Button
+                  onClick={handleDownloadInvoice}
+                  className="rounded-full bg-gradient text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
             </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b-2 border-border">

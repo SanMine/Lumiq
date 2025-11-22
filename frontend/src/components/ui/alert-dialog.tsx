@@ -49,6 +49,7 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
+      {/* //start here: AlertDialog content wrapper (data-slot="alert-dialog-content") */}
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
@@ -57,6 +58,7 @@ function AlertDialogContent({
         )}
         {...props}
       />
+      {/* //end here: AlertDialog content wrapper */}
     </AlertDialogPortal>
   )
 }
