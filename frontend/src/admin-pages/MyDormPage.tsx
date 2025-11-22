@@ -1,4 +1,4 @@
-//MyDormPage.tsx(Admin side)
+//MyDormPage.tsx (Admin side) - Complete Code
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ChipsInput } from '@/components/ui/chips-input';
-import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2, Mail, Phone, Facebook, MessageSquare } from 'lucide-react';
+import * as HoverCardPrimitive from '@radix-ui/react-hover-card';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -29,6 +31,14 @@ interface MyDormPageProps {
   token: string;
 }
 
+type FormFields = Partial<Dorm> & {
+  contact_gmail?: string;
+  contact_line?: string;
+  contact_facebook?: string;
+  contact_phone?: string;
+  facilities?: string[];
+};
+
 export default function MyDormPage({ token }: MyDormPageProps) {
   const [dorms, setDorms] = useState<Dorm[]>([]);
   const [dormsLoading, setDormsLoading] = useState(false);
@@ -45,19 +55,24 @@ export default function MyDormPage({ token }: MyDormPageProps) {
     | null
     | { title?: string; description?: string; variant?: 'default' | 'destructive' }
   >(null);
-  const [formData, setFormData] = useState<Partial<Dorm>>({
+  const [formData, setFormData] = useState<FormFields>({
     name: '',
     location: '',
     description: '',
     image_url: '',
     availibility: true,
-    facilities: '',
+    facilities: [],
     price: 0,
     insurance_policy: 0,
     Water_fee: 0,
     Electricity_fee: 0,
     waterBillingType: 'per-month',
     electricityBillingType: 'per-month',
+    contract_duration: 12,
+    contact_gmail: '',
+    contact_line: '',
+    contact_facebook: '',
+    contact_phone: '',
   });
 
   const fetchDorms = async () => {
@@ -89,10 +104,24 @@ export default function MyDormPage({ token }: MyDormPageProps) {
   const handleOpenDialog = (dorm?: Dorm) => {
     if (dorm) {
       setEditingDorm(dorm);
-      setFormData(dorm);
+      // Normalize facilities to an array for the form (backwards compatible with string storage)
+      const facilitiesArray = Array.isArray(dorm.facilities)
+        ? dorm.facilities
+        : typeof dorm.facilities === 'string' && dorm.facilities
+        ? dorm.facilities.split(',').map(f => f.trim()).filter(Boolean)
+        : [];
+
+      setFormData({
+        ...dorm,
+        contract_duration: dorm.contract_duration ?? 12,
+        contact_gmail: (dorm as any).contact_gmail || '',
+        contact_line: (dorm as any).contact_line || '',
+        contact_facebook: (dorm as any).contact_facebook || '',
+        contact_phone: (dorm as any).contact_phone || '',
+        facilities: facilitiesArray,
+      });
       setImagePreview(dorm.image_url || null);
-      const facilities = dorm.facilities ? dorm.facilities.split(',').map(f => f.trim()).filter(f => f) : [];
-      setFacilitiesChips(facilities);
+      setFacilitiesChips(facilitiesArray);
     } else {
       setEditingDorm(null);
       setImagePreview(null);
@@ -103,13 +132,18 @@ export default function MyDormPage({ token }: MyDormPageProps) {
         description: '',
         image_url: '',
         availibility: true,
-        facilities: '',
+        facilities: [],
         price: 0,
         insurance_policy: 0,
         Water_fee: 0,
         Electricity_fee: 0,
         waterBillingType: 'per-month',
         electricityBillingType: 'per-month',
+        contract_duration: 12,
+        contact_gmail: '',
+        contact_line: '',
+        contact_facebook: '',
+        contact_phone: '',
       });
     }
     setIsDialogOpen(true);
@@ -126,13 +160,18 @@ export default function MyDormPage({ token }: MyDormPageProps) {
       description: '',
       image_url: '',
       availibility: true,
-      facilities: '',
+      facilities: [],
       price: 0,
       insurance_policy: 0,
       Water_fee: 0,
       Electricity_fee: 0,
       waterBillingType: 'per-month',
       electricityBillingType: 'per-month',
+      contract_duration: 12,
+      contact_gmail: '',
+      contact_line: '',
+      contact_facebook: '',
+      contact_phone: '',
     });
   };
 
@@ -177,7 +216,8 @@ export default function MyDormPage({ token }: MyDormPageProps) {
       
       const submitData = {
         ...formData,
-        facilities: facilitiesChips.join(', '),
+        // send facilities as an array (backend expects string[] now)
+        facilities: facilitiesChips,
       };
       
       if (editingDorm) {
@@ -404,15 +444,32 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               </div>
 
               {/* Facilities */}
-              <div className="space-y-2">
-                <Label htmlFor="facilities" className="text-sm font-medium">Facilities</Label>
-                <ChipsInput
-                  id="facilities"
-                  value={facilitiesChips}
-                  onChange={setFacilitiesChips}
-                  placeholder="Add facility and press Enter (WiFi, Gym, etc)"
-                  disabled={isSubmitting}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2 space-y-2">
+                  <Label htmlFor="facilities" className="text-sm font-medium">Facilities</Label>
+                  <ChipsInput
+                    id="facilities"
+                    value={facilitiesChips}
+                    onChange={setFacilitiesChips}
+                    placeholder="Add facility and press Enter (WiFi, Gym, etc)"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contract_duration" className="text-sm font-medium">Contract Duration (Months)</Label>
+                  <Input
+                    id="contract_duration"
+                    name="contract_duration"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={formData.contract_duration === 0 || !formData.contract_duration ? '' : formData.contract_duration as any}
+                    onChange={(e) => setFormData(prev => ({ ...prev, contract_duration: Number(e.target.value) }))}
+                    placeholder="12"
+                    disabled={isSubmitting}
+                    className="text-base"
+                  />
+                </div>
               </div>
 
               {/* Pricing Section */}
@@ -510,6 +567,67 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                     <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                       {formData.electricityBillingType === 'per-unit' ? '฿ / unit' : '฿ / month'}
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Contact Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_gmail" className="text-sm font-medium">Gmail</Label>
+                    <Input
+                      id="contact_gmail"
+                      name="contact_gmail"
+                      type="email"
+                      value={formData.contact_gmail || ''}
+                      onChange={handleInputChange}
+                      placeholder="you@gmail.com"
+                      disabled={isSubmitting}
+                      className="text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_phone" className="text-sm font-medium">Phone Number</Label>
+                    <Input
+                      id="contact_phone"
+                      name="contact_phone"
+                      type="tel"
+                      inputMode="tel"
+                      value={formData.contact_phone || ''}
+                      onChange={handleInputChange}
+                      placeholder="012-345-6789"
+                      disabled={isSubmitting}
+                      className="text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_line" className="text-sm font-medium">Line</Label>
+                    <Input
+                      id="contact_line"
+                      name="contact_line"
+                      value={formData.contact_line || ''}
+                      onChange={handleInputChange}
+                      placeholder="@lineid"
+                      disabled={isSubmitting}
+                      className="text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_facebook" className="text-sm font-medium">Facebook</Label>
+                    <Input
+                      id="contact_facebook"
+                      name="contact_facebook"
+                      value={formData.contact_facebook || ''}
+                      onChange={handleInputChange}
+                      placeholder="facebook.com/yourpage"
+                      disabled={isSubmitting}
+                      className="text-base"
+                    />
                   </div>
                 </div>
               </div>
@@ -613,10 +731,172 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                     </div>
                   )}
 
-                  {dorm.facilities && (
+                  {/* Facilities with Contact Icons */}
+                  {(Array.isArray(dorm.facilities) ? dorm.facilities.length > 0 : dorm.facilities) && (
                     <div className="space-y-2">
-                      <p className="text-xs sm:text-sm font-semibold text-foreground uppercase tracking-wide">Facilities</p>
-                      <p className="text-sm sm:text-base text-foreground line-clamp-2">{dorm.facilities}</p>
+                      <div className="flex items-center gap-3">
+                        <p className="text-xs sm:text-sm font-semibold text-foreground uppercase tracking-wide">
+                          Facilities
+                        </p>
+                        
+                        {/* Contact Icons beside Facilities */}
+                        {(dorm.contact_gmail || dorm.contact_phone || dorm.contact_line || dorm.contact_facebook) && (
+                          <div className="flex items-center gap-2 ml-auto">
+                            {dorm.contact_gmail && (
+                              <HoverCardPrimitive.Root openDelay={200} closeDelay={100}>
+                                <HoverCardPrimitive.Trigger asChild>
+                                  <a
+                                    href={`mailto:${dorm.contact_gmail}`}
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                                    aria-label="Email"
+                                  >
+                                    <Mail className="w-4 h-4 text-foreground" />
+                                  </a>
+                                </HoverCardPrimitive.Trigger>
+                                <HoverCardPrimitive.Portal>
+                                  <HoverCardPrimitive.Content
+                                    className={cn(
+                                      'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 z-50 rounded-md border shadow-md p-3 w-56'
+                                    )}
+                                    sideOffset={6}
+                                    align="end"
+                                  >
+                                    <div className="space-y-1">
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        Email
+                                      </p>
+                                      <a
+                                        href={`mailto:${dorm.contact_gmail}`}
+                                        className="text-sm text-primary hover:underline break-words block"
+                                      >
+                                        {dorm.contact_gmail}
+                                      </a>
+                                    </div>
+                                    <HoverCardPrimitive.Arrow className="fill-border" />
+                                  </HoverCardPrimitive.Content>
+                                </HoverCardPrimitive.Portal>
+                              </HoverCardPrimitive.Root>
+                            )}
+
+                            {dorm.contact_phone && (
+                              <HoverCardPrimitive.Root openDelay={200} closeDelay={100}>
+                                <HoverCardPrimitive.Trigger asChild>
+                                  <a
+                                    href={`tel:${dorm.contact_phone}`}
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                                    aria-label="Phone"
+                                  >
+                                    <Phone className="w-4 h-4 text-foreground" />
+                                  </a>
+                                </HoverCardPrimitive.Trigger>
+                                <HoverCardPrimitive.Portal>
+                                  <HoverCardPrimitive.Content
+                                    className={cn(
+                                      'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 z-50 rounded-md border shadow-md p-3 w-48'
+                                    )}
+                                    sideOffset={6}
+                                    align="end"
+                                  >
+                                    <div className="space-y-1">
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        Phone
+                                      </p>
+                                      <a
+                                        href={`tel:${dorm.contact_phone}`}
+                                        className="text-sm text-primary hover:underline"
+                                      >
+                                        {dorm.contact_phone}
+                                      </a>
+                                    </div>
+                                    <HoverCardPrimitive.Arrow className="fill-border" />
+                                  </HoverCardPrimitive.Content>
+                                </HoverCardPrimitive.Portal>
+                              </HoverCardPrimitive.Root>
+                            )}
+
+                            {dorm.contact_line && (
+                              <HoverCardPrimitive.Root openDelay={200} closeDelay={100}>
+                                <HoverCardPrimitive.Trigger asChild>
+                                  <button
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                                    aria-label="Line"
+                                  >
+                                    <MessageSquare className="w-4 h-4 text-foreground" />
+                                  </button>
+                                </HoverCardPrimitive.Trigger>
+                                <HoverCardPrimitive.Portal>
+                                  <HoverCardPrimitive.Content
+                                    className={cn(
+                                      'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 z-50 rounded-md border shadow-md p-3 w-56'
+                                    )}
+                                    sideOffset={6}
+                                    align="end"
+                                  >
+                                    <div className="space-y-1">
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        Line
+                                      </p>
+                                      <p className="text-sm break-words">{dorm.contact_line}</p>
+                                    </div>
+                                    <HoverCardPrimitive.Arrow className="fill-border" />
+                                  </HoverCardPrimitive.Content>
+                                </HoverCardPrimitive.Portal>
+                              </HoverCardPrimitive.Root>
+                            )}
+
+                            {dorm.contact_facebook && (
+                              <HoverCardPrimitive.Root openDelay={200} closeDelay={100}>
+                                <HoverCardPrimitive.Trigger asChild>
+                                  <a
+                                    href={
+                                      dorm.contact_facebook.startsWith('http')
+                                        ? dorm.contact_facebook
+                                        : `https://${dorm.contact_facebook}`
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                                    aria-label="Facebook"
+                                  >
+                                    <Facebook className="w-4 h-4 text-foreground" />
+                                  </a>
+                                </HoverCardPrimitive.Trigger>
+                                <HoverCardPrimitive.Portal>
+                                  <HoverCardPrimitive.Content
+                                    className={cn(
+                                      'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 z-50 rounded-md border shadow-md p-3 w-64'
+                                    )}
+                                    sideOffset={6}
+                                    align="end"
+                                  >
+                                    <div className="space-y-1">
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        Facebook
+                                      </p>
+                                      <a
+                                        href={
+                                          dorm.contact_facebook.startsWith('http')
+                                            ? dorm.contact_facebook
+                                            : `https://${dorm.contact_facebook}`
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-sm text-primary hover:underline break-words block"
+                                      >
+                                        {dorm.contact_facebook}
+                                      </a>
+                                    </div>
+                                    <HoverCardPrimitive.Arrow className="fill-border" />
+                                  </HoverCardPrimitive.Content>
+                                </HoverCardPrimitive.Portal>
+                              </HoverCardPrimitive.Root>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm sm:text-base text-foreground line-clamp-2">
+                        {Array.isArray(dorm.facilities) ? dorm.facilities.join(', ') : dorm.facilities}
+                      </p>
                     </div>
                   )}
 
@@ -654,6 +934,12 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                         <p className="text-lg sm:text-xl font-bold text-foreground">
                           ฿{dorm.Electricity_fee.toLocaleString()} <span className="text-xs">/ {dorm.electricityBillingType === 'per-unit' ? 'unit' : 'month'}</span>
                         </p>
+                      </div>
+                    )}
+                    {dorm.contract_duration !== undefined && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">Contract</p>
+                        <p className="text-lg sm:text-xl font-bold text-foreground">{dorm.contract_duration} months</p>
                       </div>
                     )}
                   </div>

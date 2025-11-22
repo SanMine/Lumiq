@@ -31,6 +31,12 @@ const RoomSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    booking_fees: {
+      type: Number,
+      required: false,
+      default: 0,
+      comment: "One-time booking/administration fee",
+    },
     floor: {
       type: Number,
       required: true,

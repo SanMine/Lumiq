@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   User,
+  MapPin,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -36,9 +37,7 @@ export default function AdminSidebar({
         {/* Logo */}
         <div className="flex h-16 items-center border-b px-6">
           <Building2 className="h-6 w-6 text-sidebar-primary" />
-          <span className="ml-3 text-lg font-semibold text-sidebar-foreground">
-            LUMIQ Admin
-          </span>
+          <span className="ml-3 text-lg font-semibold text-sidebar-foreground">LUMIQ Admin</span>
         </div>
 
         {/* Navigation */}
@@ -65,6 +64,19 @@ export default function AdminSidebar({
           >
             <Building2 className="h-5 w-5" />
             My Dorm
+          </button>
+
+          {/* New Location tab */}
+          <button
+            onClick={() => setActiveTab('location')}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === 'location'
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+            }`}
+          >
+            <MapPin className="h-5 w-5" />
+            Location
           </button>
 
           <button

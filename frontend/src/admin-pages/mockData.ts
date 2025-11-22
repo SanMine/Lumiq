@@ -129,7 +129,7 @@ export interface Dorm {
   description?: string;
   image_url?: string;
   availibility: boolean;
-  facilities?: string;
+  facilities?: string[];
   price?: number;
   insurance_policy?: number;
   Water_fee?: number;

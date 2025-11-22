@@ -56,7 +56,11 @@ export function ChipsInput({
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((chip, index) => (
-            <Badge key={index} variant="secondary" className="px-3 py-1.5 flex items-center gap-1.5">
+            <Badge
+              key={index}
+              variant="secondary"
+              className="px-3 py-1.5 flex items-center gap-1.5 whitespace-normal break-words max-w-[20rem] sm:max-w-[28rem]"
+            >
               {chip}
               <button
                 onClick={() => removeChip(index)}

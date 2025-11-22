@@ -3,5 +3,8 @@
     "@types/debug": "^4.1.12",
     "@types/ms": "^2.1.0",
     "@types/validator": "^13.15.8"
+  },
+  "dependencies": {
+    "@radix-ui/react-hover-card": "^1.1.15"
   }
 }

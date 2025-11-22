@@ -24,8 +24,13 @@ export function requireAuth(req, res, next) {
   
   // If we get here, the token is valid! 
   // Store the user info in req.user so other functions can use it
+  // Ensure numeric IDs are numbers (Mongoose stores numeric _id for Users)
+  const parsedId = typeof tokenResult.userId === 'string' && !isNaN(Number(tokenResult.userId))
+    ? Number(tokenResult.userId)
+    : tokenResult.userId
+
   req.user = {
-    id: tokenResult.userId,
+    id: parsedId,
     email: tokenResult.email,
     role: tokenResult.role
   };

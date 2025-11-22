@@ -50,6 +50,7 @@ interface Room {
   expected_available_date?: string;
   createdAt?: string;
   updatedAt?: string;
+  booking_fees?: number;
 }
 
 interface RoomsPageProps {
@@ -80,6 +81,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     room_type: 'Single',
     capacity: 1,
     price_per_month: 0,
+    booking_fees: 0,
     floor: 1,
     description: '',
     amenities: '',
@@ -88,6 +90,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     status: 'Available',
   });
   const [amenitiesChips, setAmenitiesChips] = useState<string[]>([]);
+  const [imagesChips, setImagesChips] = useState<string[]>([]);
   const [roomNumberTo, setRoomNumberTo] = useState<string>(''); // For bulk room creation
 
   // Fetch user's default dorm on mount
@@ -151,6 +154,8 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       // parse amenities string into chips array
       const chips = room.amenities ? room.amenities.split(',').map((s) => s.trim()).filter(Boolean) : [];
       setAmenitiesChips(chips);
+      // load images into chips input
+      setImagesChips(room.images || []);
       // ensure zone is present in formData when editing
       if (!('zone' in room)) {
         setFormData((prev) => ({ ...prev, zone: '' }));
@@ -163,6 +168,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
         room_type: 'Single',
         capacity: 1,
         price_per_month: 0,
+        booking_fees: 0,
         floor: 1,
         description: '',
         amenities: '',
@@ -170,6 +176,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
         status: 'Available',
       });
       setAmenitiesChips([]);
+      setImagesChips([]);
     }
     setIsDialogOpen(true);
   };
@@ -183,6 +190,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       room_type: 'Single',
       capacity: 1,
       price_per_month: 0,
+      booking_fees: 0,
       floor: 1,
       description: '',
       amenities: '',
@@ -190,6 +198,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       status: 'Available',
     });
     setAmenitiesChips([]);
+    setImagesChips([]);
   };
 
   const handleInputChange = (
@@ -198,7 +207,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'capacity' || name === 'floor' || name === 'price_per_month' ? Number(value) : value,
+      [name]: name === 'capacity' || name === 'floor' || name === 'price_per_month' || name === 'booking_fees' ? Number(value) : value,
     }));
   };
 
@@ -223,6 +232,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
         ...formData,
         dormId: selectedDormId,
         amenities: amenitiesChips.join(', '),
+        images: imagesChips,
       };
 
       if (editingRoom) {
@@ -338,12 +348,12 @@ export default function RoomsPage({ token }: RoomsPageProps) {
       // show success callout
       setPageAlert({ title: 'Completed.', description: 'The room was deleted successfully.', variant: 'default' });
       // auto-dismiss
-      window.setTimeout(() => setPageAlert(null), 4000);
+      window.setTimeout(() => setPageAlert(null), 1000);
       await fetchRooms();
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to delete room';
       setPageAlert({ title: 'Unable to delete', description: errorMsg, variant: 'destructive' });
-      window.setTimeout(() => setPageAlert(null), 6000);
+      window.setTimeout(() => setPageAlert(null), 1000);
       console.error('Error deleting room:', err);
     }
   };
@@ -859,10 +869,10 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
             {/* Price */}
             <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
-              <h3 className="font-semibold text-xs sm:text-sm uppercase tracking-wide text-muted-foreground">Price Per Month</h3>
+              <h3 className="font-semibold text-xs sm:text-sm uppercase tracking-wide text-muted-foreground">Price Per Month (฿)</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price_per_month" className="text-xs sm:text-sm font-medium">Price (฿) *</Label>
+                  <Label htmlFor="price_per_month" className="text-xs sm:text-sm font-medium">Price *</Label>
                   <Input
                     id="price_per_month"
                     name="price_per_month"
@@ -876,6 +886,21 @@ export default function RoomsPage({ token }: RoomsPageProps) {
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="booking_fees" className="text-xs sm:text-sm font-medium">Booking Fees *</Label>
+                  <Input
+                    id="booking_fees"
+                    name="booking_fees"
+                    type="number"
+                    min="0"
+                    value={formData.booking_fees === 0 ? '' : formData.booking_fees}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    disabled={isSubmitting}
+                    className="text-sm sm:text-base h-9 sm:h-10"
+                  />
+                </div>
               </div>
             </div>
 
@@ -885,6 +910,17 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-xs sm:text-sm font-medium">Description</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="images" className="text-xs sm:text-sm font-medium">Image URLs</Label>
+                  <ChipsInput
+                    id="images"
+                    value={imagesChips}
+                    onChange={setImagesChips}
+                    placeholder="Add image URL and press Enter (you can add multiple)"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-muted-foreground">Optional - add one or more image URLs</p>
+                </div>
                 <Textarea
                   id="description"
                   name="description"

@@ -20,6 +20,7 @@ import RoomsPage from '@/admin-pages/RoomsPage';
 import BookingsPage from '@/admin-pages/BookingsPage';
 import AnalyticsPage from '@/admin-pages/AnalyticsPage';
 import SettingsPage from '@/admin-pages/SettingsPage';
+import AdminLocation from '@/admin-pages/AdminLocation';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -140,6 +141,7 @@ export default function AdminDashboard() {
           {activeTab === 'bookings' && <BookingsPage />}
           {activeTab === 'analytics' && <AnalyticsPage />}
           {activeTab === 'settings' && <SettingsPage handleLogout={handleLogout} />}
+          {activeTab === 'location' && <AdminLocation />}
         </main>
       </div>
     </div>

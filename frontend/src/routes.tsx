@@ -32,8 +32,22 @@ export default function Router() {
         {
           path: '/dorms/:id',
           lazy: async () => {
+            const { default: DormDetail } = await import('@/pages/root/dorm-detail-page')
+            return { Component: DormDetail }
+          }
+        },
+        {
+          path: '/dorms/:id/rooms/:roomId',
+          lazy: async () => {
             const { default: RoomsDetail } = await import('@/pages/root/rooms-detail-page')
             return { Component: RoomsDetail }
+          }
+        },
+        {
+          path: '/dorms/:id/book',
+          lazy: async () => {
+            const { default: RoomBooking } = await import('@/pages/root/room-booking')
+            return { Component: RoomBooking }
           }
         },
         {

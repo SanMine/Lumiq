@@ -69,6 +69,10 @@ const dormsData = [
     insurance_policy: 500,
     Water_fee: 150,
     Electricity_fee: 200,
+    contact_gmail: 'sunrise.heights@gmail.com',
+    contact_line: '@sunrise_heights',
+    contact_facebook: 'facebook.com/sunrise.heights',
+    contact_phone: '081-234-5678',
   },
   {
     name: 'Moonlight Residences',
@@ -82,6 +86,10 @@ const dormsData = [
     insurance_policy: 300,
     Water_fee: 120,
     Electricity_fee: 180,
+    contact_gmail: 'moonlight.res@lumiq.edu',
+    contact_line: '@moonlight_res',
+    contact_facebook: 'facebook.com/moonlight.residences',
+    contact_phone: '082-345-6789',
   },
   {
     name: 'StarLight Lodge',
@@ -95,6 +103,10 @@ const dormsData = [
     insurance_policy: 800,
     Water_fee: 250,
     Electricity_fee: 350,
+    contact_gmail: 'starlight.lodge@contact.com',
+    contact_line: '@starlight_lodge',
+    contact_facebook: 'facebook.com/starlight.lodge',
+    contact_phone: '083-456-7890',
   },
 ];
 

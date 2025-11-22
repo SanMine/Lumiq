@@ -19,15 +19,18 @@ import { errorHandler } from "./middlewares/error.js";
 import { personalities } from "./routes/personalities.js";
 import { preferred_roommate } from "./routes/preferred_roommate.js";
 import matchingRoutes from "./routes/matching.js";
+import { bookings } from "./routes/bookings.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
+import "./models/Booking.js";
 
 const app = express();
 
 // CORS Configuration - Allow credentials and auth headers
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN?.split(',').map(url => url.trim()) || ['http://localhost:3000'],
+  // Allow common local dev origins (Vite default 5173 and CRA 3000).
+  origin: process.env.CORS_ORIGIN?.split(',').map(url => url.trim()) || ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -39,6 +42,9 @@ const corsOptions = {
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors(corsOptions));
+
+// Serve uploaded files (payment slips, images, etc.)
+app.use('/uploads', express.static(join(__dirname, '../uploads')));
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -59,6 +65,7 @@ app.use("/api/personalities", personalities);
 app.use("/api/auth", auth);
 app.use("/api/preferred_roommate", preferred_roommate);
 app.use("/api/matching", matchingRoutes);
+app.use("/api/bookings", bookings);
 
 // Error handler (last)
 app.use(errorHandler);
