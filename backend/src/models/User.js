@@ -45,6 +45,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    dormId: {
+      type: Number,
+      ref: "Dorm",
+      default: null,
+    },
   },
   {
     timestamps: true,

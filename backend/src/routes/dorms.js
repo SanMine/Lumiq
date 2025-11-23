@@ -38,8 +38,8 @@ dorms.get("/nearby", async (req, res, next) => {
     const { latitude, longitude, radius = 5 } = req.query;
 
     if (!latitude || !longitude) {
-      return res.status(400).json({ 
-        error: "Latitude and longitude are required" 
+      return res.status(400).json({
+        error: "Latitude and longitude are required"
       });
     }
 
@@ -88,21 +88,21 @@ dorms.post("/", requireAuth, requireDormAdmin, async (req, res, next) => {
     // Check if admin already has a dorm
     const existingDorm = await Dorm.findOne({ admin_id: req.user.id });
     if (existingDorm) {
-      return res.status(400).json({ 
-        error: "You can only create one dorm. Please update your existing dorm or delete it first." 
+      return res.status(400).json({
+        error: "You can only create one dorm. Please update your existing dorm or delete it first."
       });
     }
 
     // Generate next ID
     const dormId = await getNextId('dorms');
-    
+
     // Create dorm with admin_id and generated _id
     const dorm = await Dorm.create({
       ...req.body,
       _id: dormId,
       admin_id: req.user.id,
     });
-    
+
     res.status(201).json(dorm);
   } catch (error) {
     next(error);
@@ -115,8 +115,8 @@ dorms.put("/:id/address", requireAuth, requireDormAdmin, async (req, res, next) 
     const { address } = req.body;
 
     if (!address) {
-      return res.status(400).json({ 
-        error: "Address data is required" 
+      return res.status(400).json({
+        error: "Address data is required"
       });
     }
 
@@ -133,7 +133,7 @@ dorms.put("/:id/address", requireAuth, requireDormAdmin, async (req, res, next) 
     // Update only address fields
     const updatedDorm = await Dorm.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         address: {
           addressLine1: address.addressLine1 || dorm.address?.addressLine1,
           subDistrict: address.subDistrict || dorm.address?.subDistrict,
@@ -162,21 +162,21 @@ dorms.put("/:id/location", requireAuth, requireDormAdmin, async (req, res, next)
     const { latitude, longitude } = req.body;
 
     if (latitude === undefined || longitude === undefined) {
-      return res.status(400).json({ 
-        error: "Latitude and longitude are required" 
+      return res.status(400).json({
+        error: "Latitude and longitude are required"
       });
     }
 
     // Validate coordinate ranges
     if (latitude < -90 || latitude > 90) {
-      return res.status(400).json({ 
-        error: "Latitude must be between -90 and 90" 
+      return res.status(400).json({
+        error: "Latitude must be between -90 and 90"
       });
     }
 
     if (longitude < -180 || longitude > 180) {
-      return res.status(400).json({ 
-        error: "Longitude must be between -180 and 180" 
+      return res.status(400).json({
+        error: "Longitude must be between -180 and 180"
       });
     }
 
@@ -193,7 +193,7 @@ dorms.put("/:id/location", requireAuth, requireDormAdmin, async (req, res, next)
     // Update only coordinates
     const updatedDorm = await Dorm.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude)
       },
@@ -210,10 +210,10 @@ dorms.put("/:id/location", requireAuth, requireDormAdmin, async (req, res, next)
   }
 });
 
-// Rate a dorm
-dorms.post("/:id/rate", async (req, res, next) => {
+// Rate a dorm (requires authentication)
+dorms.post("/:id/rate", requireAuth, async (req, res, next) => {
   try {
-    const { rating, userId } = req.body;
+    const { rating, userId, comment } = req.body;
     const dormId = req.params.id;
 
     const dorm = await Dorm.findById(dormId);
@@ -226,10 +226,16 @@ dorms.post("/:id/rate", async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Check if user is a resident of this dorm
+    if (String(user.dormId) !== String(dormId)) {
+      return res.status(403).json({ error: "Only residents of this dorm can submit reviews." });
+    }
+
     const result = await RatingService.addOrUpdateRating(
       dormId,
       userId,
-      rating
+      rating,
+      comment
     );
 
     res.json({
@@ -261,6 +267,73 @@ dorms.get("/:id/rating-distribution", async (req, res, next) => {
     );
     res.json(distribution);
   } catch (error) {
+    next(error);
+  }
+});
+
+// Update a rating (only by author)
+dorms.put("/:id/ratings/:ratingId", requireAuth, async (req, res, next) => {
+  try {
+    const { rating, comment } = req.body;
+    const { id: dormId, ratingId } = req.params;
+
+    const existingRating = await Rating.findById(ratingId);
+    if (!existingRating) {
+      return res.status(404).json({ error: "Rating not found" });
+    }
+
+    // Check if user is the author
+    if (String(existingRating.userId) !== String(req.user.id)) {
+      return res.status(403).json({ error: "You can only update your own ratings" });
+    }
+
+    // Verify rating belongs to this dorm
+    if (String(existingRating.dormId) !== String(dormId)) {
+      return res.status(400).json({ error: "Rating does not belong to this dorm" });
+    }
+
+    const result = await RatingService.addOrUpdateRating(
+      dormId,
+      req.user.id,
+      rating,
+      comment
+    );
+
+    res.json({
+      message: result.message,
+      rating: result.rating,
+      average_rating: result.statistics.average_rating,
+      total_ratings: result.statistics.total_ratings,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete a rating (by author or dorm admin)
+dorms.delete("/:id/ratings/:ratingId", requireAuth, async (req, res, next) => {
+  try {
+    const { id: dormId, ratingId } = req.params;
+
+    const result = await RatingService.deleteRating(
+      ratingId,
+      req.user.id,
+      req.user.role,
+      dormId
+    );
+
+    res.json({
+      message: result.message,
+      average_rating: result.statistics.average_rating,
+      total_ratings: result.statistics.total_ratings,
+    });
+  } catch (error) {
+    if (error.message === "Rating not found") {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === "Unauthorized to delete this rating") {
+      return res.status(403).json({ error: error.message });
+    }
     next(error);
   }
 });

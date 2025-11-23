@@ -59,7 +59,7 @@ export class RatingService {
     }
   }
 
-  static async addOrUpdateRating(dormId, userId, rating) {
+  static async addOrUpdateRating(dormId, userId, rating, comment = "") {
     try {
       if (!rating || rating < 1 || rating > 5) {
         throw new Error("Rating must be between 1 and 5");
@@ -67,10 +67,11 @@ export class RatingService {
       let ratingRecord = await Rating.findOne({ dormId, userId });
       let created = false;
       if (!ratingRecord) {
-        ratingRecord = await Rating.create({ rating, userId, dormId });
+        ratingRecord = await Rating.create({ rating, userId, dormId, comment });
         created = true;
       } else {
         ratingRecord.rating = rating;
+        ratingRecord.comment = comment;
         await ratingRecord.save();
       }
       const stats = await this.getDormRatingStatistics(dormId);
@@ -105,6 +106,37 @@ export class RatingService {
       return distribution;
     } catch (error) {
       throw new Error("Failed to get rating distribution");
+    }
+  }
+
+  static async deleteRating(ratingId, userId, userRole, dormId) {
+    try {
+      const rating = await Rating.findById(ratingId);
+
+      if (!rating) {
+        throw new Error("Rating not found");
+      }
+
+      // Check authorization: only the author or dorm admin can delete
+      const isAuthor = String(rating.userId) === String(userId);
+      const isDormAdmin = userRole === "dorm_admin";
+
+      if (!isAuthor && !isDormAdmin) {
+        throw new Error("Unauthorized to delete this rating");
+      }
+
+      await Rating.findByIdAndDelete(ratingId);
+
+      // Recalculate statistics after deletion
+      const stats = await this.getDormRatingStatistics(dormId);
+
+      return {
+        success: true,
+        message: "Rating deleted successfully",
+        statistics: stats,
+      };
+    } catch (error) {
+      throw error;
     }
   }
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AreaChart,
   Area,
@@ -25,15 +26,67 @@ import { Badge } from '@/components/ui/badge';
 import {
   DollarSign,
   TrendingUp,
+  TrendingDown,
   Building2,
   Calendar,
   Users,
   User,
   ChevronRight,
 } from 'lucide-react';
-import { revenueData, bookingStats, occupancyData, recentBookings } from './mockData';
+import api from '@/api';
+import Loader from '@/components/shared/loader';
 
 export default function OverviewPage() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetchOverviewData();
+  }, []);
+
+  const fetchOverviewData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/analytics/overview');
+      setData(response.data);
+    } catch (err: any) {
+      console.error('Error fetching analytics:', err);
+      setError(err.response?.data?.error || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="p-8 text-center max-w-md">
+          <p className="text-destructive font-semibold mb-4">{error}</p>
+          <Button onClick={fetchOverviewData}>Retry</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const { kpis, revenueTrend, bookingTrend, roomOccupancy, recentBookings } = data;
+
+  const formatCurrency = (value: number) => `฿${value.toLocaleString()}`;
+  const getTrendIcon = (change: number) =>
+    change >= 0 ? TrendingUp : TrendingDown;
+  const getTrendColor = (change: number) =>
+    change >= 0 ? 'text-chart-2' : 'text-destructive';
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -54,14 +107,16 @@ export default function OverviewPage() {
                   Total Revenue
                 </p>
                 <h3 className="text-2xl font-bold text-foreground mt-2">
-                  ฿68,000
+                  {formatCurrency(kpis.totalRevenue.current)}
                 </h3>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-chart-2" />
-                  <span className="text-sm font-medium text-chart-2">
-                    +12.5%
+                  {React.createElement(getTrendIcon(kpis.totalRevenue.change), {
+                    className: `h-4 w-4 ${getTrendColor(kpis.totalRevenue.change)}`
+                  })}
+                  <span className={`text-sm font-medium ${getTrendColor(kpis.totalRevenue.change)}`}>
+                    {kpis.totalRevenue.change >= 0 ? '+' : ''}{kpis.totalRevenue.change}%
                   </span>
-                  <span className="text-xs text-muted-foreground">from last month</span>
+                  <span className="text-xs text-muted-foreground">from last {kpis.totalRevenue.period}</span>
                 </div>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-2/10">
@@ -78,11 +133,15 @@ export default function OverviewPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Occupancy Rate
                 </p>
-                <h3 className="text-2xl font-bold text-foreground mt-2">95%</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-2">{kpis.occupancyRate.current}%</h3>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-chart-1" />
-                  <span className="text-sm font-medium text-chart-1">+5.2%</span>
-                  <span className="text-xs text-muted-foreground">from last month</span>
+                  {React.createElement(getTrendIcon(kpis.occupancyRate.change), {
+                    className: `h-4 w-4 ${getTrendColor(kpis.occupancyRate.change)}`
+                  })}
+                  <span className={`text-sm font-medium ${getTrendColor(kpis.occupancyRate.change)}`}>
+                    {kpis.occupancyRate.change >= 0 ? '+' : ''}{kpis.occupancyRate.change}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">from last {kpis.occupancyRate.period}</span>
                 </div>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-1/10">
@@ -99,11 +158,15 @@ export default function OverviewPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Bookings
                 </p>
-                <h3 className="text-2xl font-bold text-foreground mt-2">190</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-2">{kpis.totalBookings.current}</h3>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-chart-3" />
-                  <span className="text-sm font-medium text-chart-3">+8.1%</span>
-                  <span className="text-xs text-muted-foreground">from last month</span>
+                  {React.createElement(getTrendIcon(kpis.totalBookings.change), {
+                    className: `h-4 w-4 ${getTrendColor(kpis.totalBookings.change)}`
+                  })}
+                  <span className={`text-sm font-medium ${getTrendColor(kpis.totalBookings.change)}`}>
+                    {kpis.totalBookings.change >= 0 ? '+' : ''}{kpis.totalBookings.change}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">from last {kpis.totalBookings.period}</span>
                 </div>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-3/10">
@@ -120,11 +183,15 @@ export default function OverviewPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Average Rating
                 </p>
-                <h3 className="text-2xl font-bold text-foreground mt-2">4.8</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-2">{kpis.averageRating.current}</h3>
                 <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="h-4 w-4 text-chart-4" />
-                  <span className="text-sm font-medium text-chart-4">+0.3</span>
-                  <span className="text-xs text-muted-foreground">from last month</span>
+                  {React.createElement(getTrendIcon(kpis.averageRating.change), {
+                    className: `h-4 w-4 ${getTrendColor(kpis.averageRating.change)}`
+                  })}
+                  <span className={`text-sm font-medium ${getTrendColor(kpis.averageRating.change)}`}>
+                    {kpis.averageRating.change >= 0 ? '+' : ''}{kpis.averageRating.change}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">from last {kpis.averageRating.period}</span>
                 </div>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-4/10">
@@ -146,7 +213,7 @@ export default function OverviewPage() {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
+                <AreaChart data={revenueTrend}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop
@@ -170,7 +237,7 @@ export default function OverviewPage() {
                   <YAxis
                     tick={{ fill: 'oklch(0.554 0.046 257.417)' }}
                     tickLine={false}
-                    tickFormatter={(value) => `$${value / 1000}k`}
+                    tickFormatter={(value) => `฿${value / 1000}k`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -178,7 +245,7 @@ export default function OverviewPage() {
                       border: '1px solid oklch(0.929 0.013 255.508)',
                       borderRadius: '8px',
                     }}
-                    formatter={(value) => [`$${value}`, 'Revenue']}
+                    formatter={(value) => [`฿${value}`, 'Revenue']}
                   />
                   <Area
                     type="monotone"
@@ -193,19 +260,19 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        {/* Weekly Bookings */}
+        {/* Yearly Bookings */}
         <Card>
           <CardHeader>
-            <CardTitle>Weekly Bookings</CardTitle>
-            <CardDescription>Bookings for the current week</CardDescription>
+            <CardTitle>Yearly Bookings</CardTitle>
+            <CardDescription>Monthly bookings for current year</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={bookingStats}>
+                <BarChart data={bookingTrend}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                   <XAxis
-                    dataKey="name"
+                    dataKey="month"
                     tick={{ fill: 'oklch(0.554 0.046 257.417)' }}
                     tickLine={false}
                   />
@@ -246,7 +313,7 @@ export default function OverviewPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={occupancyData}
+                    data={roomOccupancy}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -254,7 +321,7 @@ export default function OverviewPage() {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {occupancyData.map((entry, index) => (
+                    {roomOccupancy.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -270,7 +337,7 @@ export default function OverviewPage() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-2 mt-4">
-              {occupancyData.map((item, index) => (
+              {roomOccupancy.map((item: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div
@@ -296,46 +363,52 @@ export default function OverviewPage() {
                 <CardTitle>Recent Bookings</CardTitle>
                 <CardDescription>Latest booking activities</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/my-dorm')}>
                 View All
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentBookings.slice(0, 5).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <User className="h-5 w-5" />
+            {recentBookings.length > 0 ? (
+              <div className="space-y-4">
+                {recentBookings.map((booking: any) => (
+                  <div
+                    key={booking.id}
+                    className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {booking.guest}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{booking.room}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {booking.guest}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-foreground">
+                        {formatCurrency(booking.amount)}
                       </p>
-                      <p className="text-xs text-muted-foreground">{booking.room}</p>
+                      <Badge
+                        variant={
+                          booking.status === 'Confirmed' ? 'default' : 'secondary'
+                        }
+                        className="mt-1"
+                      >
+                        {booking.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">
-                      ฿{booking.amount}
-                    </p>
-                    <Badge
-                      variant={
-                        booking.status === 'Confirmed' ? 'default' : 'secondary'
-                      }
-                      className="mt-1"
-                    >
-                      {booking.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No recent bookings
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

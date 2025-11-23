@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Star, MapPin, Wifi, Coffee, Dumbbell, Home, Bed, Zap } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -80,7 +89,74 @@ interface Rating {
   dormId: number;
   createdAt: string;
   updatedAt: string;
+  comment?: string;
 }
+
+const ReviewForm = ({ dormId, userId }: { dormId: string; userId: string | number }) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (rating === 0) {
+      alert("Please select a rating");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await api.post(`/dorms/${dormId}/rate`, {
+        rating,
+        userId,
+        comment,
+      });
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to submit rating");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="py-4 space-y-6">
+      <div className="space-y-2">
+        <Label>Rating</Label>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`w-8 h-8 cursor-pointer transition-colors ${star <= (hoveredStar || rating)
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-gray-300"
+                }`}
+              onMouseEnter={() => setHoveredStar(star)}
+              onMouseLeave={() => setHoveredStar(0)}
+              onClick={() => setRating(star)}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="comment">Review</Label>
+        <Textarea
+          id="comment"
+          placeholder="Share your experience..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={4}
+        />
+      </div>
+      <Button
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="w-full rounded-full bg-gradient text-white"
+      >
+        {submitting ? "Submitting..." : "Submit Review"}
+      </Button>
+    </div>
+  );
+};
 
 export default function DormDetail() {
   const { id } = useParams();
@@ -189,6 +265,12 @@ export default function DormDetail() {
       }
       acc[key].statusCount[room.status] = (acc[key].statusCount[room.status] || 0) + 1;
 
+      // Store all rooms for this type to list them later
+      if (!acc[key].rooms) {
+        acc[key].rooms = [];
+      }
+      acc[key].rooms.push(room);
+
       return acc;
     }, {})
   );
@@ -228,12 +310,41 @@ export default function DormDetail() {
                   Price Range: ฿{dorm.price.toLocaleString()} / month
                 </span>
                 {user?.role !== 'dorm_admin' && (
-                  <Button
-                    onClick={() => navigate(`/dorms/${id}/book`)}
-                    className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                  >
-                    Book / Apply Now
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
+                      >
+                        Book / Apply Now
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Select a Room to Book</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+                        {rooms.filter((r) => r.status === 'Available').length > 0 ? (
+                          rooms
+                            .filter((r) => r.status === 'Available')
+                            .sort((a, b) => parseInt(a.room_number) - parseInt(b.room_number))
+                            .map((r) => (
+                              <Link
+                                key={r._id}
+                                to={`/dorms/${id}/rooms/${r._id}`}
+                                className="flex flex-col items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium gap-1"
+                              >
+                                <span className="text-lg">{r.room_number}</span>
+                                <span className="text-xs text-muted-foreground">{r.room_type}</span>
+                              </Link>
+                            ))
+                        ) : (
+                          <div className="col-span-full text-center text-muted-foreground py-8">
+                            No available rooms found at the moment.
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
             </div>
@@ -276,8 +387,8 @@ export default function DormDetail() {
                     <th className="pb-3 font-semibold">Size</th>
                     <th className="pb-3 font-semibold">Price</th>
                     <th className="pb-3 font-semibold">Availability</th>
-                    <th className="pb-3 font-semibold">Total</th>
-                    <th className="pb-3 font-semibold">Actions</th>
+                    <th className="pb-3 font-semibold">Total Available</th>
+                    <th className="pb-3 font-semibold">View Available room</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -303,11 +414,38 @@ export default function DormDetail() {
                             {availability === "Available" ? "Available" : availability === "Limited" ? "Limited" : "Full"}
                           </Badge>
                         </td>
-                        <td className="py-4 text-foreground font-medium">{grp.count}</td>
+                        <td className="py-4 text-foreground font-medium">{grp.statusCount.Available}</td>
                         <td className="py-4">
-                          <Link to={`/dorms/${id}/rooms/${grp.sampleRoomId ?? 'single'}`}>
-                            <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">View Rooms</Button>
-                          </Link>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">
+                                View Available room
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Available Rooms - {grp.room_type}</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid grid-cols-3 gap-4 py-4">
+                                {grp.rooms
+                                  .filter((r: Room) => r.status === 'Available')
+                                  .map((r: Room) => (
+                                    <Link
+                                      key={r._id}
+                                      to={`/dorms/${id}/rooms/${r._id}`}
+                                      className="flex items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium"
+                                    >
+                                      {r.room_number}
+                                    </Link>
+                                  ))}
+                                {grp.rooms.filter((r: Room) => r.status === 'Available').length === 0 && (
+                                  <div className="col-span-3 text-center text-muted-foreground">
+                                    No available rooms found.
+                                  </div>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </td>
                       </tr>
                     )
@@ -325,9 +463,26 @@ export default function DormDetail() {
                       </td>
                       <td className="py-4 text-foreground font-medium">1</td>
                       <td className="py-4">
-                        <Link to={`/dorms/${id}/rooms/single`}>
-                          <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">View Rooms</Button>
-                        </Link>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">
+                              View Available room
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Available Rooms - Single Room</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-3 gap-4 py-4">
+                              <Link
+                                to={`/dorms/${id}/rooms/single`}
+                                className="flex items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium"
+                              >
+                                101
+                              </Link>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </td>
                     </tr>
                   )}
@@ -346,17 +501,44 @@ export default function DormDetail() {
               <div className="text-muted-foreground text-lg">Based on {totalRatings} reviews</div>
             </div>
 
+            {/* Write a Review Button - Only for residents */}
+            {user && String(user.dormId) === String(dorm._id) && (
+              <div className="mb-6">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer">
+                      Write a Review
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rate {dorm.name}</DialogTitle>
+                    </DialogHeader>
+                    <ReviewForm dormId={id!} userId={user.id} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+
             {/* Reviews */}
             <div className="space-y-4">
-              {ratings.length > 0 ? ratings.slice(0, 2).map((rating) => (
+              {ratings.length > 0 ? ratings.map((rating) => (
                 <Card key={rating._id} className="bg-muted/50 border-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-semibold text-foreground">{rating.userId.name}</p>
                       <span className="text-muted-foreground text-sm">{new Date(rating.createdAt).toISOString().split('T')[0]}</span>
                     </div>
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < rating.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                        />
+                      ))}
+                    </div>
                     <p className="text-muted-foreground">
-                      Rated {rating.rating} out of 5 stars
+                      {rating.comment || "No comment provided."}
                     </p>
                   </CardContent>
                 </Card>
@@ -597,15 +779,60 @@ export default function DormDetail() {
               <div className="flex flex-wrap gap-3">
                 {user?.role !== 'dorm_admin' && (
                   <>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
+                        >
+                          Book a Room
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                          <DialogTitle>Select a Room to Book</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+                          {rooms.filter((r) => r.status === 'Available').length > 0 ? (
+                            rooms
+                              .filter((r) => r.status === 'Available')
+                              .sort((a, b) => parseInt(a.room_number) - parseInt(b.room_number))
+                              .map((r) => (
+                                <Link
+                                  key={r._id}
+                                  to={`/dorms/${id}/rooms/${r._id}`}
+                                  className="flex flex-col items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium gap-1"
+                                >
+                                  <span className="text-lg">{r.room_number}</span>
+                                  <span className="text-xs text-muted-foreground">{r.room_type}</span>
+                                </Link>
+                              ))
+                          ) : (
+                            <div className="col-span-full text-center text-muted-foreground py-8">
+                              No available rooms found at the moment.
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button
-                      onClick={() => navigate(`/dorms/${id}/book`)}
                       variant="outline"
-                      className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                    >
-                      Book a Room
-                    </Button>
-                    <Button
-                      variant="outline"
+                      onClick={async () => {
+                        if (!user) {
+                          alert('Please login to save to wishlist');
+                          navigate('/auth/sign-in');
+                          return;
+                        }
+
+                        try {
+                          await api.post('/wishlist', { dormId: dorm._id });
+                          // Navigate to wishlist page after successful save
+                          navigate('/wishlist');
+                        } catch (err: any) {
+                          console.error('Error adding to wishlist:', err);
+                          alert(err.response?.data?.error || 'Failed to add to wishlist');
+                        }
+                      }}
                       className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
                     >
                       Save to Wishlist

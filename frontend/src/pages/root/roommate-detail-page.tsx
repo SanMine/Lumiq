@@ -1,13 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle2, Info, Mail } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, AlertTriangle, Sparkles, BrainCircuit } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import api from "@/api";
 import { toast } from "sonner";
 import Spinner from "@/components/shared/spinner";
+import { Progress } from "@/components/ui/progress";
 
 interface UserProfile {
     _id: number;
@@ -40,24 +41,21 @@ interface Personality {
     temperature: string;
 }
 
-interface CompatibilityDetails {
-    candidateId: number;
-    candidateName: string;
-    matchPercentage: number;
-    compatibility: {
-        personalityMatch: string;
-        lifestyleMatch: string;
-        preferenceMatch: string;
-        overallReason: string;
-    };
-    detailedScores?: {
-        yourPreferencesVsTheirPersonality: number;
-        yourPersonalityVsTheirPreferences: number;
-        breakdown: {
-            preferencesMatchDetails: string[];
-            personalityMatchDetails: string[];
-        };
-    };
+interface AiAnalysis {
+    compatibilityScore: number;
+    verdict: string;
+    spark: string;
+    friction: string;
+    strengths: Array<{
+        category: string;
+        explanation: string;
+    }>;
+    concerns: Array<{
+        category: string;
+        explanation: string;
+    }>;
+    summary: string;
+    cached?: boolean;
 }
 
 interface Knock {
@@ -75,8 +73,9 @@ export default function RoommateDetailPage() {
     const { user } = useAuth();
     const [roommate, setRoommate] = useState<UserProfile | null>(null);
     const [personality, setPersonality] = useState<Personality | null>(null);
-    const [compatibility, setCompatibility] = useState<CompatibilityDetails | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAiLoading, setIsAiLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // Knock-related state
@@ -104,19 +103,12 @@ export default function RoommateDetailPage() {
                 const personalityResponse = await api.get(`/personalities?userId=${id}`);
                 setPersonality(personalityResponse.data);
 
-                // Fetch compatibility details
-                const compatibilityResponse = await api.post(`/matching/compare/${user._id || user.id}/${id}`);
-                if (compatibilityResponse.data.success) {
-                    setCompatibility(compatibilityResponse.data.compatibility);
-                }
-
-                // Fetch knock status between current user and this roommate
+                // Fetch knock status
                 try {
                     const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
                     const knocks = knocksResponse.data;
                     setAllKnocks(knocks);
 
-                    // Find ANY knock between current user and viewed roommate
                     const existingKnock = knocks.find((k: Knock) =>
                         (k.senderId === Number(user._id || user.id) && k.recipientId === Number(id)) ||
                         (k.recipientId === Number(user._id || user.id) && k.senderId === Number(id))
@@ -140,6 +132,38 @@ export default function RoommateDetailPage() {
 
         fetchRoommateDetails();
     }, [user, id, navigate]);
+
+    // Separate effect for AI analysis to allow independent loading
+    useEffect(() => {
+        const fetchAiAnalysis = async () => {
+            if (!user || !id) return;
+
+            try {
+                setIsAiLoading(true);
+                const response = await api.get(`/matching/ai-analysis/${user._id || user.id}/${id}`);
+                if (response.data.success) {
+                    setAiAnalysis({
+                        compatibilityScore: response.data.compatibilityScore,
+                        verdict: response.data.verdict,
+                        spark: response.data.spark,
+                        friction: response.data.friction,
+                        strengths: response.data.strengths,
+                        concerns: response.data.concerns,
+                        summary: response.data.summary,
+                        cached: response.data.cached
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching AI analysis:", error);
+                // Don't show error toast here to avoid disrupting the main UI
+                // Just let the AI section show a fallback or empty state if needed
+            } finally {
+                setIsAiLoading(false);
+            }
+        };
+
+        fetchAiAnalysis();
+    }, [user, id]);
 
     if (isLoading) {
         return (
@@ -184,7 +208,6 @@ export default function RoommateDetailPage() {
 
             setKnock(response.data);
 
-            // Refresh all knocks to ensure state consistency
             const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
             setAllKnocks(knocksResponse.data);
 
@@ -208,7 +231,6 @@ export default function RoommateDetailPage() {
 
             toast.success("Knock sent! You're now connected!");
 
-            // Refresh knock data to get updated state
             const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
             const knocks = knocksResponse.data;
             setAllKnocks(knocks);
@@ -232,7 +254,6 @@ export default function RoommateDetailPage() {
         const currentUserId = Number(user._id || user.id);
         const roommateId = Number(id);
 
-        // Check for mutual knocks using allKnocks state
         const sentKnock = allKnocks.find((k: Knock) =>
             k.senderId === currentUserId && k.recipientId === roommateId
         );
@@ -243,7 +264,6 @@ export default function RoommateDetailPage() {
 
         const hasMutualKnock = !!(sentKnock && receivedKnock);
 
-        // Mutual knock exists (Connection established)
         if (hasMutualKnock) {
             return (
                 <Button
@@ -255,7 +275,6 @@ export default function RoommateDetailPage() {
             );
         }
 
-        // I sent knock to them - show "Knock Sent"
         if (sentKnock) {
             return (
                 <Button
@@ -268,7 +287,6 @@ export default function RoommateDetailPage() {
             );
         }
 
-        // They sent knock to me - show "Knock Back" button
         if (receivedKnock) {
             return (
                 <Button
@@ -281,7 +299,6 @@ export default function RoommateDetailPage() {
             );
         }
 
-        // No knock exists - show "Knock Knock" button
         return (
             <Button
                 className="w-full mt-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
@@ -293,7 +310,6 @@ export default function RoommateDetailPage() {
         );
     };
 
-    // Helper functions to format data
     const getYear = () => {
         if (!roommate.dateOfBirth) return "Student";
         const birthYear = new Date(roommate.dateOfBirth).getFullYear();
@@ -341,10 +357,21 @@ export default function RoommateDetailPage() {
         return lifestyle || "Various interests";
     };
 
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return "text-green-600 dark:text-green-400";
+        if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
+        return "text-red-600 dark:text-red-400";
+    };
+
+    const getScoreBg = (score: number) => {
+        if (score >= 80) return "bg-green-600 dark:bg-green-500";
+        if (score >= 60) return "bg-yellow-500 dark:bg-yellow-500";
+        return "bg-red-500 dark:bg-red-500";
+    };
+
     return (
         <section className="min-h-screen bg-background py-6 px-4 sm:px-6">
             <div className="max-w-7xl mx-auto">
-                {/* Back Button - Fixed width */}
                 <Button
                     variant="ghost"
                     onClick={() => navigate("/roommates")}
@@ -360,7 +387,6 @@ export default function RoommateDetailPage() {
                         <Card className="border-2 border-border bg-card shadow-lg">
                             <CardContent className="p-6">
                                 <div className="flex flex-col items-center">
-                                    {/* Profile Image */}
                                     <div className="relative mb-6">
                                         <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-1 shadow-xl">
                                             <img
@@ -374,7 +400,6 @@ export default function RoommateDetailPage() {
                                         </div>
                                     </div>
 
-                                    {/* Profile Info */}
                                     <h2 className="text-2xl font-bold mb-2 text-foreground text-center">
                                         {roommate.name}
                                     </h2>
@@ -385,15 +410,135 @@ export default function RoommateDetailPage() {
                                         {getYear()}
                                     </Badge>
 
-                                    {/* Knock Knock Button */}
                                     {renderKnockButton()}
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Right Column - Preferences */}
+                    {/* Right Column - AI Analysis & Preferences */}
                     <div className="lg:col-span-2 space-y-6">
+
+                        {/* AI Compatibility Analysis */}
+                        <Card className="border-2 border-border bg-card shadow-lg overflow-hidden">
+                            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-6 border-b border-border">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <BrainCircuit className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                            AI Risk Analysis
+                                            {aiAnalysis?.cached && (
+                                                <Badge variant="outline" className="text-[10px] h-5">Cached</Badge>
+                                            )}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">Honest. Blunt. Actionable.</p>
+                                    </div>
+                                </div>
+
+                                {isAiLoading ? (
+                                    <div className="space-y-4 animate-pulse">
+                                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                                        <div className="h-20 bg-muted rounded"></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="h-32 bg-muted rounded"></div>
+                                            <div className="h-32 bg-muted rounded"></div>
+                                        </div>
+                                    </div>
+                                ) : aiAnalysis ? (
+                                    <div className="space-y-6">
+                                        {/* Score Section */}
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex justify-between mb-2">
+                                                    <span className="font-semibold text-sm">Overall Match Score</span>
+                                                    <span className={`font-bold ${getScoreColor(aiAnalysis.compatibilityScore)}`}>
+                                                        {aiAnalysis.compatibilityScore}%
+                                                    </span>
+                                                </div>
+                                                <Progress value={aiAnalysis.compatibilityScore} className="h-3" indicatorClassName={getScoreBg(aiAnalysis.compatibilityScore)} />
+                                            </div>
+                                        </div>
+
+                                        {/* Verdict */}
+                                        <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-border">
+                                            <h4 className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">The Verdict</h4>
+                                            <p className="text-lg font-medium leading-relaxed italic">
+                                                "{aiAnalysis.verdict}"
+                                            </p>
+                                        </div>
+
+                                        {/* Spark & Friction */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                                                <h4 className="text-green-600 dark:text-green-400 font-bold flex items-center gap-2 mb-2">
+                                                    <Sparkles className="w-4 h-4" />
+                                                    The Spark
+                                                </h4>
+                                                <p className="text-sm text-foreground/90">{aiAnalysis.spark}</p>
+                                            </div>
+                                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                                                <h4 className="text-red-600 dark:text-red-400 font-bold flex items-center gap-2 mb-2">
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                    The Friction
+                                                </h4>
+                                                <p className="text-sm text-foreground/90">{aiAnalysis.friction}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Strengths */}
+                                            <div className="space-y-3">
+                                                <h4 className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-2">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    Key Strengths
+                                                </h4>
+                                                {aiAnalysis.strengths.map((strength, idx) => (
+                                                    <div key={idx} className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg p-3">
+                                                        <p className="font-medium text-xs text-green-800 dark:text-green-300 mb-1">
+                                                            {strength.category}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {strength.explanation}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Concerns */}
+                                            <div className="space-y-3">
+                                                <h4 className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                    Potential Concerns
+                                                </h4>
+                                                {aiAnalysis.concerns.length > 0 ? (
+                                                    aiAnalysis.concerns.map((concern, idx) => (
+                                                        <div key={idx} className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg p-3">
+                                                            <p className="font-medium text-xs text-amber-800 dark:text-amber-300 mb-1">
+                                                                {concern.category}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {concern.explanation}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="bg-muted/30 rounded-lg p-4 text-center">
+                                                        <p className="text-xs text-muted-foreground">No major concerns identified!</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 text-muted-foreground">
+                                        Unable to load AI analysis at this time.
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+
                         {/* Matched Preferences */}
                         <Card className="border-2 border-border bg-card shadow-lg">
                             <CardContent className="p-6">
@@ -407,7 +552,6 @@ export default function RoommateDetailPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Nationality */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Nationality
@@ -417,7 +561,6 @@ export default function RoommateDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Study Habits */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Study Habits
@@ -427,7 +570,6 @@ export default function RoommateDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Cleanliness */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Cleanliness
@@ -453,7 +595,6 @@ export default function RoommateDetailPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Sleep Schedule */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Sleep Schedule
@@ -463,7 +604,6 @@ export default function RoommateDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Social Habits */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Social Habits
@@ -473,7 +613,6 @@ export default function RoommateDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Hobbies */}
                                     <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
                                         <p className="text-muted-foreground text-sm mb-2 font-medium">
                                             Hobbies & Interests
@@ -485,129 +624,6 @@ export default function RoommateDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Compatibility Analysis */}
-                        {compatibility && compatibility.detailedScores && (
-                            <Card className="border-2 border-border bg-card shadow-lg">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center gap-2 mb-6">
-                                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                                            <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-foreground">
-                                            Compatibility Analysis
-                                        </h3>
-                                        <Badge variant="secondary" className="ml-auto">
-                                            {compatibility.matchPercentage}% Match
-                                        </Badge>
-                                    </div>
-
-                                    {/* Overall Summary */}
-                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                                        <p className="text-sm text-foreground font-medium">
-                                            {compatibility.compatibility.overallReason}
-                                        </p>
-                                    </div>
-
-                                    {/* Detailed Scores */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                        <div className="bg-muted/50 border border-border rounded-lg p-4">
-                                            <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                                Your Preferences vs Their Personality
-                                            </p>
-                                            <p className="font-semibold text-foreground text-lg">
-                                                {compatibility.detailedScores.yourPreferencesVsTheirPersonality}%
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                How well their traits match what you want
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-muted/50 border border-border rounded-lg p-4">
-                                            <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                                Your Personality vs Their Preferences
-                                            </p>
-                                            <p className="font-semibold text-foreground text-lg">
-                                                {compatibility.detailedScores.yourPersonalityVsTheirPreferences}%
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                How well your traits match what they want
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Stage 1: Your Preferences → Their Personality */}
-                                    <div className="mb-6">
-                                        <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                                            <div className="w-6 h-6 bg-green-500/10 rounded flex items-center justify-center">
-                                                <span className="text-green-600 dark:text-green-400 text-sm font-bold">1</span>
-                                            </div>
-                                            Your Preferences → Their Personality
-                                            <Badge variant="outline" className="text-xs">
-                                                {compatibility.detailedScores.yourPreferencesVsTheirPersonality}%
-                                            </Badge>
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {compatibility.detailedScores.breakdown.preferencesMatchDetails.map((reason, index) => (
-                                                <div key={index} className="bg-muted/30 border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                                                    <p className="text-sm text-foreground">{reason}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Stage 2: Your Personality → Their Preferences */}
-                                    <div className="mb-6">
-                                        <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                                            <div className="w-6 h-6 bg-purple-500/10 rounded flex items-center justify-center">
-                                                <span className="text-purple-600 dark:text-purple-400 text-sm font-bold">2</span>
-                                            </div>
-                                            Your Personality → Their Preferences
-                                            <Badge variant="outline" className="text-xs">
-                                                {compatibility.detailedScores.yourPersonalityVsTheirPreferences}%
-                                            </Badge>
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {compatibility.detailedScores.breakdown.personalityMatchDetails.map((reason, index) => (
-                                                <div key={index} className="bg-muted/30 border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                                                    <p className="text-sm text-foreground">{reason}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Summary Cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
-                                            <p className="text-green-700 dark:text-green-300 text-sm font-medium mb-1">
-                                                Personality Match
-                                            </p>
-                                            <p className="text-green-800 dark:text-green-200 text-xs">
-                                                {compatibility.compatibility.personalityMatch}
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
-                                            <p className="text-blue-700 dark:text-blue-300 text-sm font-medium mb-1">
-                                                Lifestyle Match
-                                            </p>
-                                            <p className="text-blue-800 dark:text-blue-200 text-xs">
-                                                {compatibility.compatibility.lifestyleMatch}
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
-                                            <p className="text-purple-700 dark:text-purple-300 text-sm font-medium mb-1">
-                                                Preference Match
-                                            </p>
-                                            <p className="text-purple-800 dark:text-purple-200 text-xs">
-                                                {compatibility.compatibility.preferenceMatch}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
                     </div>
                 </div>
             </div>

@@ -97,6 +97,10 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
       await RoomService.reserveRoom(roomId, req.user.id, createPayload.moveInDate);
       newBooking.status = "Confirmed";
       await newBooking.save();
+
+      // Update user's dormId
+      const { User } = await import("../models/User.js");
+      await User.findByIdAndUpdate(req.user.id, { dormId: dormId });
     } catch (reserveErr) {
       // If reservation fails, keep booking as Pending. Do not block booking creation.
       console.warn("Room reservation after booking creation failed:", reserveErr?.message || reserveErr);

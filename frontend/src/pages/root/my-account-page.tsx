@@ -329,7 +329,7 @@ export default function MyAccountPage() {
                                         onClick={() => navigate('/knockknock')}
                                     >
                                         <Users className="w-4 h-4 mr-2" />
-                                        Knock Knock
+                                        My Roommates
                                     </Button>
 
                                     <Button

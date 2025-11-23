@@ -129,6 +129,13 @@ export default function Router() {
           }
         },
         {
+          path: "/wishlist",
+          lazy: async () => {
+            const { default: WishlistPage } = await import('@/pages/root/wishlist-page')
+            return { Component: WishlistPage }
+          }
+        },
+        {
           path: "/admin-dashboard",
           lazy: async () => {
             const { default: AdminDashboard } = await import('@/pages/root/admin-dashboard')

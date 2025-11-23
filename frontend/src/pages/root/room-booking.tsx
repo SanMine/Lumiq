@@ -121,6 +121,12 @@ export default function RoomBooking() {
     }
   };
 
+  const handleNext = () => {
+    if (currentStep < 5) {
+      setCurrentStep((prev) => (prev + 1) as BookingStep);
+    }
+  };
+
   const handleConfirm = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -145,13 +151,30 @@ export default function RoomBooking() {
         prices.waterFees +
         prices.electricityFees;
 
+      // Map semester to date
+      let moveInDate = new Date();
+      if (formData.semester === "fall2024") moveInDate = new Date("2024-08-01");
+      else if (formData.semester === "spring2025") moveInDate = new Date("2025-01-01");
+      else if (formData.semester === "summer2025") moveInDate = new Date("2025-06-01");
+      else moveInDate.setDate(moveInDate.getDate() + 1); // Default to tomorrow
+
+      // Map duration to string (direct from formData)
+      const stayDuration = formData.duration;
+
+      // Map payment method to enum
+      let paymentMethod = "qr";
+      if (formData.paymentMethod === "Card") paymentMethod = "card";
+      else if (formData.paymentMethod === "Pay at Dorm Office") paymentMethod = "slip";
+
       const payloadBase: any = {
         dormId: dorm?._id || dorm?.id || id,
         roomId: room?._id || room?.id,
-        moveInDate: formData.semester || null,
-        stayDuration: formData.duration || 0,
+        moveInDate: moveInDate.toISOString(),
+        stayDuration: stayDuration,
+        term_stay: formData.semester,
+        dormType: formData.dormType,
         durationType: "months",
-        paymentMethod: formData.paymentMethod || "QR PromptPay",
+        paymentMethod: paymentMethod,
         bookingFeePaid: prices.bookingFee || 0,
         totalAmount: Math.max(0, firstMonthTotal) || 0,
       };
@@ -162,10 +185,10 @@ export default function RoomBooking() {
       payloadBase.booking_fees = prices.bookingFee || 0;
       payloadBase.booked_date = booked_date;
       payloadBase.booked_time = booked_time;
-      payloadBase.expected_move_in_date = formData.semester || null;
+      payloadBase.expected_move_in_date = moveInDate.toISOString();
 
       let resp;
-      if (formData.paymentMethod === "slip" && formData.paymentSlip) {
+      if (paymentMethod === "slip" && formData.paymentSlip) {
         const fd = new FormData();
         Object.keys(payloadBase).forEach((k) => fd.append(k, payloadBase[k] as any));
         fd.append("paymentSlip", formData.paymentSlip as File);
@@ -229,15 +252,14 @@ export default function RoomBooking() {
               <Button
                 variant="outline"
                 className="rounded-full w-fit min-h-[40px] text-black cursor-pointer border-2 border-border hover:bg-muted px-8"
-                onClick={() => navigate("/account")}
+                onClick={() => navigate("/dorms")}
               >
                 Go to Dashboard
               </Button>
               <Button
                 className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                onClick={() => navigate(`/dorms/${id}`)}
               >
-                Back to Dorm
+                Share Confirmation
               </Button>
             </div>
           </CardContent>
@@ -291,7 +313,7 @@ export default function RoomBooking() {
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  placeholder="+66 XX XXX XXXX"
+                  placeholder="+1 (555) 123-4567"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="bg-muted border-border"
@@ -340,16 +362,6 @@ export default function RoomBooking() {
 
             <div className="space-y-6">
               <div>
-                <Label className="mb-3 block">Dorm Info</Label>
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <p className="text-foreground"><strong>Dorm:</strong> {dorm?.name || "N/A"}</p>
-                  <p className="text-foreground"><strong>Room Number:</strong> {room?.room_number || "N/A"}</p>
-                  <p className="text-foreground"><strong>Room Type:</strong> {room?.room_type || formData.roomType}</p>
-                  <p className="text-foreground"><strong>Price:</strong> ฿{room?.price_per_month?.toLocaleString() || dorm?.price?.toLocaleString() || "N/A"}/month</p>
-                </div>
-              </div>
-
-              <div>
                 <Label className="mb-3 block">Dorm Type</Label>
                 <div className="flex gap-3">
                   <Button
@@ -369,6 +381,33 @@ export default function RoomBooking() {
                 </div>
               </div>
 
+              <div>
+                <Label className="mb-3 block">Room Type</Label>
+                <div className="flex gap-3">
+                  <Button
+                    variant={formData.roomType === "Single" ? "default" : "outline"}
+                    className={formData.roomType === "Single" ? "bg-primary" : "border-2"}
+                    onClick={() => handleInputChange("roomType", "Single")}
+                  >
+                    Single
+                  </Button>
+                  <Button
+                    variant={formData.roomType === "Double" ? "default" : "outline"}
+                    className={formData.roomType === "Double" ? "bg-primary" : "border-2"}
+                    onClick={() => handleInputChange("roomType", "Double")}
+                  >
+                    Double
+                  </Button>
+                  <Button
+                    variant={formData.roomType === "Shared" ? "default" : "outline"}
+                    className={formData.roomType === "Shared" ? "bg-primary" : "border-2"}
+                    onClick={() => handleInputChange("roomType", "Shared")}
+                  >
+                    Shared
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="floor">Preferred Floor</Label>
                 <Select
@@ -376,7 +415,7 @@ export default function RoomBooking() {
                   onValueChange={(value) => handleInputChange("floor", value)}
                 >
                   <SelectTrigger className="bg-muted border-border">
-                    <SelectValue placeholder={room?.floor ? `Floor ${room.floor}` : "Any Floor"} />
+                    <SelectValue placeholder="Any Floor" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any Floor</SelectItem>
@@ -484,18 +523,17 @@ export default function RoomBooking() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="font-semibold text-muted-foreground">Basic Info</div>
                 <div className="md:col-span-2 text-foreground">
-                  Name: {formData.name || "N/A"}, Student ID: {formData.studentId || "N/A"},
-                  Email: {formData.email || "N/A"}, Phone: {formData.phone || "N/A"},
-                  Term: {formData.semester || "N/A"}, Duration: {formData.duration || "N/A"}
+                  Name: {formData.name || "Ethan Carter"}, Student ID: {formData.studentId || "20210001"},
+                  Email: {formData.email || "ethan.carter@lumiq.edu"}, Phone: {formData.phone || "+1 (555) 123-4567"},
+                  Term: {formData.semester || "Fall 2024"}, Duration: {formData.duration || "Full Semester"}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm border-t border-border pt-4">
                 <div className="font-semibold text-muted-foreground">Room Preferences</div>
                 <div className="md:col-span-2 text-foreground">
-                  Dorm: {dorm?.name || "N/A"}, Room: {room?.room_number || "N/A"},
-                  Room Type: {room?.room_type || formData.roomType},
-                  Preferred Floor: {formData.floor || room?.floor || "Any Floor"}
+                  Dorm Type: {formData.dormType}, Room Type: {formData.roomType},
+                  Preferred Floor: {room?.floor || formData.floor || "Any Floor"}
                 </div>
               </div>
 

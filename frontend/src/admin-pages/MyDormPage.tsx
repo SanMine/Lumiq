@@ -32,10 +32,6 @@ interface MyDormPageProps {
 }
 
 type FormFields = Partial<Dorm> & {
-  contact_gmail?: string;
-  contact_line?: string;
-  contact_facebook?: string;
-  contact_phone?: string;
   facilities?: string[];
 };
 
@@ -108,8 +104,8 @@ export default function MyDormPage({ token }: MyDormPageProps) {
       const facilitiesArray = Array.isArray(dorm.facilities)
         ? dorm.facilities
         : typeof dorm.facilities === 'string' && dorm.facilities
-        ? dorm.facilities.split(',').map(f => f.trim()).filter(Boolean)
-        : [];
+          ? dorm.facilities.split(',').map(f => f.trim()).filter(Boolean)
+          : [];
 
       setFormData({
         ...dorm,
@@ -181,7 +177,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
       ...prev,
       [name]: type === 'number' ? parseFloat(value) || 0 : value,
     }));
-    
+
     if (name === 'image_url' && value) {
       setImagePreview(value);
     } else if (name === 'image_url' && !value) {
@@ -199,10 +195,10 @@ export default function MyDormPage({ token }: MyDormPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.location) {
-      setPageAlert({ 
-        title: 'Validation Error', 
-        description: 'Name and location are required fields.', 
-        variant: 'destructive' 
+      setPageAlert({
+        title: 'Validation Error',
+        description: 'Name and location are required fields.',
+        variant: 'destructive'
       });
       window.setTimeout(() => setPageAlert(null), 4000);
       return;
@@ -210,16 +206,16 @@ export default function MyDormPage({ token }: MyDormPageProps) {
     try {
       setIsSubmitting(true);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const url = editingDorm 
+      const url = editingDorm
         ? `${apiUrl}/dorms/${editingDorm._id}`
         : `${apiUrl}/dorms`;
-      
+
       const submitData = {
         ...formData,
         // send facilities as an array (backend expects string[] now)
         facilities: facilitiesChips,
       };
-      
+
       if (editingDorm) {
         await axios.put(url, submitData, {
           headers: {
@@ -227,10 +223,10 @@ export default function MyDormPage({ token }: MyDormPageProps) {
             'Content-Type': 'application/json',
           },
         });
-        setPageAlert({ 
-          title: 'Completed.', 
-          description: 'The dorm was updated successfully.', 
-          variant: 'default' 
+        setPageAlert({
+          title: 'Completed.',
+          description: 'The dorm was updated successfully.',
+          variant: 'default'
         });
       } else {
         await axios.post(url, submitData, {
@@ -239,10 +235,10 @@ export default function MyDormPage({ token }: MyDormPageProps) {
             'Content-Type': 'application/json',
           },
         });
-        setPageAlert({ 
-          title: 'Completed.', 
-          description: 'The dorm was created successfully.', 
-          variant: 'default' 
+        setPageAlert({
+          title: 'Completed.',
+          description: 'The dorm was created successfully.',
+          variant: 'default'
         });
       }
       window.setTimeout(() => setPageAlert(null), 4000);
@@ -251,10 +247,10 @@ export default function MyDormPage({ token }: MyDormPageProps) {
     } catch (err: any) {
       console.error('Full error:', err);
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to save dorm';
-      setPageAlert({ 
-        title: 'Unable to save', 
-        description: errorMsg, 
-        variant: 'destructive' 
+      setPageAlert({
+        title: 'Unable to save',
+        description: errorMsg,
+        variant: 'destructive'
       });
       window.setTimeout(() => setPageAlert(null), 6000);
     } finally {
@@ -275,19 +271,19 @@ export default function MyDormPage({ token }: MyDormPageProps) {
           },
         }
       );
-      setPageAlert({ 
-        title: 'Completed.', 
-        description: 'The dorm was deleted successfully.', 
-        variant: 'default' 
+      setPageAlert({
+        title: 'Completed.',
+        description: 'The dorm was deleted successfully.',
+        variant: 'default'
       });
       window.setTimeout(() => setPageAlert(null), 4000);
       await fetchDorms();
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to delete dorm';
-      setPageAlert({ 
-        title: 'Unable to delete', 
-        description: errorMsg, 
-        variant: 'destructive' 
+      setPageAlert({
+        title: 'Unable to delete',
+        description: errorMsg,
+        variant: 'destructive'
       });
       window.setTimeout(() => setPageAlert(null), 6000);
       console.error('Error deleting dorm:', err);
@@ -348,7 +344,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
+            <Button
               onClick={() => handleOpenDialog()}
               disabled={dorms.length > 0 && !editingDorm}
               title={dorms.length > 0 ? "You can only create one dorm" : ""}
@@ -511,7 +507,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Water Fee</h3>
-                  <Tabs value={formData.waterBillingType || 'per-month'} onValueChange={(value) => setFormData({...formData, waterBillingType: value})} className="w-auto">
+                  <Tabs value={formData.waterBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, waterBillingType: value })} className="w-auto">
                     <TabsList className="grid w-auto grid-cols-2 gap-0">
                       <TabsTrigger value="per-month" className="text-xs px-3">Per Month</TabsTrigger>
                       <TabsTrigger value="per-unit" className="text-xs px-3">Per Unit</TabsTrigger>
@@ -543,7 +539,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Electricity Fee</h3>
-                  <Tabs value={formData.electricityBillingType || 'per-month'} onValueChange={(value) => setFormData({...formData, electricityBillingType: value})} className="w-auto">
+                  <Tabs value={formData.electricityBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, electricityBillingType: value })} className="w-auto">
                     <TabsList className="grid w-auto grid-cols-2 gap-0">
                       <TabsTrigger value="per-month" className="text-xs px-3">Per Month</TabsTrigger>
                       <TabsTrigger value="per-unit" className="text-xs px-3">Per Unit</TabsTrigger>
@@ -659,8 +655,8 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
                   className="sm:flex-1"
                 >
@@ -709,7 +705,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                     />
                   </div>
                 )}
-                
+
                 {/* Details Section */}
                 <div className={`p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex flex-col ${dorm.image_url ? 'lg:col-span-3' : 'lg:col-span-5'}`}>
                   <div className="space-y-1 sm:space-y-2">
@@ -738,7 +734,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                         <p className="text-xs sm:text-sm font-semibold text-foreground uppercase tracking-wide">
                           Facilities
                         </p>
-                        
+
                         {/* Contact Icons beside Facilities */}
                         {(dorm.contact_gmail || dorm.contact_phone || dorm.contact_line || dorm.contact_facebook) && (
                           <div className="flex items-center gap-2 ml-auto">
@@ -983,14 +979,14 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                         </AlertDialogHeader>
                         <div />
                         <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => { 
-                            setIsDeleteAlertOpen(false); 
-                            setDeleteTarget(null); 
+                          <AlertDialogCancel onClick={() => {
+                            setIsDeleteAlertOpen(false);
+                            setDeleteTarget(null);
                           }}>
                             Cancel
                           </AlertDialogCancel>
-                          <AlertDialogAction 
-                            className={buttonVariants({ variant: 'destructive' })} 
+                          <AlertDialogAction
+                            className={buttonVariants({ variant: 'destructive' })}
                             onClick={async () => {
                               await handleDelete(dorm._id);
                             }}

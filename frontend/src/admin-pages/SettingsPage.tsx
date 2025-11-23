@@ -1,14 +1,84 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut } from 'lucide-react';
+import { LogOut, Check, X } from 'lucide-react';
+import api from '@/api';
+import Loader from '@/components/shared/loader';
 
 interface SettingsPageProps {
   handleLogout: () => void;
 }
 
+interface NotificationPreferences {
+  newBookings: boolean;
+  paymentReceived: boolean;
+  reviewPosted: boolean;
+  roomMaintenance: boolean;
+}
+
 export default function SettingsPage({ handleLogout }: SettingsPageProps) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<NotificationPreferences>({
+    newBookings: true,
+    paymentReceived: true,
+    reviewPosted: true,
+    roomMaintenance: true,
+  });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/user-settings');
+      setPreferences(response.data.notificationPreferences);
+    } catch (err: any) {
+      console.error('Error fetching settings:', err);
+      setError(err.response?.data?.error || 'Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreference = async (key: keyof NotificationPreferences, value: boolean) => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      // Optimistic update
+      setPreferences(prev => ({ ...prev, [key]: value }));
+
+      const response = await api.put('/user-settings/notifications', {
+        ...preferences,
+        [key]: value,
+      });
+
+      setSuccess(response.data.message);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error updating preference:', err);
+      setError(err.response?.data?.error || 'Failed to update preference');
+
+      // Revert on error
+      setPreferences(prev => ({ ...prev, [key]: !value }));
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -19,10 +89,23 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
         </p>
       </div>
 
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="rounded-lg bg-chart-2/10 border border-chart-2 p-4 flex items-center gap-2">
+          <Check className="h-5 w-5 text-chart-2" />
+          <p className="text-sm text-chart-2 font-medium">{success}</p>
+        </div>
+      )}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive p-4 flex items-center gap-2">
+          <X className="h-5 w-5 text-destructive" />
+          <p className="text-sm text-destructive font-medium">{error}</p>
+        </div>
+      )}
+
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile">Dorm Profile</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
 
@@ -63,40 +146,6 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Amenities</CardTitle>
-              <CardDescription>Select available amenities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {[
-                  'Wi-Fi',
-                  'Parking',
-                  'Laundry',
-                  'Gym',
-                  'Study Room',
-                  'Kitchen',
-                  '24/7 Security',
-                  'Air Conditioning',
-                  'Bike Storage',
-                ].map((amenity) => (
-                  <label
-                    key={amenity}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      defaultChecked={true}
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-sm text-foreground">{amenity}</span>
-                  </label>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="border-destructive/50">
             <CardHeader>
               <CardTitle className="text-destructive">Account</CardTitle>
@@ -109,7 +158,7 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
                 <p className="text-sm text-foreground mb-3">
                   Log out from your account. You'll be redirected to the login page.
                 </p>
-                <Button 
+                <Button
                   variant="destructive"
                   onClick={handleLogout}
                   className="w-full"
@@ -122,86 +171,68 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pricing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Room Pricing</CardTitle>
-              <CardDescription>Set pricing for different room types</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <p className="font-medium text-foreground">Single Room</p>
-                  <p className="text-sm text-muted-foreground">Standard single occupancy</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    defaultValue="450"
-                    className="w-24 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <span className="text-sm text-muted-foreground">฿/month</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <p className="font-medium text-foreground">Double Room</p>
-                  <p className="text-sm text-muted-foreground">Shared room for two students</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    defaultValue="650"
-                    className="w-24 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <span className="text-sm text-muted-foreground">฿/month</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pb-4">
-                <div>
-                  <p className="font-medium text-foreground">Suite</p>
-                  <p className="text-sm text-muted-foreground">Premium suite with private bathroom</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    defaultValue="1200"
-                    className="w-24 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <span className="text-sm text-muted-foreground">฿/month</span>
-                </div>
-              </div>
-              <Button>Update Pricing</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
               <CardDescription>
-                Manage how you receive notifications
+                Manage how you receive notifications and control feature access
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { label: 'New Booking Requests', desc: 'Get notified when someone books a room' },
-                { label: 'Payment Received', desc: 'Notification when payment is completed' },
-                { label: 'Review Posted', desc: 'When a guest leaves a review' },
-                { label: 'Room Maintenance', desc: 'Updates on maintenance requests' },
+                {
+                  key: 'newBookings' as keyof NotificationPreferences,
+                  label: 'New Booking Requests',
+                  desc: 'Get notified when someone books a room'
+                },
+                {
+                  key: 'paymentReceived' as keyof NotificationPreferences,
+                  label: 'Payment Received',
+                  desc: 'Notification when payment is completed'
+                },
+                {
+                  key: 'reviewPosted' as keyof NotificationPreferences,
+                  label: 'Review Posted',
+                  desc: 'When a guest leaves a review (disabling this will disable review functionality)'
+                },
+                {
+                  key: 'roomMaintenance' as keyof NotificationPreferences,
+                  label: 'Room Maintenance',
+                  desc: 'Updates on maintenance requests'
+                },
               ].map((item) => (
                 <div
-                  key={item.label}
+                  key={item.key}
                   className="flex items-center justify-between border-b pb-4 last:border-0"
                 >
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-foreground">{item.label}</p>
                     <p className="text-sm text-muted-foreground">{item.desc}</p>
                   </div>
-                  <input type="checkbox" defaultChecked className="rounded" />
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences[item.key]}
+                      onChange={(e) => updatePreference(item.key, e.target.checked)}
+                      disabled={saving}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-chart-2"></div>
+                  </label>
                 </div>
               ))}
+
+              {!preferences.reviewPosted && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/50 p-4 mt-4">
+                  <p className="text-sm text-destructive font-medium mb-1">
+                    Review Functionality Disabled
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Review posting and viewing is currently disabled. Enable "Review Posted" to allow users to post and view reviews on your dorm.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

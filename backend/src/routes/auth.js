@@ -55,6 +55,7 @@ auth.post("/register", async (req, res, next) => {
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
+        dormId: newUser.dormId,
       },
       token: token,
     });
@@ -100,6 +101,7 @@ auth.post("/login", async (req, res, next) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        dormId: user.dormId,
       },
       token: token,
     });
@@ -126,6 +128,7 @@ auth.get("/me", requireAuth, async (req, res, next) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        dormId: user.dormId,
       },
     });
   } catch (error) {
@@ -137,7 +140,7 @@ auth.get("/me", requireAuth, async (req, res, next) => {
 // 🔐 UPDATE PROFILE: Allow logged-in users to update their profile
 auth.put("/update-profile", requireAuth, async (req, res, next) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, bio } = req.body;
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -165,6 +168,7 @@ auth.put("/update-profile", requireAuth, async (req, res, next) => {
 
     if (name) user.name = name.trim();
     if (email) user.email = email.toLowerCase().trim();
+    if (bio !== undefined) user.bio = bio.trim();
     await user.save();
 
     res.json({
@@ -175,6 +179,7 @@ auth.put("/update-profile", requireAuth, async (req, res, next) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        dormId: user.dormId,
       },
     });
   } catch (error) {

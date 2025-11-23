@@ -21,10 +21,13 @@ import { preferred_roommate } from "./routes/preferred_roommate.js";
 import matchingRoutes from "./routes/matching.js";
 import { bookings } from "./routes/bookings.js";
 import { knocks } from "./routes/knocks.js";
+import { wishlist } from "./routes/wishlist.js";
+import { analytics } from "./routes/analytics.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
 import "./models/Booking.js";
+import "./models/AiMatchResult.js";
 
 const app = express();
 
@@ -68,6 +71,8 @@ app.use("/api/preferred_roommate", preferred_roommate);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/bookings", bookings);
 app.use("/api/knocks", knocks);
+app.use("/api/wishlist", wishlist);
+app.use("/api/analytics", analytics);
 
 // Error handler (last)
 app.use(errorHandler);

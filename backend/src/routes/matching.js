@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { findRoommateMatches, getMatchingStats } from '../services/matchingService.js';
+import { AiMatchingService } from '../services/aiMatchingService.js';
 import { requireAuth, requireStudent } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -171,4 +172,44 @@ router.post('/compare/:userId/:candidateId', requireStudent, async (req, res) =>
   }
 });
 
+/**
+ * GET /api/matching/ai-analysis/:userId1/:userId2
+ * Get AI-powered compatibility analysis between two users
+ */
+router.get('/ai-analysis/:userId1/:userId2', requireAuth, async (req, res) => {
+  try {
+    const userId1 = parseInt(req.params.userId1);
+    const userId2 = parseInt(req.params.userId2);
+
+    // Validate IDs
+    if (isNaN(userId1) || isNaN(userId2)) {
+      return res.status(400).json({
+        error: 'Invalid user IDs',
+      });
+    }
+
+    if (userId1 === userId2) {
+      return res.status(400).json({
+        error: 'Cannot analyze compatibility with yourself',
+      });
+    }
+
+    // Get AI compatibility analysis
+    const analysis = await AiMatchingService.analyzeCompatibility(userId1, userId2);
+
+    return res.status(200).json({
+      success: true,
+      userId1,
+      userId2,
+      ...analysis,
+    });
+  } catch (error) {
+    console.error('Error in ai-analysis route:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to analyze compatibility',
+    });
+  }
+});
+
 export default router;
+

@@ -11,6 +11,7 @@ interface User {
     dateOfBirth?: string
     address?: string
     bio?: string
+    dormId?: number
 }
 
 interface AuthContextType {
@@ -43,21 +44,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('token')
-        const storedUser = localStorage.getItem('user')
-        
-        if (storedToken && storedUser) {
-            setToken(storedToken)
-            setUser(JSON.parse(storedUser))
+        const initAuth = async () => {
+            const storedToken = localStorage.getItem('token')
+            if (storedToken) {
+                try {
+                    setToken(storedToken)
+                    const response = await authService.getCurrentUser(storedToken)
+                    if (response.success && response.user) {
+                        setUser(response.user)
+                        localStorage.setItem('user', JSON.stringify(response.user))
+                    } else {
+                        throw new Error('Failed to verify token')
+                    }
+                } catch (error) {
+                    console.error('Auth initialization error:', error)
+                    logout()
+                }
+            }
+            setIsLoading(false)
         }
-        
-        setIsLoading(false)
+
+        initAuth()
     }, [])
 
     const login = async (email: string, password: string) => {
         try {
             const response = await authService.login(email, password)
-            
+
             if (response.success && response.token && response.user) {
                 setToken(response.token)
                 setUser(response.user)
@@ -75,7 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const register = async (name: string, email: string, password: string, role: string = 'student') => {
         try {
             const response = await authService.register(name, email, password, role)
-            
+
             if (response.success && response.token && response.user) {
                 setToken(response.token)
                 setUser(response.user)
