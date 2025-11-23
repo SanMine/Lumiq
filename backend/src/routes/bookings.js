@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { Booking } from "../models/Booking.js";
+import { RoomService } from "../services/roomService.js";
 import { requireAuth, requireStudent } from "../middlewares/auth.js";
 import multer from "multer";
 import { join, dirname } from "path";
@@ -31,6 +32,7 @@ const upload = multer({ storage });
 // Create a booking (students only) — accepts optional file upload (field: paymentSlip)
 bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res, next) => {
   try {
+    // Accept both canonical field names and a few alternate aliases from clients
     const {
       dormId,
       roomId,
@@ -40,6 +42,11 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
       paymentMethod,
       bookingFeePaid,
       totalAmount,
+      // alternate aliases
+      booking_fees,
+      expected_move_in_date,
+      booked_date,
+      booked_time,
     } = req.body;
 
     if (!dormId || !roomId) {
@@ -48,19 +55,52 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
 
     const paymentSlipUrl = req.file ? `/uploads/bookings/${req.file.filename}` : req.body.paymentSlipUrl || null;
 
-    const newBooking = await Booking.create({
+    // Map aliases to canonical values
+    const bookingFeeValue = (bookingFeePaid !== undefined ? bookingFeePaid : booking_fees) || 0;
+    const moveInValue = moveInDate || expected_move_in_date || null;
+
+    // If client provided booked_date and booked_time we can set createdAt accordingly
+    let createdAt = undefined;
+    if (booked_date) {
+      try {
+        // combine date and optional time into ISO string when possible
+        const timePart = booked_time || '00:00:00';
+        const iso = new Date(`${booked_date}T${timePart}`);
+        if (!isNaN(iso.getTime())) createdAt = iso;
+      } catch (e) {
+        // ignore parse errors and let mongoose set createdAt
+      }
+    }
+
+    const createPayload = {
       userId: req.user.id,
       dormId,
       roomId,
-      moveInDate: moveInDate ? new Date(moveInDate) : null,
+      moveInDate: moveInValue ? new Date(moveInValue) : null,
       stayDuration: stayDuration ? Number(stayDuration) : 0,
       durationType: durationType || "months",
       paymentMethod: paymentMethod || "card",
       paymentSlipUrl,
-      bookingFeePaid: bookingFeePaid ? Number(bookingFeePaid) : 0,
+      bookingFeePaid: bookingFeeValue ? Number(bookingFeeValue) : 0,
       totalAmount: totalAmount ? Number(totalAmount) : 0,
       status: "Pending",
-    });
+    };
+
+    if (createdAt) createPayload.createdAt = createdAt;
+
+    const newBooking = await Booking.create(createPayload);
+
+    // Try to reserve the room for this user immediately. This uses RoomService which
+    // performs necessary checks (room exists, available). If reservation succeeds,
+    // update booking status to Confirmed.
+    try {
+      await RoomService.reserveRoom(roomId, req.user.id, createPayload.moveInDate);
+      newBooking.status = "Confirmed";
+      await newBooking.save();
+    } catch (reserveErr) {
+      // If reservation fails, keep booking as Pending. Do not block booking creation.
+      console.warn("Room reservation after booking creation failed:", reserveErr?.message || reserveErr);
+    }
 
     res.status(201).json(newBooking);
   } catch (err) {
