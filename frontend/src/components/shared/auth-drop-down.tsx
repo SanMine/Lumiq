@@ -62,13 +62,24 @@ export default function AuthDropdown() {
                                 <DropdownMenuShortcut>⇧⌘H</DropdownMenuShortcut>
                             </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild className="cursor-pointer">
-                            <Link to='/roommate-match' className="whitespace-nowrap">
-                                <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
-                                Roommates Matching
-                                <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
-                            </Link>
-                        </DropdownMenuItem>
+                        {user?.role === 'dorm_admin' && (
+                            <DropdownMenuItem asChild className="cursor-pointer">
+                                <Link to='/admin-dashboard' className="whitespace-nowrap">
+                                    <FaRegBuilding className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                    Admin Dashboard
+                                    <DropdownMenuShortcut>⇧⌘A</DropdownMenuShortcut>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                        {user?.role !== 'dorm_admin' && (
+                            <DropdownMenuItem asChild className="cursor-pointer">
+                                <Link to='/roommate-match' className="whitespace-nowrap">
+                                    <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                    Roommates Matching
+                                    <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem asChild className="cursor-pointer">
                             <Link to='/dorms' className="whitespace-nowrap">
                                 <FaRegBuilding className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />

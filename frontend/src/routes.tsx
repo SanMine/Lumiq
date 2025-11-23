@@ -47,28 +47,52 @@ export default function Router() {
           path: '/dorms/:id/book',
           lazy: async () => {
             const { default: RoomBooking } = await import('@/pages/root/room-booking')
-            return { Component: RoomBooking }
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <RoomBooking />
+                </ProtectedRoute>
+              )
+            }
           }
         },
         {
           path: '/roommate-match',
           lazy: async () => {
             const { default: RoommateMatchingPage } = await import('@/pages/root/roommate-matching-page')
-            return { Component: RoommateMatchingPage }
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <RoommateMatchingPage />
+                </ProtectedRoute>
+              )
+            }
           }
         },
         {
           path: "/roommates",
           lazy: async () => {
             const { default: RoommatesPage } = await import('@/pages/root/roommates-page')
-            return { Component: RoommatesPage }
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <RoommatesPage />
+                </ProtectedRoute>
+              )
+            }
           }
         },
         {
           path: "/roommates/:id",
           lazy: async () => {
             const { default: RoommateDetailPage } = await import('@/pages/root/roommate-detail-page')
-            return { Component: RoommateDetailPage }
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <RoommateDetailPage />
+                </ProtectedRoute>
+              )
+            }
           }
         },
         {
@@ -82,7 +106,7 @@ export default function Router() {
           path: "/admin-dashboard",
           lazy: async () => {
             const { default: AdminDashboard } = await import('@/pages/root/admin-dashboard')
-            return { 
+            return {
               Component: () => (
                 <ProtectedRoute requiredRole="dorm_admin">
                   <AdminDashboard />

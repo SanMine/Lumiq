@@ -7,6 +7,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useRef } from "react"
 import api from "@/api"
 import Loader from "@/components/shared/loader"
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Room {
   _id: number | string
@@ -42,7 +43,8 @@ export default function SingleRoomDetail() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
-  
+  const { user } = useAuth()
+
 
   // helper: extract leading numeric part of room_number for numeric sorting
   const extractRoomNumber = (s?: string | number) => {
@@ -85,7 +87,7 @@ export default function SingleRoomDetail() {
     }
   }
 
-  
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -185,8 +187,8 @@ export default function SingleRoomDetail() {
   const amenities = Array.isArray(room.amenities)
     ? room.amenities.map(String)
     : typeof room.amenities === 'string'
-    ? room.amenities.split(',').map(s => s.trim()).filter(Boolean)
-    : []
+      ? room.amenities.split(',').map(s => s.trim()).filter(Boolean)
+      : []
 
   // Prepare images for gallery: show all saved images in the thumbnail grid
   const galleryImages = (room.images || []).filter(Boolean)
@@ -199,7 +201,16 @@ export default function SingleRoomDetail() {
         {/* Booking button navigates directly to the booking page */}
 
         {/* Back */}
-        <button onClick={() => navigate(id ? `/dorms/${id}` : -1)} className="flex items-center gap-2 text-sm text-muted-foreground mb-6 hover:text-foreground transition-colors">
+        <button
+          onClick={() => {
+            if (id) {
+              navigate(`/dorms/${id}`)
+            } else {
+              navigate(-1)
+            }
+          }}
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-6 hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to {dorm?.name || 'Dorm'}
         </button>
@@ -337,8 +348,8 @@ export default function SingleRoomDetail() {
                         min-w-[180px] shrink-0 p-4 border-2 cursor-pointer
                         transition-all duration-300 ease-out
                         hover:scale-[1.02] hover:-translate-y-0.5
-                        ${isSelected 
-                          ? 'ring-4 ring-primary/50 border-transparent bg-primary/5' 
+                        ${isSelected
+                          ? 'ring-4 ring-primary/50 border-transparent bg-primary/5'
                           : 'border-border hover:border-primary/50 hover:shadow-lg'
                         }
                         animate-in fade-in slide-in-from-bottom-4
@@ -351,8 +362,8 @@ export default function SingleRoomDetail() {
                       <div className="space-y-3">
                         {/* Room Number Badge */}
                         <div className="flex items-center justify-between">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`
                               font-bold text-sm px-3 py-1
                               ${isSelected ? 'bg-primary text-primary-foreground border-primary' : 'border-border'}
@@ -393,12 +404,12 @@ export default function SingleRoomDetail() {
                             (r.status === 'Available'
                               ? 'bg-green-600 hover:bg-green-700 text-white'
                               : r.status === 'Reserved'
-                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                              : r.status === 'Occupied'
-                              ? 'bg-red-600 hover:bg-red-700 text-white'
-                              : r.status === 'Maintenance'
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-gray-300 text-gray-800')
+                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                : r.status === 'Occupied'
+                                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                                  : r.status === 'Maintenance'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                    : 'bg-gray-300 text-gray-800')
                           }
                         >
                           {r.status || 'Unknown'}
@@ -518,12 +529,12 @@ export default function SingleRoomDetail() {
                     room.status === 'Available'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : room.status === 'Reserved'
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                      : room.status === 'Occupied'
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : room.status === 'Maintenance'
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-300 text-gray-800'
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                        : room.status === 'Occupied'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : room.status === 'Maintenance'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-gray-300 text-gray-800'
                   }>
                     {room.status || 'Unknown'}
                   </Badge>
@@ -544,19 +555,23 @@ export default function SingleRoomDetail() {
               <div className="border-t border-border" />
 
               {/* Booking Button */}
-              <Button 
-                onClick={() => navigate(id ? `/dorms/${id}/book?roomId=${room._id}` : '/')}
-                className="rounded-full bg-gradient w-full min-h-[48px] text-white cursor-pointer hover:scale-105 transition-all duration-200 font-semibold text-base shadow-lg hover:shadow-xl"
-                disabled={room.status !== 'Available'}
-              >
-                <Calendar className="w-5 h-5 mr-2" />
-                Book This Room
-              </Button>
+              {user?.role !== 'dorm_admin' && (
+                <>
+                  <Button
+                    onClick={() => navigate(id ? `/dorms/${id}/book?roomId=${room._id}` : '/')}
+                    className="rounded-full bg-gradient w-full min-h-[48px] text-white cursor-pointer hover:scale-105 transition-all duration-200 font-semibold text-base shadow-lg hover:shadow-xl"
+                    disabled={room.status !== 'Available'}
+                  >
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Book This Room
+                  </Button>
 
-              {/* Info Text */}
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                Secure your booking today • No hidden fees
-              </p>
+                  {/* Info Text */}
+                  <p className="text-xs text-center text-muted-foreground pt-2">
+                    Secure your booking today • No hidden fees
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -590,8 +605,14 @@ export default function SingleRoomDetail() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                <Button 
-                  onClick={() => navigate(id ? `/dorms/${id}` : -1)}
+                <Button
+                  onClick={() => {
+                    if (id) {
+                      navigate(`/dorms/${id}`)
+                    } else {
+                      navigate(-1)
+                    }
+                  }}
                   variant="outline"
                   size="lg"
                   className="rounded-full border-2 hover:bg-muted px-8 h-14 font-semibold text-lg"

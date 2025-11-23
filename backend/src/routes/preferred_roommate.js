@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { Preferred_roommate } from "../models/Preferred_roommate.js";
 import { User } from "../models/User.js";
+import { requireAuth, requireStudent } from "../middlewares/auth.js";
 
 export const preferred_roommate = Router();
 
-preferred_roommate.get("/", async (req, res, next) => {
+preferred_roommate.get("/", requireAuth, async (req, res, next) => {
   try {
     const { userId } = req.query;
     if (userId) {
@@ -23,7 +24,7 @@ preferred_roommate.get("/", async (req, res, next) => {
 });
 
 // Get roommate preferences by ID
-preferred_roommate.get("/:id", async (req, res, next) => {
+preferred_roommate.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
     const roommatePref = await Preferred_roommate.findById(id);
@@ -36,8 +37,8 @@ preferred_roommate.get("/:id", async (req, res, next) => {
   }
 });
 
-// Create roommate preferences
-preferred_roommate.post("/", async (req, res, next) => {
+// Create roommate preferences (students only)
+preferred_roommate.post("/", requireStudent, async (req, res, next) => {
   try {
     const prefData = req.body;
     if (!prefData.userId) {
@@ -54,8 +55,8 @@ preferred_roommate.post("/", async (req, res, next) => {
   }
 });
 
-// Update roommate preferences
-preferred_roommate.put("/:id", async (req, res, next) => {
+// Update roommate preferences (students only)
+preferred_roommate.put("/:id", requireStudent, async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -70,8 +71,8 @@ preferred_roommate.put("/:id", async (req, res, next) => {
   }
 });
 
-// Delete roommate preferences
-preferred_roommate.delete("/:id", async (req, res, next) => {
+// Delete roommate preferences (students only)
+preferred_roommate.delete("/:id", requireStudent, async (req, res, next) => {
   try {
     const { id } = req.params;
     const deletedPref = await Preferred_roommate.findByIdAndDelete(id);

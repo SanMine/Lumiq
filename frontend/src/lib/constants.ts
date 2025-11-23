@@ -17,6 +17,20 @@ export const NAVLINKS = [
     { to: "/account", name: "Account" },
 ]
 
+export const STUDENT_NAVLINKS = [
+    { to: "/", name: "Home" },
+    { to: "/roommate-match", name: "Roommates Matching" },
+    { to: "/dorms", name: "All Dormitories" },
+    { to: "/account", name: "Account" },
+]
+
+export const DORM_ADMIN_NAVLINKS = [
+    { to: "/", name: "Home" },
+    { to: "/admin-dashboard", name: "Admin Dashboard" },
+    { to: "/dorms", name: "All Dormitories" },
+    { to: "/account", name: "Account" },
+]
+
 export const cards = [
     {
         title: "Explore Dorms",

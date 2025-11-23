@@ -15,7 +15,7 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
-  iconSize: [25, 41], 
+  iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
 
@@ -25,6 +25,7 @@ import { Mail, Phone, MessageSquare, Facebook } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from "@/api";
 import Loader from "@/components/shared/loader";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Dorm {
   _id: number;
@@ -33,7 +34,7 @@ interface Dorm {
   image_url: string;
   description: string;
   availibility: boolean;
-  facilities: string[];
+  facilities: string | string[];
   latitude?: number;
   longitude?: number;
   price: number;
@@ -89,23 +90,24 @@ export default function DormDetail() {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchDormData = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch dorm details
         const dormResponse = await api.get(`/dorms/${id}`);
         setDorm(dormResponse.data);
-        
+
         // Fetch rooms for this dorm
         const roomsResponse = await api.get(`/rooms?dormId=${id}`);
         setRooms(roomsResponse.data);
-        
+
         // Fetch ratings for this dorm
         const ratingsResponse = await api.get(`/dorms/${id}/ratings`);
         setRatings(ratingsResponse.data);
@@ -116,10 +118,10 @@ export default function DormDetail() {
         setLoading(false);
       }
     };
-    
+
     fetchDormData();
   }, [id]);
-  
+
   console.log("Dorm ID:", id);
 
   if (loading) {
@@ -138,17 +140,21 @@ export default function DormDetail() {
     );
   }
 
-  const averageRating = typeof dorm.average_rating === 'string' 
-    ? parseFloat(dorm.average_rating) 
+  const averageRating = typeof dorm.average_rating === 'string'
+    ? parseFloat(dorm.average_rating)
     : dorm.average_rating || 0;
   const totalRatings = dorm.total_ratings || 0;
 
   // Highlights pulled from backend: prefer structured array in `facilities` (backwards compatible with comma-separated string)
-  const highlights: string[] = Array.isArray(dorm.facilities)
-    ? dorm.facilities
-    : typeof dorm.facilities === 'string' && dorm.facilities
-    ? dorm.facilities.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
+  const highlights: string[] = (() => {
+    if (Array.isArray(dorm.facilities)) {
+      return dorm.facilities;
+    }
+    if (typeof dorm.facilities === 'string' && dorm.facilities) {
+      return dorm.facilities.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+    return [];
+  })();
 
   const getIconForHighlight = (name: string) => {
     const key = name.toLowerCase();
@@ -190,8 +196,8 @@ export default function DormDetail() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        
-          {/* Main Dorm Info Card */}
+
+        {/* Main Dorm Info Card */}
         <Card className="overflow-hidden border-2 border-border bg-card mb-8 py-0">
           <CardContent className="p-0">
             {/* Hero Image */}
@@ -211,7 +217,7 @@ export default function DormDetail() {
             {/* Content */}
             <div className="p-6 space-y-4">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground">{dorm.name}</h1>
-              
+
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="w-5 h-5" />
                 <span className="text-lg">{dorm.location}</span>
@@ -221,12 +227,14 @@ export default function DormDetail() {
                 <span className="text-foreground font-semibold text-xl">
                   Price Range: ฿{dorm.price.toLocaleString()} / month
                 </span>
-                <Button 
-                  onClick={() => navigate(`/dorms/${id}/book`)}
-                  className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                >
-                  Book / Apply Now
-                </Button>
+                {user?.role !== 'dorm_admin' && (
+                  <Button
+                    onClick={() => navigate(`/dorms/${id}/book`)}
+                    className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
+                  >
+                    Book / Apply Now
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -286,11 +294,11 @@ export default function DormDetail() {
                         <td className="py-4 text-foreground">฿{grp.minPrice}/month</td>
                         <td className="py-4">
                           <Badge className={
-                            availability === "Available" 
+                            availability === "Available"
                               ? "bg-lime-400 text-black hover:bg-lime-500"
                               : availability === "Limited"
-                              ? "bg-yellow-400 text-black hover:bg-yellow-500"
-                              : "bg-red-500 text-white hover:bg-red-600"
+                                ? "bg-yellow-400 text-black hover:bg-yellow-500"
+                                : "bg-red-500 text-white hover:bg-red-600"
                           }>
                             {availability === "Available" ? "Available" : availability === "Limited" ? "Limited" : "Full"}
                           </Badge>
@@ -587,19 +595,23 @@ export default function DormDetail() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-foreground text-lg font-semibold">Ready to find your new home?</p>
               <div className="flex flex-wrap gap-3">
-                <Button 
-                  onClick={() => navigate(`/dorms/${id}/book`)}
-                  variant="outline" 
-                  className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                >
-                  Book a Room
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
-                >
-                  Save to Wishlist
-                </Button>
+                {user?.role !== 'dorm_admin' && (
+                  <>
+                    <Button
+                      onClick={() => navigate(`/dorms/${id}/book`)}
+                      variant="outline"
+                      className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
+                    >
+                      Book a Room
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
+                    >
+                      Save to Wishlist
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>

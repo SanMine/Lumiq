@@ -5,7 +5,7 @@
 
 import express from 'express';
 import { findRoommateMatches, getMatchingStats } from '../services/matchingService.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { requireAuth, requireStudent } from '../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -13,7 +13,7 @@ const router = express.Router();
  * POST /api/matching/find-roommates/:userId
  * Find compatible roommates for a specific user
  */
-router.post('/find-roommates/:userId', requireAuth, async (req, res) => {
+router.post('/find-roommates/:userId', requireStudent, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
     const minMatchPercentage = parseInt(req.query.minMatch || 0);
@@ -53,7 +53,7 @@ router.post('/find-roommates/:userId', requireAuth, async (req, res) => {
  * GET /api/matching/stats/:userId
  * Get matching statistics for a user
  */
-router.get('/stats/:userId', requireAuth, async (req, res) => {
+router.get('/stats/:userId', requireStudent, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
     const minMatchPercentage = parseInt(req.query.minMatch || 60);
@@ -85,7 +85,7 @@ router.get('/stats/:userId', requireAuth, async (req, res) => {
  * GET /api/matching/best-match/:userId
  * Get the best compatible roommate match
  */
-router.get('/best-match/:userId', requireAuth, async (req, res) => {
+router.get('/best-match/:userId', requireStudent, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
 
@@ -126,7 +126,7 @@ router.get('/best-match/:userId', requireAuth, async (req, res) => {
  * POST /api/matching/compare/:userId/:candidateId
  * Compare two users for compatibility
  */
-router.post('/compare/:userId/:candidateId', requireAuth, async (req, res) => {
+router.post('/compare/:userId/:candidateId', requireStudent, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
     const candidateId = parseInt(req.params.candidateId);

@@ -1,4 +1,4 @@
-import { APP_NAME, NAVLINKS } from '@/lib/constants'
+import { APP_NAME, NAVLINKS, STUDENT_NAVLINKS, DORM_ADMIN_NAVLINKS } from '@/lib/constants'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router'
@@ -14,8 +14,18 @@ export default function Navbar() {
     const navigate = useNavigate()
     const { user } = useAuth()
 
+    // Determine which navigation links to show based on user role
+    const getNavLinks = () => {
+        if (!user) return NAVLINKS
+        if (user.role === 'dorm_admin') return DORM_ADMIN_NAVLINKS
+        if (user.role === 'student') return STUDENT_NAVLINKS
+        return NAVLINKS
+    }
+
+    const navLinks = getNavLinks()
+
     const renderNavLinks = () =>
-        NAVLINKS.map((link, index) => (
+        navLinks.map((link, index) => (
             <NavLink
                 onClick={() => setIsMobMenuOpen(false)}
                 key={index}
