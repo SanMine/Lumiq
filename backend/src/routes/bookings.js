@@ -111,8 +111,8 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
 // Get list of bookings
 bookings.get("/", requireAuth, async (req, res, next) => {
   try {
-    // Admins can see all bookings, others see only their own
-    if (req.user.role === "admin") {
+    // Admins (including dorm_admin) can see all bookings, others see only their own
+    if (req.user.role === "admin" || req.user.role === "dorm_admin") {
       const all = await Booking.find().sort({ _id: -1 });
       return res.json(all);
     }
@@ -130,7 +130,9 @@ bookings.get("/:id", requireAuth, async (req, res, next) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     const isOwner = String(booking.userId) === String(req.user.id);
-    if (!isOwner && req.user.role !== "admin") {
+    // Allow dorm_admins as well as admins
+    const isAdmin = req.user.role === "admin" || req.user.role === "dorm_admin";
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -147,7 +149,8 @@ bookings.put("/:id", requireAuth, async (req, res, next) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     const isOwner = String(booking.userId) === String(req.user.id);
-    if (!isOwner && req.user.role !== "admin") {
+    const isAdmin = req.user.role === "admin" || req.user.role === "dorm_admin";
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: "Access denied" });
     }
 
