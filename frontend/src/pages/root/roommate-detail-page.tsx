@@ -60,6 +60,15 @@ interface CompatibilityDetails {
     };
 }
 
+interface Knock {
+    _id: string;
+    senderId: number;
+    recipientId: number;
+    status: "pending" | "accepted" | "rejected";
+    createdAt: string;
+    updatedAt: string;
+}
+
 export default function RoommateDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -69,6 +78,11 @@ export default function RoommateDetailPage() {
     const [compatibility, setCompatibility] = useState<CompatibilityDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Knock-related state
+    const [knock, setKnock] = useState<Knock | null>(null);
+    const [knockLoading, setKnockLoading] = useState(false);
+    const [allKnocks, setAllKnocks] = useState<Knock[]>([]);
 
     useEffect(() => {
         const fetchRoommateDetails = async () => {
@@ -94,6 +108,25 @@ export default function RoommateDetailPage() {
                 const compatibilityResponse = await api.post(`/matching/compare/${user._id || user.id}/${id}`);
                 if (compatibilityResponse.data.success) {
                     setCompatibility(compatibilityResponse.data.compatibility);
+                }
+
+                // Fetch knock status between current user and this roommate
+                try {
+                    const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
+                    const knocks = knocksResponse.data;
+                    setAllKnocks(knocks);
+
+                    // Find ANY knock between current user and viewed roommate
+                    const existingKnock = knocks.find((k: Knock) =>
+                        (k.senderId === Number(user._id || user.id) && k.recipientId === Number(id)) ||
+                        (k.recipientId === Number(user._id || user.id) && k.senderId === Number(id))
+                    );
+
+                    if (existingKnock) {
+                        setKnock(existingKnock);
+                    }
+                } catch (knockError) {
+                    console.log("No existing knocks found");
                 }
             } catch (error: any) {
                 console.error("Error fetching roommate details:", error);
@@ -139,6 +172,126 @@ export default function RoommateDetailPage() {
             </section>
         );
     }
+
+    const handleKnockKnock = async () => {
+        if (!user || !id) return;
+
+        try {
+            setKnockLoading(true);
+            const response = await api.post('/knocks', {
+                recipientId: id
+            });
+
+            setKnock(response.data);
+
+            // Refresh all knocks to ensure state consistency
+            const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
+            setAllKnocks(knocksResponse.data);
+
+            toast.success("Knock sent successfully!");
+        } catch (error: any) {
+            console.error("Error sending knock:", error);
+            toast.error(error.response?.data?.error || "Failed to send knock");
+        } finally {
+            setKnockLoading(false);
+        }
+    };
+
+    const handleKnockBack = async () => {
+        if (!user || !id) return;
+
+        try {
+            setKnockLoading(true);
+            const response = await api.post('/knocks', {
+                recipientId: id
+            });
+
+            toast.success("Knock sent! You're now connected!");
+
+            // Refresh knock data to get updated state
+            const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
+            const knocks = knocksResponse.data;
+            setAllKnocks(knocks);
+
+            const existingKnock = knocks.find((k: Knock) =>
+                (k.senderId === Number(user._id || user.id) && k.recipientId === Number(id)) ||
+                (k.recipientId === Number(user._id || user.id) && k.senderId === Number(id))
+            );
+            setKnock(existingKnock);
+        } catch (error: any) {
+            console.error("Error knocking back:", error);
+            toast.error(error.response?.data?.error || "Failed to send knock");
+        } finally {
+            setKnockLoading(false);
+        }
+    };
+
+    const renderKnockButton = () => {
+        if (!user || !id) return null;
+
+        const currentUserId = Number(user._id || user.id);
+        const roommateId = Number(id);
+
+        // Check for mutual knocks using allKnocks state
+        const sentKnock = allKnocks.find((k: Knock) =>
+            k.senderId === currentUserId && k.recipientId === roommateId
+        );
+
+        const receivedKnock = allKnocks.find((k: Knock) =>
+            k.senderId === roommateId && k.recipientId === currentUserId
+        );
+
+        const hasMutualKnock = !!(sentKnock && receivedKnock);
+
+        // Mutual knock exists (Connection established)
+        if (hasMutualKnock) {
+            return (
+                <Button
+                    className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                    onClick={() => navigate(`/connection/${roommateId}`)}
+                >
+                    View Connection
+                </Button>
+            );
+        }
+
+        // I sent knock to them - show "Knock Sent"
+        if (sentKnock) {
+            return (
+                <Button
+                    className="w-full mt-4"
+                    variant="outline"
+                    disabled
+                >
+                    Knock Sent ✓
+                </Button>
+            );
+        }
+
+        // They sent knock to me - show "Knock Back" button
+        if (receivedKnock) {
+            return (
+                <Button
+                    className="w-full mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                    onClick={handleKnockBack}
+                    disabled={knockLoading}
+                >
+                    {knockLoading ? "Sending..." : "Knock Back"}
+                </Button>
+            );
+        }
+
+        // No knock exists - show "Knock Knock" button
+        return (
+            <Button
+                className="w-full mt-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                onClick={handleKnockKnock}
+                disabled={knockLoading}
+            >
+                {knockLoading ? "Sending..." : "Knock Knock"}
+            </Button>
+        );
+    };
 
     // Helper functions to format data
     const getYear = () => {
@@ -233,15 +386,7 @@ export default function RoommateDetailPage() {
                                     </Badge>
 
                                     {/* Knock Knock Button */}
-                                    <Button
-                                        className="w-full mt-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                                        onClick={() => {
-                                            // TODO: Implement knock functionality
-                                            toast.success("Knock sent!");
-                                        }}
-                                    >
-                                        Knock Knock
-                                    </Button>
+                                    {renderKnockButton()}
                                 </div>
                             </CardContent>
                         </Card>

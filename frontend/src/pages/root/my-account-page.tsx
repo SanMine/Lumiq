@@ -27,7 +27,8 @@ import {
     Save,
     Shield,
     User,
-    UserCircle
+    UserCircle,
+    Users
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -84,7 +85,7 @@ export default function MyAccountPage() {
         if (!isLoading && !user) {
             navigate('/auth/sign-in');
         }
-        
+
         if (user) {
             // Fetch full user data from backend to get all fields
             const fetchUserData = async () => {
@@ -112,9 +113,9 @@ export default function MyAccountPage() {
                     });
                 }
             };
-            
+
             fetchUserData();
-            
+
             // Fetch personality data
             const fetchPersonalityData = async () => {
                 try {
@@ -145,7 +146,7 @@ export default function MyAccountPage() {
                     console.log("No existing personality data");
                 }
             };
-            
+
             fetchPersonalityData();
         }
     }, [user, isLoading, navigate]);
@@ -158,10 +159,10 @@ export default function MyAccountPage() {
 
     const handlePersonalitySave = async () => {
         if (!user) return;
-        
+
         try {
             setIsSavingPersonality(true);
-            
+
             // Map frontend form data to backend schema
             const backendData = {
                 userId: user._id || user.id,
@@ -198,7 +199,7 @@ export default function MyAccountPage() {
                 await api.post("/personalities", backendData);
                 toast.success("Personality profile created successfully!");
             }
-            
+
             setIsEditingPersonality(false);
         } catch (error: any) {
             console.error("Error saving personality:", error);
@@ -210,10 +211,10 @@ export default function MyAccountPage() {
 
     const handleSave = async () => {
         if (!user) return;
-        
+
         try {
             setIsSaving(true);
-            
+
             // Update user profile via API with all fields
             const response = await api.put(`/users/${user._id || user.id}`, {
                 name: profileData.fullName,
@@ -223,7 +224,7 @@ export default function MyAccountPage() {
                 address: profileData.address,
                 bio: profileData.bio
             });
-            
+
             // Update the user context with new data
             if (setUser) {
                 setUser({
@@ -233,7 +234,7 @@ export default function MyAccountPage() {
                     _id: response.data._id
                 });
             }
-            
+
             setIsEditing(false);
             toast.success("Profile updated successfully");
         } catch (error: any) {
@@ -321,6 +322,15 @@ export default function MyAccountPage() {
                                     </div>
 
                                     <Separator className="my-4" />
+
+                                    <Button
+                                        variant="outline"
+                                        className="w-full mb-3"
+                                        onClick={() => navigate('/knockknock')}
+                                    >
+                                        <Users className="w-4 h-4 mr-2" />
+                                        Knock Knock
+                                    </Button>
 
                                     <Button
                                         variant="outline"
@@ -444,15 +454,15 @@ export default function MyAccountPage() {
 
                                         {isEditing && (
                                             <div className="flex justify-end gap-3 pt-4">
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     onClick={() => setIsEditing(false)}
                                                     disabled={isSaving}
                                                 >
                                                     Cancel
                                                 </Button>
-                                                <Button 
-                                                    onClick={handleSave} 
+                                                <Button
+                                                    onClick={handleSave}
                                                     className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
                                                     disabled={isSaving}
                                                 >
@@ -834,7 +844,7 @@ export default function MyAccountPage() {
                                                 <Switch
                                                     id="openForRoommateMatching"
                                                     checked={personalityData.openForRoommateMatching}
-                                                    onCheckedChange={(checked) => 
+                                                    onCheckedChange={(checked) =>
                                                         setPersonalityData({ ...personalityData, openForRoommateMatching: checked })
                                                     }
                                                     disabled={!isEditingPersonality}
@@ -844,15 +854,15 @@ export default function MyAccountPage() {
 
                                         {isEditingPersonality && (
                                             <div className="flex justify-end gap-3 pt-4">
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     onClick={() => setIsEditingPersonality(false)}
                                                     disabled={isSavingPersonality}
                                                 >
                                                     Cancel
                                                 </Button>
-                                                <Button 
-                                                    onClick={handlePersonalitySave} 
+                                                <Button
+                                                    onClick={handlePersonalitySave}
                                                     className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
                                                     disabled={isSavingPersonality}
                                                 >

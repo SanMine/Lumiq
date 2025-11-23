@@ -39,8 +39,8 @@ export default function Router() {
         {
           path: '/dorms/:id/rooms/:roomId',
           lazy: async () => {
-            const { default: RoomsDetail } = await import('@/pages/root/rooms-detail-page')
-            return { Component: RoomsDetail }
+            const { default: RoomDetail } = await import('@/pages/root/room-detail-page')
+            return { Component: RoomDetail }
           }
         },
         {
@@ -90,6 +90,32 @@ export default function Router() {
               Component: () => (
                 <ProtectedRoute excludedRoles={['dorm_admin']}>
                   <RoommateDetailPage />
+                </ProtectedRoute>
+              )
+            }
+          }
+        },
+        {
+          path: "/knockknock",
+          lazy: async () => {
+            const { default: KnockKnockPage } = await import('@/pages/root/knockknock-page')
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <KnockKnockPage />
+                </ProtectedRoute>
+              )
+            }
+          }
+        },
+        {
+          path: "/connection/:userId",
+          lazy: async () => {
+            const { default: ConnectionPage } = await import('@/pages/root/connection-page')
+            return {
+              Component: () => (
+                <ProtectedRoute excludedRoles={['dorm_admin']}>
+                  <ConnectionPage />
                 </ProtectedRoute>
               )
             }

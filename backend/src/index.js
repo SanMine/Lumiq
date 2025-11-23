@@ -20,6 +20,7 @@ import { personalities } from "./routes/personalities.js";
 import { preferred_roommate } from "./routes/preferred_roommate.js";
 import matchingRoutes from "./routes/matching.js";
 import { bookings } from "./routes/bookings.js";
+import { knocks } from "./routes/knocks.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
@@ -66,6 +67,7 @@ app.use("/api/auth", auth);
 app.use("/api/preferred_roommate", preferred_roommate);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/bookings", bookings);
+app.use("/api/knocks", knocks);
 
 // Error handler (last)
 app.use(errorHandler);
