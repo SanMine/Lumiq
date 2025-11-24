@@ -2,13 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, User, Mail, MapPin, Phone, Calendar, Coffee, Moon, Book, Sparkles, Wine, Heart, ThermometerSnowflake } from "lucide-react";
+import { ArrowLeft, User, Mail, MapPin, Phone, Calendar, Coffee, Moon, Book, Sparkles, Wine, Heart, ThermometerSnowflake, MessageCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import api from "@/api";
 import { toast } from "sonner";
 import Loader from "@/components/shared/loader";
+import Chatbot from "@/components/shared/chatbot";
 
 interface UserProfile {
     _id: number;
@@ -445,6 +446,9 @@ export default function ConnectionPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Floating Chatbot */}
+            <Chatbot />
         </section>
     );
 }
