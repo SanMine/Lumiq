@@ -59,8 +59,8 @@ export class AiMatchingService {
             ]);
 
             // Sanitize PII
-            const sanitizedUser1 = this.sanitizeUserData(user1Data, "User A");
-            const sanitizedUser2 = this.sanitizeUserData(user2Data, "User B");
+            const sanitizedUser1 = this.sanitizeUserData(user1Data, "[YOU]");
+            const sanitizedUser2 = this.sanitizeUserData(user2Data, "[THEM]");
 
             // Build prompt
             const prompt = this.buildPrompt(sanitizedUser1, sanitizedUser2);
@@ -77,7 +77,7 @@ export class AiMatchingService {
                 user1Id: userId1,
                 user2Id: userId2,
                 compatibilityScore: analysis.compatibilityScore,
-                verdict: analysis.verdict,
+                bottom_line: analysis.bottom_line,
                 spark: analysis.spark,
                 friction: analysis.friction,
                 strengths: analysis.strengths,
@@ -123,30 +123,40 @@ export class AiMatchingService {
             userLabel: label,
             bio: userData.user.bio || "No bio provided",
             personality: {
+                nickname: personality.nickname || userData.user.name,
                 age: personality.age,
                 gender: personality.gender,
+                nationality: personality.nationality,
+                description: personality.description || "No description provided",
                 sleepType: personality.sleep_type,
-                mbti: personality.MBTI,
+                studyHabits: personality.study_habits,
                 cleanliness: personality.cleanliness,
+                social: personality.social,
+                mbti: personality.MBTI,
+                goingOut: personality.going_out,
                 smoking: personality.smoking,
+                drinking: personality.drinking,
                 pets: personality.pets,
                 noiseTolerance: personality.noise_tolerance,
                 temperature: personality.temperature,
-                nationality: personality.nationality,
-                hobbies: personality.hobbies,
                 lifestyle: personality.lifestyle,
             },
             preferences: {
                 ageRange: preferences.preferred_age_range,
                 gender: preferences.preferred_gender,
+                nationality: preferences.preferred_nationality,
                 sleepType: preferences.preferred_sleep_type,
-                mbti: preferences.preferred_MBTI,
+                studyHabits: preferences.preferred_study_habits,
                 cleanliness: preferences.preferred_cleanliness,
+                social: preferences.preferred_social,
+                mbti: preferences.preferred_MBTI,
+                goingOut: preferences.preferred_going_out,
                 smoking: preferences.preferred_smoking,
+                drinking: preferences.preferred_drinking,
                 pets: preferences.preferred_pets,
                 noiseTolerance: preferences.preferred_noise_tolerance,
                 temperature: preferences.preferred_temperature,
-                nationality: preferences.preferred_nationality,
+                additionalPreferences: preferences.additional_preferences,
             },
         };
     }
@@ -155,89 +165,129 @@ export class AiMatchingService {
      * Build AI prompt for compatibility analysis
      */
     static buildPrompt(user1, user2) {
-        return `You are a brutal, honest Risk Analyst for a roommate matching agency. Your job is to prevent disasters, not to be polite.
-Avoid corporate jargon like "necessitate", "optimal", "synergy", or "align". Use simple, direct English.
-Identify the specific "Spark" (why they will bond) and the specific "Friction" (why they will fight).
-Look for nuances in their Bios that might override the raw data.
+        return `You are a friendly, honest compatibility analyst for a roommate matching platform.
+Your job is to help people make informed decisions about living together.
+
+CRITICAL RULES:
+- NEVER use "User A", "User B", "[YOU]", "[THEM]", or any labels in your responses
+- Always refer to the first person as "You" or "Your"
+- Always refer to the second person as "they", "them", "their", or "your potential roommate"
+- Use "You both" when referring to both people together
+- Be specific, conversational, and supportive
+
+ANTI-HALLUCINATION RULES (EXTREMELY IMPORTANT):
+- ONLY use information explicitly stated in the data below
+- DO NOT infer, assume, or make up hobbies, interests, or activities
+- DO NOT mention specific activities (gaming, sports, etc.) unless they are EXPLICITLY listed in Lifestyle or Description
+- If Lifestyle says "Relaxed", DO NOT assume they like gaming, partying, or any specific activity
+- If a field says "Not specified" or is empty, acknowledge it as unknown - DO NOT fill in the blanks
+- Base your analysis ONLY on concrete data points like sleep schedules, cleanliness levels, smoking status, etc.
+
+The data below uses [YOU] and [THEM] as internal labels only - DO NOT repeat these labels in your response.
+
 
 Analyze compatibility between:
 
 ${user1.userLabel}:
 Bio: "${user1.bio}"
 Personality:
+- Nickname: ${user1.personality.nickname}
 - Age: ${user1.personality.age}
 - Gender: ${user1.personality.gender}
+- Nationality: ${user1.personality.nationality}
+- Description: "${user1.personality.description}"
 - Sleep Type: ${user1.personality.sleepType}
-- MBTI: ${user1.personality.mbti}
+- Study Habits: ${user1.personality.studyHabits}
 - Cleanliness: ${user1.personality.cleanliness}
+- Social Preference: ${user1.personality.social}
+- MBTI: ${user1.personality.mbti || "Not specified"}
+- Going Out: ${user1.personality.goingOut}
 - Smoking: ${user1.personality.smoking ? "Yes" : "No"}
+- Drinking: ${user1.personality.drinking}
 - Pets: ${user1.personality.pets}
 - Noise Tolerance: ${user1.personality.noiseTolerance}
 - Temperature Preference: ${user1.personality.temperature}
-- Nationality: ${user1.personality.nationality}
-- Hobbies: ${user1.personality.hobbies || "Not specified"}
 - Lifestyle: ${user1.personality.lifestyle || "Not specified"}
 
 Preferences:
 - Preferred Age Range: ${user1.preferences.ageRange?.min || "Any"}-${user1.preferences.ageRange?.max || "Any"}
 - Preferred Gender: ${user1.preferences.gender || "Any"}
+- Preferred Nationality: ${user1.preferences.nationality || "Any"}
 - Preferred Sleep Type: ${user1.preferences.sleepType || "Any"}
+- Preferred Study Habits: ${user1.preferences.studyHabits || "Any"}
+- Preferred Cleanliness: ${user1.preferences.cleanliness || "Any"}
+- Preferred Social Level: ${user1.preferences.social || "Any"}
 - Preferred MBTI: ${user1.preferences.mbti || "Any"}
-- Preferred Cleanliness: ${user1.preferences.cleanliness}
+- Preferred Going Out: ${user1.preferences.goingOut || "Any"}
 - Preferred Smoking: ${user1.preferences.smoking ? "Smoker" : "Non-smoker"}
+- Preferred Drinking: ${user1.preferences.drinking || "Any"}
 - Preferred Pets: ${user1.preferences.pets ? "With pets" : "No pets"}
 - Preferred Noise Tolerance: ${user1.preferences.noiseTolerance || "Any"}
 - Preferred Temperature: ${user1.preferences.temperature || "Any"}
+- Additional Preferences: ${user1.preferences.additionalPreferences || "None"}
 
 ${user2.userLabel}:
 Bio: "${user2.bio}"
 Personality:
+- Nickname: ${user2.personality.nickname}
 - Age: ${user2.personality.age}
 - Gender: ${user2.personality.gender}
+- Nationality: ${user2.personality.nationality}
+- Description: "${user2.personality.description}"
 - Sleep Type: ${user2.personality.sleepType}
-- MBTI: ${user2.personality.mbti}
+- Study Habits: ${user2.personality.studyHabits}
 - Cleanliness: ${user2.personality.cleanliness}
+- Social Preference: ${user2.personality.social}
+- MBTI: ${user2.personality.mbti || "Not specified"}
+- Going Out: ${user2.personality.goingOut}
 - Smoking: ${user2.personality.smoking ? "Yes" : "No"}
+- Drinking: ${user2.personality.drinking}
 - Pets: ${user2.personality.pets}
 - Noise Tolerance: ${user2.personality.noiseTolerance}
 - Temperature Preference: ${user2.personality.temperature}
-- Nationality: ${user2.personality.nationality}
-- Hobbies: ${user2.personality.hobbies || "Not specified"}
 - Lifestyle: ${user2.personality.lifestyle || "Not specified"}
 
 Preferences:
 - Preferred Age Range: ${user2.preferences.ageRange?.min || "Any"}-${user2.preferences.ageRange?.max || "Any"}
 - Preferred Gender: ${user2.preferences.gender || "Any"}
+- Preferred Nationality: ${user2.preferences.nationality || "Any"}
 - Preferred Sleep Type: ${user2.preferences.sleepType || "Any"}
+- Preferred Study Habits: ${user2.preferences.studyHabits || "Any"}
+- Preferred Cleanliness: ${user2.preferences.cleanliness || "Any"}
+- Preferred Social Level: ${user2.preferences.social || "Any"}
 - Preferred MBTI: ${user2.preferences.mbti || "Any"}
-- Preferred Cleanliness: ${user2.preferences.cleanliness}
+- Preferred Going Out: ${user2.preferences.goingOut || "Any"}
 - Preferred Smoking: ${user2.preferences.smoking ? "Smoker" : "Non-smoker"}
+- Preferred Drinking: ${user2.preferences.drinking || "Any"}
 - Preferred Pets: ${user2.preferences.pets ? "With pets" : "No pets"}
 - Preferred Noise Tolerance: ${user2.preferences.noiseTolerance || "Any"}
 - Preferred Temperature: ${user2.preferences.temperature || "Any"}
+- Additional Preferences: ${user2.preferences.additionalPreferences || "None"}
 
 Provide a JSON response with:
-1. compatibilityScore: Number (0-100)
-2. verdict: String - A blunt, one-sentence final judgment.
-3. spark: String - The ONE specific thing they will bond over.
-4. friction: String - The ONE specific thing they will fight about.
-5. strengths: Array of {category, explanation} - Top 3 compatibility strengths.
-6. concerns: Array of {category, explanation} - Top 2 potential concerns.
-7. summary: String - A direct, no-nonsense summary (2-3 sentences).
+1. compatibilityScore: Number (0-100) - Overall compatibility percentage
+2. bottom_line: String - A friendly, honest one-sentence summary using "You both" or "You"
+3. spark: String - The ONE specific thing you both will bond over
+4. friction: String - The ONE specific thing you might clash about
+5. strengths: Array of {category, explanation} - Top 3-5 reasons you're compatible (use "You both" language)
+6. concerns: Array of {category, explanation} - Top 2-3 things to watch out for (use "You" language)
+7. summary: String - A warm, direct 2-3 sentence overview using "You both"
 
 Return ONLY valid JSON in this exact format:
 {
   "compatibilityScore": 85,
-  "verdict": "Good match, as long as User B buys earplugs.",
-  "spark": "Both love late-night gaming sessions.",
-  "friction": "User A is messy, and User B is a neat freak.",
+  "bottom_line": "You both will thrive together once you set some ground rules about cleanliness.",
+  "spark": "You're both night owls who prefer a relaxed lifestyle - perfect for late-night movie marathons.",
+  "friction": "You're neat and organized, but they're more relaxed about mess. This could cause tension.",
   "strengths": [
-    {"category": "Sleep Schedule", "explanation": "Both are night owls."}
+    {"category": "Sleep Schedule", "explanation": "You're both night owls, so you won't wake each other up."},
+    {"category": "Temperature", "explanation": "You both prefer cool temperatures, making thermostat wars unlikely."}
   ],
   "concerns": [
-    {"category": "Cleanliness", "explanation": "User A needs to keep the door closed."}
+    {"category": "Cleanliness", "explanation": "You prefer a tidy space, but they're more relaxed. Set clear expectations about shared areas."},
+    {"category": "Smoking", "explanation": "You don't smoke, but they do. Ask them to smoke outside to avoid any issues."}
   ],
-  "summary": "They will get along great until the dishes pile up."
+  "summary": "You both share great compatibility in lifestyle and sleep schedules. The main thing to address upfront is cleanliness expectations and smoking boundaries to avoid future conflicts."
 }`;
     }
 
@@ -251,7 +301,7 @@ Return ONLY valid JSON in this exact format:
                     {
                         role: "system",
                         content:
-                            "You are a brutal, honest Risk Analyst. Always respond with valid JSON only. Do not use markdown formatting.",
+                            "You are a friendly, honest compatibility analyst for a roommate matching platform. Use 'You both' or 'You' when referring to users. CRITICAL: Only use information explicitly provided in the data - do not infer or make up specific hobbies, activities, or interests. Always respond with valid JSON only. Do not use markdown formatting.",
                     },
                     {
                         role: "user",
@@ -281,12 +331,12 @@ Return ONLY valid JSON in this exact format:
 
             return {
                 compatibilityScore: parsed.compatibilityScore || 75,
-                verdict: parsed.verdict || "Decent match, but proceed with caution.",
-                spark: parsed.spark || "Shared interests.",
-                friction: parsed.friction || "Potential lifestyle clashes.",
+                bottom_line: parsed.bottom_line || "You should have a conversation about expectations before moving in together.",
+                spark: parsed.spark || "You both share some common interests.",
+                friction: parsed.friction || "You might have different lifestyle preferences.",
                 strengths: parsed.strengths || [],
                 concerns: parsed.concerns || [],
-                summary: parsed.summary || "Analysis completed.",
+                summary: parsed.summary || "You both have potential for a good roommate relationship.",
             };
         } catch (error) {
             console.error("JSON Parse Error:", error);
@@ -300,14 +350,14 @@ Return ONLY valid JSON in this exact format:
     static getFallbackResult() {
         return {
             compatibilityScore: 75,
-            verdict: "Data unavailable, proceed with caution.",
-            spark: "Unknown.",
-            friction: "Unknown.",
+            bottom_line: "You should chat before making a final decision - our analysis is temporarily unavailable.",
+            spark: "You both have potential to connect once you get to know each other.",
+            friction: "We need more data to identify specific areas of concern.",
             strengths: [
                 {
                     category: "General Compatibility",
                     explanation:
-                        "AI analysis temporarily unavailable. Showing estimated compatibility based on basic matching.",
+                        "You both meet the basic criteria for roommate matching. Our AI analysis is temporarily unavailable.",
                 },
             ],
             concerns: [

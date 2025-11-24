@@ -23,6 +23,7 @@ import { bookings } from "./routes/bookings.js";
 import { knocks } from "./routes/knocks.js";
 import { wishlist } from "./routes/wishlist.js";
 import { analytics } from "./routes/analytics.js";
+import { notifications } from "./routes/notifications.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
@@ -71,6 +72,7 @@ app.use("/api/preferred_roommate", preferred_roommate);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/bookings", bookings);
 app.use("/api/knocks", knocks);
+app.use("/api/notifications", notifications);
 app.use("/api/wishlist", wishlist);
 app.use("/api/analytics", analytics);
 

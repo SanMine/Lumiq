@@ -87,11 +87,10 @@ export default function KnockKnockPage() {
         try {
             setKnockingBack(prev => new Set(prev).add(knock.senderId));
 
-            await api.post('/knocks', {
-                recipientId: knock.senderId
-            });
+            // Accept the existing knock instead of creating a new one
+            await api.put(`/knocks/${knock._id}/accept`);
 
-            toast.success("Knock sent! You're now connected!");
+            toast.success("Knock accepted! You're now connected!");
 
             // Refresh knocks list
             const currentUserId = user._id || user.id;
@@ -114,8 +113,8 @@ export default function KnockKnockPage() {
 
             setIncomingKnocks(knocksWithProfiles);
         } catch (error: any) {
-            console.error("Error knocking back:", error);
-            toast.error(error.response?.data?.error || "Failed to send knock");
+            console.error("Error accepting knock:", error);
+            toast.error(error.response?.data?.error || "Failed to accept knock");
         } finally {
             setKnockingBack(prev => {
                 const newSet = new Set(prev);
@@ -125,14 +124,18 @@ export default function KnockKnockPage() {
         }
     };
 
-    const checkHasMutualKnock = (knock: KnockWithUser): boolean => {
+    const checkHasConnection = (knock: KnockWithUser): boolean => {
         if (!user) return false;
         const currentUserId = user._id || user.id;
 
-        // Check if there's already a knock from current user to this sender
-        // We must check allKnocks, not incomingKnocks
+        // Check if the knock has been accepted (meaning connection is established)
+        if (knock.status === 'accepted') return true;
+
+        // Check if there's a knock from current user to this sender that's been accepted
         return allKnocks.some(k =>
-            k.senderId === currentUserId && k.recipientId === knock.senderId
+            k.senderId === currentUserId &&
+            k.recipientId === knock.senderId &&
+            k.status === 'accepted'
         );
     };
 
@@ -183,7 +186,7 @@ export default function KnockKnockPage() {
                 ) : (
                     <div className="space-y-4">
                         {incomingKnocks.map((knock) => {
-                            const hasMutualKnock = checkHasMutualKnock(knock);
+                            const hasConnection = checkHasConnection(knock);
 
                             return (
                                 <Card key={knock._id} className="hover:shadow-lg transition-shadow">
@@ -216,7 +219,7 @@ export default function KnockKnockPage() {
 
                                             {/* Action Buttons */}
                                             <div className="flex gap-2">
-                                                {hasMutualKnock ? (
+                                                {hasConnection ? (
                                                     <Button
                                                         className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
                                                         onClick={() => navigate(`/connection/${knock.senderId}`)}

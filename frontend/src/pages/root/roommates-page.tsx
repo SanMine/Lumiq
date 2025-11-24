@@ -38,17 +38,40 @@ export default function RoommatesPage() {
                 setIsLoading(true);
                 setError(null);
 
-                // Fetch roommate matches from the backend
-                const response = await api.post(`/matching/find-roommates/${user._id || user.id}`);
-                
-                if (response.data.success) {
-                    setRoommates(response.data.matches || []);
-                    
-                    if (response.data.matches.length === 0) {
+                // Fetch algorithmic matches first to get candidate list
+                const matchesResponse = await api.post(`/matching/find-roommates/${user._id || user.id}`);
+
+                if (matchesResponse.data.success && matchesResponse.data.matches.length > 0) {
+                    const candidates = matchesResponse.data.matches;
+
+                    // Fetch AI analysis for each candidate
+                    const matchesWithAI = await Promise.all(
+                        candidates.map(async (candidate: RoommateMatch) => {
+                            try {
+                                const aiResponse = await api.get(`/matching/ai-analysis/${user._id || user.id}/${candidate.candidateId}`);
+                                if (aiResponse.data.success) {
+                                    return {
+                                        ...candidate,
+                                        matchPercentage: aiResponse.data.compatibilityScore, // Use AI score instead
+                                        aiSummary: aiResponse.data.summary,
+                                    };
+                                }
+                            } catch (error) {
+                                console.error(`AI analysis failed for candidate ${candidate.candidateId}:`, error);
+                            }
+                            // Fallback to algorithmic score if AI fails
+                            return candidate;
+                        })
+                    );
+
+                    setRoommates(matchesWithAI);
+
+                    if (matchesWithAI.length === 0) {
                         toast.info("No roommate matches found. Make sure other users have completed their personality profiles.");
                     }
                 } else {
-                    setError("Failed to fetch roommate matches");
+                    setRoommates([]);
+                    toast.info("No roommate matches found. Make sure other users have completed their personality profiles.");
                 }
             } catch (error: any) {
                 console.error("Error fetching roommate matches:", error);

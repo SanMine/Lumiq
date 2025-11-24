@@ -92,8 +92,11 @@ export default function ConnectionPage() {
                 );
 
                 // Verify mutual knocks (both users knocked each other)
-                if (!knockToThem || !knockFromThem) {
-                    setError("Connection not established. Both users must knock each other.");
+                // Connection is established if either knock is accepted
+                const hasConnection = knockToThem?.status === 'accepted' || knockFromThem?.status === 'accepted';
+
+                if (!hasConnection) {
+                    setError("Connection not established. One user must accept the knock.");
                     toast.error("No mutual connection found");
                     navigate('/roommates');
                     return;
@@ -148,7 +151,7 @@ export default function ConnectionPage() {
     const ProfileCard = ({ userProfile, personality, title }: { userProfile: UserProfile, personality: Personality, title: string }) => (
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
                     <User className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -159,169 +162,225 @@ export default function ConnectionPage() {
 
             {/* Profile Image */}
             <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-1">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-1 shadow-xl">
                     <img
                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile.name}`}
                         alt={userProfile.name}
-                        className="w-full h-full rounded-full bg-muted"
+                        className="w-full h-full rounded-full bg-background"
                     />
                 </div>
             </div>
 
             {/* Basic Information */}
-            <Card className="border-2 border-border">
-                <CardHeader>
-                    <CardTitle className="text-lg">Basic Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-semibold">{personality.nickname || userProfile.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{personality.age} years old</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{personality.gender}</Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{personality.nationality || "Not specified"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{userProfile.email}</span>
-                    </div>
-                    {personality.contact && (
-                        <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm">{personality.contact}</span>
+            <Card className="border-2 border-border bg-card shadow-lg">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                    )}
-                    {personality.description && (
-                        <div className="pt-2 border-t border-border">
-                            <p className="text-sm italic text-muted-foreground">{personality.description}</p>
+                        <h3 className="text-xl font-bold text-foreground">
+                            Basic Information
+                        </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Name</p>
+                            </div>
+                            <p className="font-semibold text-foreground">{personality.nickname || userProfile.name}</p>
                         </div>
-                    )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-muted-foreground text-sm font-medium">Age</p>
+                                </div>
+                                <p className="font-semibold text-foreground">{personality.age} years</p>
+                            </div>
+                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-muted-foreground text-sm font-medium">Gender</p>
+                                </div>
+                                <p className="font-semibold text-foreground">{personality.gender}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Nationality</p>
+                            </div>
+                            <p className="font-semibold text-foreground">{personality.nationality || "Not specified"}</p>
+                        </div>
+
+                        {personality.description && (
+                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-muted-foreground text-sm font-medium">Bio</p>
+                                </div>
+                                <p className="text-sm italic text-muted-foreground">{personality.description}</p>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
 
             {/* Lifestyle Preferences */}
-            <Card className="border-2 border-border">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <Coffee className="w-5 h-5" />
-                        Lifestyle Preferences
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Moon className="w-4 h-4" />
-                            Sleep Schedule
-                        </span>
-                        <Badge>{personality.sleep_type}</Badge>
+            <Card className="border-2 border-border bg-card shadow-lg">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                            <Coffee className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">
+                            Lifestyle
+                        </h3>
                     </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Lifestyle</span>
-                        <Badge variant="outline">{personality.lifestyle[0] || "Moderate"}</Badge>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Book className="w-4 h-4" />
-                            Study Habits
-                        </span>
-                        <Badge>{personality.study_habits}</Badge>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" />
-                            Cleanliness
-                        </span>
-                        <Badge>{personality.cleanliness}</Badge>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                                    <Moon className="w-4 h-4" /> Sleep Schedule
+                                </p>
+                                <Badge variant="outline">{personality.sleep_type}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Lifestyle</p>
+                                <Badge variant="secondary">{personality.lifestyle[0] || "Moderate"}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                                    <Book className="w-4 h-4" /> Study Habits
+                                </p>
+                                <Badge variant="outline">{personality.study_habits}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4" /> Cleanliness
+                                </p>
+                                <Badge variant="secondary">{personality.cleanliness}</Badge>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Social Preferences */}
-            <Card className="border-2 border-border">
-                <CardHeader>
-                    <CardTitle className="text-lg">Social Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Social Level</span>
-                        <Badge>{personality.social}</Badge>
+            <Card className="border-2 border-border bg-card shadow-lg">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                            <Wine className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">
+                            Social
+                        </h3>
                     </div>
-                    {personality.MBTI && (
-                        <>
-                            <Separator />
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">MBTI</span>
-                                <Badge variant="outline">{personality.MBTI}</Badge>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Social Level</p>
+                                <Badge>{personality.social}</Badge>
                             </div>
-                        </>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Going Out</span>
-                        <Badge>{personality.going_out}</Badge>
+                        </div>
+
+                        {personality.MBTI && (
+                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-muted-foreground text-sm font-medium">MBTI</p>
+                                    <Badge variant="outline">{personality.MBTI}</Badge>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Going Out</p>
+                                <Badge variant="secondary">{personality.going_out}</Badge>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Habits */}
-            <Card className="border-2 border-border">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <Heart className="w-5 h-5" />
-                        Habits
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Smoking</span>
-                        <Badge variant={personality.smoking ? "destructive" : "secondary"}>
-                            {personality.smoking ? "Yes" : "No"}
-                        </Badge>
+            <Card className="border-2 border-border bg-card shadow-lg">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center">
+                            <Heart className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">
+                            Habits
+                        </h3>
                     </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Wine className="w-4 h-4" />
-                            Drinking
-                        </span>
-                        <Badge>{personality.drinking}</Badge>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Pets</span>
-                        <Badge variant="outline">{personality.pets}</Badge>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Smoking</p>
+                                <Badge variant={personality.smoking ? "destructive" : "secondary"}>
+                                    {personality.smoking ? "Yes" : "No"}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                                    <Wine className="w-4 h-4" /> Drinking
+                                </p>
+                                <Badge variant="outline">{personality.drinking}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Pets</p>
+                                <Badge variant="secondary">{personality.pets}</Badge>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Environmental Preferences */}
-            <Card className="border-2 border-border">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <ThermometerSnowflake className="w-5 h-5" />
-                        Environmental Preferences
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Noise Tolerance</span>
-                        <Badge>{personality.noise_tolerance}</Badge>
+            <Card className="border-2 border-border bg-card shadow-lg">
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center">
+                            <ThermometerSnowflake className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">
+                            Environment
+                        </h3>
                     </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Temperature Preference</span>
-                        <Badge variant="outline">{personality.temperature}</Badge>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Noise Tolerance</p>
+                                <Badge>{personality.noise_tolerance}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-muted-foreground text-sm font-medium">Temperature</p>
+                                <Badge variant="outline">{personality.temperature}</Badge>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -335,11 +394,11 @@ export default function ConnectionPage() {
                 <div className="mb-8">
                     <Button
                         variant="ghost"
-                        onClick={() => navigate('/roommates')}
+                        onClick={() => navigate('/knockknock')}
                         className="mb-4"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Matches
+                        Back
                     </Button>
 
                     <div className="text-center">
@@ -355,7 +414,7 @@ export default function ConnectionPage() {
                 {/* Split View - Half and Half */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left Side - Current User */}
-                    <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-800">
+                    <div>
                         <ProfileCard
                             userProfile={currentUserProfile}
                             personality={currentUserPersonality}
@@ -364,7 +423,7 @@ export default function ConnectionPage() {
                     </div>
 
                     {/* Right Side - Matched User */}
-                    <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-lg p-6 border-2 border-purple-200 dark:border-purple-800">
+                    <div>
                         <ProfileCard
                             userProfile={connectedUserProfile}
                             personality={connectedUserPersonality}

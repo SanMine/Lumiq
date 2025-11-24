@@ -43,7 +43,7 @@ interface Personality {
 
 interface AiAnalysis {
     compatibilityScore: number;
-    verdict: string;
+    bottom_line: string;
     spark: string;
     friction: string;
     strengths: Array<{
@@ -67,6 +67,23 @@ interface Knock {
     updatedAt: string;
 }
 
+interface PreferredRoommate {
+    preferred_age_range?: { min: number; max: number };
+    preferred_gender?: string;
+    preferred_nationality?: string;
+    preferred_sleep_type?: string;
+    preferred_study_habits?: string;
+    preferred_cleanliness?: string;
+    preferred_social?: string;
+    preferred_MBTI?: string;
+    preferred_going_out?: string;
+    preferred_smoking?: boolean;
+    preferred_drinking?: string;
+    preferred_pets?: boolean;
+    preferred_noise_tolerance?: string;
+    preferred_temperature?: string;
+}
+
 export default function RoommateDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -82,6 +99,9 @@ export default function RoommateDetailPage() {
     const [knock, setKnock] = useState<Knock | null>(null);
     const [knockLoading, setKnockLoading] = useState(false);
     const [allKnocks, setAllKnocks] = useState<Knock[]>([]);
+
+    // Current user's preferences for matching
+    const [myPreferences, setMyPreferences] = useState<PreferredRoommate | null>(null);
 
     useEffect(() => {
         const fetchRoommateDetails = async () => {
@@ -120,6 +140,14 @@ export default function RoommateDetailPage() {
                 } catch (knockError) {
                     console.log("No existing knocks found");
                 }
+
+                // Fetch current user's preferences for comparison
+                try {
+                    const preferencesResponse = await api.get(`/preferred_roommate?userId=${user._id || user.id}`);
+                    setMyPreferences(preferencesResponse.data);
+                } catch (prefError) {
+                    console.log("No preferences found for current user");
+                }
             } catch (error: any) {
                 console.error("Error fetching roommate details:", error);
                 const errorMessage = error.response?.data?.error || "Failed to load roommate details";
@@ -144,7 +172,7 @@ export default function RoommateDetailPage() {
                 if (response.data.success) {
                     setAiAnalysis({
                         compatibilityScore: response.data.compatibilityScore,
-                        verdict: response.data.verdict,
+                        bottom_line: response.data.bottom_line,
                         spark: response.data.spark,
                         friction: response.data.friction,
                         strengths: response.data.strengths,
@@ -197,6 +225,52 @@ export default function RoommateDetailPage() {
         );
     }
 
+    // Helper function to compare my preference against their personality
+    const comparePreference = (
+        myPref: any,
+        theirValue: any,
+        fieldType: 'string' | 'boolean' | 'any' = 'string'
+    ): { isMatch: boolean; myValue: string; theirValue: string } => {
+        // Handle if user hasn't set preferences
+        if (!myPreferences || myPref === undefined || myPref === null || myPref === 'Any') {
+            return {
+                isMatch: true,
+                myValue: 'Any',
+                theirValue: String(theirValue || 'Not specified')
+            };
+        }
+
+        // Handle boolean preferences (smoking, pets)
+        if (fieldType === 'boolean') {
+            const match = myPref === theirValue;
+            return {
+                isMatch: match,
+                myValue: myPref ? 'Yes' : 'No',
+                theirValue: theirValue ? 'Yes' : 'No'
+            };
+        }
+
+        // Handle string/enum preferences
+        if (fieldType === 'string' || fieldType === 'any') {
+            // Normalize for comparison (case-insensitive)
+            const prefNorm = String(myPref).toLowerCase().trim();
+            const valueNorm = String(theirValue || '').toLowerCase().trim();
+
+            const match = prefNorm === valueNorm || prefNorm === 'any' || prefNorm === 'flexible';
+            return {
+                isMatch: match,
+                myValue: String(myPref),
+                theirValue: String(theirValue || 'Not specified')
+            };
+        }
+
+        return {
+            isMatch: false,
+            myValue: String(myPref),
+            theirValue: String(theirValue)
+        };
+    };
+
     const handleKnockKnock = async () => {
         if (!user || !id) return;
 
@@ -225,12 +299,23 @@ export default function RoommateDetailPage() {
 
         try {
             setKnockLoading(true);
-            const response = await api.post('/knocks', {
-                recipientId: id
-            });
 
-            toast.success("Knock sent! You're now connected!");
+            // Find the received knock
+            const receivedKnock = allKnocks.find((k: Knock) =>
+                k.senderId === Number(id) && k.recipientId === Number(user._id || user.id)
+            );
 
+            if (!receivedKnock) {
+                toast.error("No knock found to accept");
+                return;
+            }
+
+            // Accept the knock using the accept endpoint
+            await api.put(`/knocks/${receivedKnock._id}/accept`);
+
+            toast.success("Knock accepted! You're now connected!");
+
+            // Refresh knocks
             const knocksResponse = await api.get(`/knocks?userId=${user._id || user.id}`);
             const knocks = knocksResponse.data;
             setAllKnocks(knocks);
@@ -241,8 +326,8 @@ export default function RoommateDetailPage() {
             );
             setKnock(existingKnock);
         } catch (error: any) {
-            console.error("Error knocking back:", error);
-            toast.error(error.response?.data?.error || "Failed to send knock");
+            console.error("Error accepting knock:", error);
+            toast.error(error.response?.data?.error || "Failed to accept knock");
         } finally {
             setKnockLoading(false);
         }
@@ -262,9 +347,10 @@ export default function RoommateDetailPage() {
             k.senderId === roommateId && k.recipientId === currentUserId
         );
 
-        const hasMutualKnock = !!(sentKnock && receivedKnock);
+        // Connection is established if either knock is accepted
+        const hasConnection = !!(sentKnock?.status === 'accepted' || receivedKnock?.status === 'accepted');
 
-        if (hasMutualKnock) {
+        if (hasConnection) {
             return (
                 <Button
                     className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
@@ -419,6 +505,236 @@ export default function RoommateDetailPage() {
                     {/* Right Column - AI Analysis & Preferences */}
                     <div className="lg:col-span-2 space-y-6">
 
+                        {/* Matched Preferences */}
+                        <Card className="border-2 border-border bg-card shadow-lg">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
+                                        <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-foreground">
+                                        Matched Preferences
+                                    </h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Nationality */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_nationality, personality.nationality);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Nationality
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Study Habits */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_study_habits, personality.study_habits);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Study Habits
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Cleanliness */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_cleanliness, personality.cleanliness);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Cleanliness
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Other Preferences */}
+                        <Card className="border-2 border-border bg-card shadow-lg">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                                        <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-foreground">
+                                        Other Preferences
+                                    </h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Sleep Schedule */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_sleep_type, personality.sleep_type);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Sleep Schedule
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Social Habits */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_social, personality.social);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Social Habits
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Smoking */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_smoking, personality.smoking, 'boolean');
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Smoking
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Drinking */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_drinking, personality.drinking);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Drinking
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Temperature */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_temperature, personality.temperature);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Temperature
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Going Out */}
+                                    {(() => {
+                                        const match = comparePreference(myPreferences?.preferred_going_out, personality.going_out);
+                                        return (
+                                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-muted-foreground text-sm font-medium">
+                                                        Going Out
+                                                    </p>
+                                                    <Badge variant={match.isMatch ? "default" : "destructive"} className="text-xs">
+                                                        {match.isMatch ? "Match" : "Unmatch"}
+                                                    </Badge>
+                                                </div>
+                                                {match.isMatch ? (
+                                                    <p className="font-semibold text-foreground">{match.theirValue}</p>
+                                                ) : (
+                                                    <p className="font-semibold text-foreground">{match.myValue} → {match.theirValue}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         {/* AI Compatibility Analysis */}
                         <Card className="border-2 border-border bg-card shadow-lg overflow-hidden">
                             <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-6 border-b border-border">
@@ -461,11 +777,11 @@ export default function RoommateDetailPage() {
                                             </div>
                                         </div>
 
-                                        {/* Verdict */}
+                                        {/* Bottom Line */}
                                         <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-border">
-                                            <h4 className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">The Verdict</h4>
+                                            <h4 className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Bottom Line</h4>
                                             <p className="text-lg font-medium leading-relaxed italic">
-                                                "{aiAnalysis.verdict}"
+                                                "{aiAnalysis.bottom_line}"
                                             </p>
                                         </div>
 
@@ -537,92 +853,6 @@ export default function RoommateDetailPage() {
                                     </div>
                                 )}
                             </div>
-                        </Card>
-
-                        {/* Matched Preferences */}
-                        <Card className="border-2 border-border bg-card shadow-lg">
-                            <CardContent className="p-6">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-foreground">
-                                        Matched Preferences
-                                    </h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Nationality
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {personality.nationality || "Not specified"}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Study Habits
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {formatStudyHabits()}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Cleanliness
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {formatCleanliness()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Other Preferences */}
-                        <Card className="border-2 border-border bg-card shadow-lg">
-                            <CardContent className="p-6">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                                        <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-foreground">
-                                        Other Preferences
-                                    </h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Sleep Schedule
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {formatSleepSchedule()}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Social Habits
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {formatSocialHabits()}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-muted/50 border border-border rounded-lg p-4 md:col-span-2 hover:bg-muted transition-colors">
-                                        <p className="text-muted-foreground text-sm mb-2 font-medium">
-                                            Hobbies & Interests
-                                        </p>
-                                        <p className="font-semibold text-foreground">
-                                            {formatHobbies()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
                         </Card>
                     </div>
                 </div>

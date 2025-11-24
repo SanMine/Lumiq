@@ -114,6 +114,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(updatedUser)
         if (updatedUser) {
             localStorage.setItem('user', JSON.stringify(updatedUser))
+        } else {
+            localStorage.removeItem('user')
         }
     }
 

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Check, X } from 'lucide-react';
 import api from '@/api';
 import Loader from '@/components/shared/loader';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SettingsPageProps {
   handleLogout: () => void;
@@ -17,7 +18,15 @@ interface NotificationPreferences {
   roomMaintenance: boolean;
 }
 
+interface DormData {
+  _id: number;
+  name: string;
+  address: string;
+  description?: string;
+}
+
 export default function SettingsPage({ handleLogout }: SettingsPageProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +37,10 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
     reviewPosted: true,
     roomMaintenance: true,
   });
+  const [dormData, setDormData] = useState<DormData | null>(null);
+  const [dormName, setDormName] = useState('');
+  const [dormAddress, setDormAddress] = useState('');
+  const [dormDescription, setDormDescription] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -37,13 +50,53 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/user-settings');
-      setPreferences(response.data.notificationPreferences);
+
+      // Fetch dorm data if user has a dormId
+      if (user?.dormId) {
+        const dormResponse = await api.get(`/dorms/${user.dormId}`);
+        setDormData(dormResponse.data);
+        setDormName(dormResponse.data.name || '');
+        setDormAddress(dormResponse.data.address || '');
+        setDormDescription(dormResponse.data.description || '');
+      }
+
+      // Note: /user-settings endpoint doesn't exist yet
+      // For now, we'll just use default preferences
+      // In the future, add: const response = await api.get('/user-settings');
+      // setPreferences(response.data.notificationPreferences);
     } catch (err: any) {
       console.error('Error fetching settings:', err);
       setError(err.response?.data?.error || 'Failed to load settings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveDormChanges = async () => {
+    try {
+      if (!user?.dormId) {
+        setError('No dorm associated with this account');
+        return;
+      }
+
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      await api.put(`/dorms/${user.dormId}`, {
+        name: dormName,
+        address: dormAddress,
+        description: dormDescription,
+      });
+
+      setSuccess('Dorm information updated successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error updating dorm:', err);
+      setError(err.response?.data?.error || 'Failed to update dorm information');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -56,12 +109,11 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
       // Optimistic update
       setPreferences(prev => ({ ...prev, [key]: value }));
 
-      const response = await api.put('/user-settings/notifications', {
-        ...preferences,
-        [key]: value,
-      });
+      // Note: /user-settings/notifications endpoint doesn't exist yet
+      // For now, just update local state
+      // In the future, add: const response = await api.put('/user-settings/notifications', {...});
 
-      setSuccess(response.data.message);
+      setSuccess('Preference updated successfully!');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       console.error('Error updating preference:', err);
@@ -122,7 +174,9 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
                 <label className="text-sm font-medium text-foreground">Dorm Name</label>
                 <input
                   type="text"
-                  defaultValue="Sunshine Dormitory"
+                  value={dormName}
+                  onChange={(e) => setDormName(e.target.value)}
+                  placeholder="Enter dorm name"
                   className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -130,7 +184,9 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
                 <label className="text-sm font-medium text-foreground">Address</label>
                 <input
                   type="text"
-                  defaultValue="123 University Ave, Campus City"
+                  value={dormAddress}
+                  onChange={(e) => setDormAddress(e.target.value)}
+                  placeholder="Enter dorm address"
                   className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -138,11 +194,15 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
                 <label className="text-sm font-medium text-foreground">Description</label>
                 <textarea
                   rows={4}
-                  defaultValue="Modern student housing with excellent facilities and convenient location near campus."
+                  value={dormDescription}
+                  onChange={(e) => setDormDescription(e.target.value)}
+                  placeholder="Enter dorm description"
                   className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
-              <Button>Save Changes</Button>
+              <Button onClick={saveDormChanges} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
             </CardContent>
           </Card>
 

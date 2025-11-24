@@ -28,7 +28,7 @@ const AiMatchResultSchema = new mongoose.Schema(
             min: 0,
             max: 100,
         },
-        verdict: {
+        bottom_line: {
             type: String,
             required: true,
         },

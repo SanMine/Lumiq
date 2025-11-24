@@ -154,7 +154,7 @@ export default function MyAccountPage() {
     const handleLogout = () => {
         logout();
         toast.success("Logged out successfully");
-        navigate('/');
+        navigate('/auth/sign-in');
     };
 
     const handlePersonalitySave = async () => {

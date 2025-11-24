@@ -99,7 +99,14 @@ knocks.post("/", requireStudent, async (req, res, next) => {
             recipientId: Number(recipientId),
             status: "pending"
         });
-
+        // Create a notification for the recipient about the new knock
+        await Notification.create({
+            recipientId: Number(recipientId),
+            type: "knock",
+            title: "New Knock Received",
+            message: `User ${senderId} sent you a knock.`,
+            data: { knockId: newKnock._id }
+        });
         res.status(201).json(newKnock);
     } catch (error) {
         // Handle duplicate key error
@@ -135,7 +142,14 @@ knocks.put("/:id/accept", requireStudent, async (req, res, next) => {
         // Update knock status to accepted
         knock.status = "accepted";
         await knock.save();
-
+        // Notify the sender that their knock was accepted
+        await Notification.create({
+            recipientId: knock.senderId,
+            type: "knock",
+            title: "Knock Accepted",
+            message: `User ${knock.recipientId} accepted your knock.`,
+            data: { knockId: knock._id }
+        });
         res.json(knock);
     } catch (error) {
         next(error);

@@ -11,6 +11,7 @@
 import { User } from '../models/User.js';
 import { User_personality } from '../models/User_personality.js';
 import { Preferred_roommate } from '../models/Preferred_roommate.js';
+import { Knock } from '../models/Knock.js';
 
 /**
  * Find compatible roommates for a user using algorithmic bidirectional matching
@@ -39,7 +40,7 @@ export async function findRoommateMatches(userId) {
 
     // Get all other users
     const allUsers = await User.find({ _id: { $ne: userId } });
-    
+
     // Get personalities for all other users who are open for roommate matching
     const personalities = await User_personality.find({
       userId: { $in: allUsers.map(u => u._id) },
@@ -62,9 +63,31 @@ export async function findRoommateMatches(userId) {
       preferenceMap[p.userId] = p;
     });
 
+    // Get all knocks for the current user to filter out connected users
+    const userKnocks = await Knock.find({
+      $or: [
+        { senderId: userId },
+        { recipientId: userId }
+      ]
+    });
+
+    // Get IDs of users with accepted connections
+    const connectedUserIds = new Set();
+    userKnocks.forEach(knock => {
+      if (knock.status === 'accepted') {
+        // Add the other user in the knock to the connected list
+        if (knock.senderId === userId) {
+          connectedUserIds.add(knock.recipientId);
+        } else {
+          connectedUserIds.add(knock.senderId);
+        }
+      }
+    });
+
     // Filter users who have both personality and preference profiles
-    const candidateUsers = allUsers.filter(u => 
-      personalityMap[u._id] && preferenceMap[u._id]
+    // AND are not already connected
+    const candidateUsers = allUsers.filter(u =>
+      personalityMap[u._id] && preferenceMap[u._id] && !connectedUserIds.has(u._id)
     );
 
     if (candidateUsers.length === 0) {
@@ -73,7 +96,7 @@ export async function findRoommateMatches(userId) {
 
     // Analyze compatibility for each candidate
     const matches = [];
-    
+
     for (const candidate of candidateUsers) {
       const candidatePersonality = personalityMap[candidate._id];
       const candidatePreferences = preferenceMap[candidate._id];
@@ -146,8 +169,8 @@ function calculatePreferenceToPersonalityMatch(preferences, personality) {
   const details = [];
 
   // Age Range Check (Weight: 10)
-  const ageInRange = personality.age >= preferences.preferred_age_range.min && 
-                      personality.age <= preferences.preferred_age_range.max;
+  const ageInRange = personality.age >= preferences.preferred_age_range.min &&
+    personality.age <= preferences.preferred_age_range.max;
   if (ageInRange) {
     scores.push(10);
     details.push(`✓ Age ${personality.age} is within your preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
@@ -223,9 +246,9 @@ function calculatePreferenceToPersonalityMatch(preferences, personality) {
   }
 
   // Noise Tolerance Check (Weight: 10)
-  if (preferences.preferred_noise_tolerance === 'Flexible' || 
-      personality.noise_tolerance === 'Flexible' ||
-      preferences.preferred_noise_tolerance === personality.noise_tolerance) {
+  if (preferences.preferred_noise_tolerance === 'Flexible' ||
+    personality.noise_tolerance === 'Flexible' ||
+    preferences.preferred_noise_tolerance === personality.noise_tolerance) {
     scores.push(10);
     details.push(`✓ Noise tolerance ${personality.noise_tolerance} is compatible`);
   } else {
@@ -234,9 +257,9 @@ function calculatePreferenceToPersonalityMatch(preferences, personality) {
   }
 
   // Temperature Check (Weight: 10)
-  if (preferences.preferred_temperature === 'Flexible' || 
-      personality.temperature === 'Flexible' ||
-      preferences.preferred_temperature === personality.temperature) {
+  if (preferences.preferred_temperature === 'Flexible' ||
+    personality.temperature === 'Flexible' ||
+    preferences.preferred_temperature === personality.temperature) {
     scores.push(10);
     details.push(`✓ Temperature preference ${personality.temperature} is compatible`);
   } else {
@@ -245,8 +268,8 @@ function calculatePreferenceToPersonalityMatch(preferences, personality) {
   }
 
   // Nationality Check (Weight: 10) - Optional
-  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' || 
-      preferences.preferred_nationality === personality.nationality) {
+  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' ||
+    preferences.preferred_nationality === personality.nationality) {
     scores.push(10);
     details.push(`✓ Nationality compatible`);
   } else {
@@ -278,8 +301,8 @@ function calculatePersonalityToPreferenceMatch(personality, preferences) {
   const details = [];
 
   // Age Range Check
-  const ageInRange = personality.age >= preferences.preferred_age_range.min && 
-                      personality.age <= preferences.preferred_age_range.max;
+  const ageInRange = personality.age >= preferences.preferred_age_range.min &&
+    personality.age <= preferences.preferred_age_range.max;
   if (ageInRange) {
     scores.push(10);
     details.push(`✓ Your age ${personality.age} fits their preferred range (${preferences.preferred_age_range.min}-${preferences.preferred_age_range.max})`);
@@ -354,9 +377,9 @@ function calculatePersonalityToPreferenceMatch(personality, preferences) {
   }
 
   // Noise Tolerance Check
-  if (preferences.preferred_noise_tolerance === 'Flexible' || 
-      personality.noise_tolerance === 'Flexible' ||
-      preferences.preferred_noise_tolerance === personality.noise_tolerance) {
+  if (preferences.preferred_noise_tolerance === 'Flexible' ||
+    personality.noise_tolerance === 'Flexible' ||
+    preferences.preferred_noise_tolerance === personality.noise_tolerance) {
     scores.push(10);
     details.push(`✓ Your noise tolerance ${personality.noise_tolerance} is compatible with their preference`);
   } else {
@@ -365,9 +388,9 @@ function calculatePersonalityToPreferenceMatch(personality, preferences) {
   }
 
   // Temperature Check
-  if (preferences.preferred_temperature === 'Flexible' || 
-      personality.temperature === 'Flexible' ||
-      preferences.preferred_temperature === personality.temperature) {
+  if (preferences.preferred_temperature === 'Flexible' ||
+    personality.temperature === 'Flexible' ||
+    preferences.preferred_temperature === personality.temperature) {
     scores.push(10);
     details.push(`✓ Your temperature preference ${personality.temperature} is compatible with theirs`);
   } else {
@@ -376,8 +399,8 @@ function calculatePersonalityToPreferenceMatch(personality, preferences) {
   }
 
   // Nationality Check - Optional
-  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' || 
-      preferences.preferred_nationality === personality.nationality) {
+  if (!preferences.preferred_nationality || preferences.preferred_nationality === '' ||
+    preferences.preferred_nationality === personality.nationality) {
     scores.push(10);
     details.push(`✓ Nationality compatible`);
   } else {
@@ -406,7 +429,7 @@ function calculatePersonalityToPreferenceMatch(personality, preferences) {
  */
 function generateOverallReason(averageScore, preferencesMatch, personalityMatch) {
   let reason = '';
-  
+
   if (averageScore >= 90) {
     reason = `Exceptional match! This is a highly compatible roommate with ${averageScore}% overall compatibility. `;
   } else if (averageScore >= 80) {
@@ -421,7 +444,7 @@ function generateOverallReason(averageScore, preferencesMatch, personalityMatch)
   const strongPoints = [];
   if (preferencesMatch.score >= 75) strongPoints.push('their personality fits your preferences excellently');
   if (personalityMatch.score >= 75) strongPoints.push('your personality fits their preferences excellently');
-  
+
   if (strongPoints.length > 0) {
     reason += `Key strengths: ${strongPoints.join(' and ')}.`;
   }
@@ -438,18 +461,18 @@ function generateOverallReason(averageScore, preferencesMatch, personalityMatch)
 export async function getMatchingStats(userId, minMatchPercentage = 0) {
   try {
     const matches = await findRoommateMatches(userId);
-    
+
     const goodMatches = matches.filter(m => m.matchPercentage >= minMatchPercentage);
-    
+
     const stats = {
       totalCandidates: matches.length,
       goodMatches: goodMatches.length,
       averageMatchPercentage:
         matches.length > 0
           ? Math.round(
-              matches.reduce((sum, m) => sum + m.matchPercentage, 0) /
-                matches.length
-            )
+            matches.reduce((sum, m) => sum + m.matchPercentage, 0) /
+            matches.length
+          )
           : 0,
       bestMatch: matches.length > 0 ? matches[0] : null,
       worstMatch: matches.length > 0 ? matches[matches.length - 1] : null,

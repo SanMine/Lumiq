@@ -9,6 +9,8 @@ import AuthDropdown from './auth-drop-down'
 import { ModeToggle } from './mode-toggle'
 import { SiLogseq } from "react-icons/si";
 
+import Notifications from './notifications'
+
 export default function Navbar() {
     const [isMobMenuOpen, setIsMobMenuOpen] = useState(false)
     const navigate = useNavigate()
@@ -53,6 +55,7 @@ export default function Navbar() {
                     {/* Desktop Right Side */}
                     <div className='hidden md:flex items-center gap-3'>
                         {user ? <>
+                            <Notifications />
                             <ModeToggle />
                             <AuthDropdown />
                         </> : <>
