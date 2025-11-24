@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import api from "@/api";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationItem {
     _id: number;
@@ -24,6 +25,7 @@ interface NotificationItem {
 
 export default function Notifications() {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const navigate = useNavigate();
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     const fetchNotifications = async () => {
@@ -49,14 +51,30 @@ export default function Notifications() {
         return () => clearInterval(interval);
     }, []);
 
-    const markAsRead = async (id: number) => {
+    const handleNotificationClick = async (notification: NotificationItem) => {
+        // Mark as read
         try {
-            await api.put(`/notifications/${id}/read`);
+            await api.put(`/notifications/${notification._id}/read`);
             setNotifications((prev) =>
-                prev.map((n) => (n._id === id ? { ...n, read: true } : n))
+                prev.map((n) => (n._id === notification._id ? { ...n, read: true } : n))
             );
         } catch (error) {
             console.error("Failed to mark as read", error);
+        }
+
+        // Navigate based on notification type
+        if (notification.type === "knock") {
+            navigate("/knockknock");
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
+        e.stopPropagation(); // Prevent triggering the notification click
+        try {
+            await api.delete(`/notifications/${id}`);
+            setNotifications((prev) => prev.filter((n) => n._id !== id));
+        } catch (error) {
+            console.error("Failed to delete notification", error);
         }
     };
 
@@ -110,18 +128,28 @@ export default function Notifications() {
                                 <DropdownMenuItem
                                     key={notification._id}
                                     className={cn(
-                                        "flex flex-col items-start gap-1 p-4 cursor-pointer focus:bg-muted/50",
+                                        "flex flex-col items-start gap-1 p-4 cursor-pointer focus:bg-muted/50 relative group",
                                         !notification.read && "bg-muted/30"
                                     )}
-                                    onClick={() => markAsRead(notification._id)}
+                                    onClick={() => handleNotificationClick(notification)}
                                 >
                                     <div className="flex w-full items-start justify-between gap-2">
                                         <span className={cn("text-sm font-semibold leading-none", !notification.read && "text-primary")}>
                                             {notification.title}
                                         </span>
-                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                            {notification.time}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                                {notification.time}
+                                            </span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => handleDelete(e, notification._id)}
+                                            >
+                                                <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                            </Button>
+                                        </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground line-clamp-2">
                                         {notification.description}
@@ -137,12 +165,6 @@ export default function Notifications() {
                             ))}
                         </div>
                     )}
-                </div>
-                <DropdownMenuSeparator />
-                <div className="p-2">
-                    <Button variant="outline" className="w-full h-8 text-xs" asChild>
-                        <a href="/notifications">View all notifications</a>
-                    </Button>
                 </div>
             </DropdownMenuContent>
         </DropdownMenu>

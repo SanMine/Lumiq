@@ -101,6 +101,36 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
       // Update user's dormId
       const { User } = await import("../models/User.js");
       await User.findByIdAndUpdate(req.user.id, { dormId: dormId });
+
+      // Notify the dorm admin about the new booking
+      try {
+        const { Dorm } = await import("../models/Dorm.js");
+        const { Notification } = await import("../models/Notification.js");
+
+        const dorm = await Dorm.findById(dormId);
+        const user = await User.findById(req.user.id);
+
+        if (dorm && dorm.admin_id) {
+          const userName = user ? user.name : "A student";
+          const dormName = dorm.name || "your dorm";
+
+          await Notification.create({
+            recipientId: dorm.admin_id,
+            type: "system",
+            title: "New Room Booking 🏠",
+            message: `${userName} just booked a room at ${dormName}!`,
+            data: {
+              bookingId: newBooking._id,
+              dormId: dormId,
+              userId: req.user.id,
+              roomId: roomId
+            }
+          });
+          console.log(`✅ Booking notification sent to admin ${dorm.admin_id}`);
+        }
+      } catch (notifError) {
+        console.error("❌ Failed to send booking notification:", notifError);
+      }
     } catch (reserveErr) {
       // If reservation fails, keep booking as Pending. Do not block booking creation.
       console.warn("Room reservation after booking creation failed:", reserveErr?.message || reserveErr);

@@ -25,7 +25,29 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-import { Dorm } from './mockData';
+
+// Define Dorm interface
+interface Dorm {
+  _id: number;
+  name: string;
+  location?: string;
+  description?: string;
+  image_url?: string;
+  availibility?: boolean;
+  facilities?: string[] | string;
+  price?: number;
+  insurance_policy?: number;
+  Water_fee?: number;
+  Electricity_fee?: number;
+  waterBillingType?: 'per-month' | 'per-unit';
+  electricityBillingType?: 'per-month' | 'per-unit';
+  contract_duration?: number;
+  contact_gmail?: string;
+  contact_line?: string;
+  contact_facebook?: string;
+  contact_phone?: string;
+  rating?: number;
+}
 
 interface MyDormPageProps {
   token: string;
@@ -507,7 +529,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Water Fee</h3>
-                  <Tabs value={formData.waterBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, waterBillingType: value })} className="w-auto">
+                  <Tabs value={formData.waterBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, waterBillingType: value as 'per-month' | 'per-unit' })} className="w-auto">
                     <TabsList className="grid w-auto grid-cols-2 gap-0">
                       <TabsTrigger value="per-month" className="text-xs px-3">Per Month</TabsTrigger>
                       <TabsTrigger value="per-unit" className="text-xs px-3">Per Unit</TabsTrigger>
@@ -539,7 +561,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Electricity Fee</h3>
-                  <Tabs value={formData.electricityBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, electricityBillingType: value })} className="w-auto">
+                  <Tabs value={formData.electricityBillingType || 'per-month'} onValueChange={(value) => setFormData({ ...formData, electricityBillingType: value as 'per-month' | 'per-unit' })} className="w-auto">
                     <TabsList className="grid w-auto grid-cols-2 gap-0">
                       <TabsTrigger value="per-month" className="text-xs px-3">Per Month</TabsTrigger>
                       <TabsTrigger value="per-unit" className="text-xs px-3">Per Unit</TabsTrigger>

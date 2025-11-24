@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
-import { LayoutDashboard, Bell, Search, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Search, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/shared/theme-provider';
 import { Button } from '@/components/ui/button';
+import Notifications from '@/components/shared/notifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, token, logout } = useAuth();
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -127,17 +128,14 @@ export default function AdminDashboard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button className="relative rounded-full p-2 hover:bg-accent">
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive"></span>
-          </button>
+          <Notifications />
         </header>
 
         {/* Dashboard Content - Render based on active tab */}
         <main className="p-6">
           {activeTab === 'overview' && <OverviewPage />}
-          {activeTab === 'dorms' && <MyDormPage token={token} />}
-          {activeTab === 'rooms' && <RoomsPage token={token} />}
+          {activeTab === 'dorms' && token && <MyDormPage token={token} />}
+          {activeTab === 'rooms' && token && <RoomsPage token={token} />}
           {activeTab === 'bookings' && <BookingsPage />}
           {activeTab === 'analytics' && <AnalyticsPage />}
           {activeTab === 'settings' && <SettingsPage handleLogout={handleLogout} />}

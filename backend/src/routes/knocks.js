@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Knock } from "../models/Knock.js";
 import { User } from "../models/User.js";
+import { Notification } from "../models/Notification.js";
 import { requireAuth, requireStudent } from "../middlewares/auth.js";
 
 export const knocks = Router();
@@ -99,14 +100,25 @@ knocks.post("/", requireStudent, async (req, res, next) => {
             recipientId: Number(recipientId),
             status: "pending"
         });
+
         // Create a notification for the recipient about the new knock
-        await Notification.create({
-            recipientId: Number(recipientId),
-            type: "knock",
-            title: "New Knock Received",
-            message: `User ${senderId} sent you a knock.`,
-            data: { knockId: newKnock._id }
-        });
+        try {
+            // Fetch sender info to get the name
+            const sender = await User.findById(senderId);
+            const senderName = sender ? sender.name : "Someone";
+
+            const notification = await Notification.create({
+                recipientId: Number(recipientId),
+                type: "knock",
+                title: "Knock Knock!",
+                message: `${senderName} wants to connect with you!`,
+                data: { knockId: newKnock._id, senderId: senderId }
+            });
+            console.log("✅ Notification created:", notification);
+        } catch (notifError) {
+            console.error("❌ Failed to create notification:", notifError);
+        }
+
         res.status(201).json(newKnock);
     } catch (error) {
         // Handle duplicate key error
@@ -142,14 +154,25 @@ knocks.put("/:id/accept", requireStudent, async (req, res, next) => {
         // Update knock status to accepted
         knock.status = "accepted";
         await knock.save();
+
         // Notify the sender that their knock was accepted
-        await Notification.create({
-            recipientId: knock.senderId,
-            type: "knock",
-            title: "Knock Accepted",
-            message: `User ${knock.recipientId} accepted your knock.`,
-            data: { knockId: knock._id }
-        });
+        try {
+            // Fetch accepter info to get the name
+            const accepter = await User.findById(knock.recipientId);
+            const accepterName = accepter ? accepter.name : "Someone";
+
+            const notification = await Notification.create({
+                recipientId: knock.senderId,
+                type: "knock",
+                title: "Connection Accepted! 🎉",
+                message: `${accepterName} accepted your connection request!`,
+                data: { knockId: knock._id, accepterId: knock.recipientId }
+            });
+            console.log("✅ Acceptance notification created:", notification);
+        } catch (notifError) {
+            console.error("❌ Failed to create acceptance notification:", notifError);
+        }
+
         res.json(knock);
     } catch (error) {
         next(error);

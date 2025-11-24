@@ -91,12 +91,25 @@ export default function ConnectionPage() {
                     k.senderId === Number(userId) && k.recipientId === Number(currentUserId)
                 );
 
-                // Verify mutual knocks (both users knocked each other)
-                // Connection is established if either knock is accepted
-                const hasConnection = knockToThem?.status === 'accepted' || knockFromThem?.status === 'accepted';
+                console.log("🔍 Connection validation:", {
+                    currentUserId,
+                    connectedUserId: userId,
+                    knockToThem,
+                    knockFromThem,
+                    knockToThemStatus: knockToThem?.status,
+                    knockFromThemStatus: knockFromThem?.status
+                });
+
+                // Connection is established if ANY knock between them is accepted
+                // (Either A knocked B and B accepted, OR B knocked A and A accepted)
+                const hasConnection =
+                    (knockToThem && knockToThem.status === 'accepted') ||
+                    (knockFromThem && knockFromThem.status === 'accepted');
+
+                console.log("✅ Has connection:", hasConnection);
 
                 if (!hasConnection) {
-                    setError("Connection not established. One user must accept the knock.");
+                    setError("Connection not established. Knock must be accepted.");
                     toast.error("No mutual connection found");
                     navigate('/roommates');
                     return;

@@ -53,17 +53,28 @@ export default function KnockKnockPage() {
                 const knocks = knocksResponse.data;
                 setAllKnocks(knocks);
 
-                // Filter for incoming knocks (where current user is recipient)
-                const incoming = knocks.filter((k: Knock) => k.recipientId === currentUserId);
+                // Filter for:
+                // 1. Incoming knocks (where current user is recipient)
+                // 2. Outgoing ACCEPTED knocks (where current user is sender AND status is accepted)
+                const relevantKnocks = knocks.filter((k: Knock) =>
+                    k.recipientId === currentUserId ||
+                    (k.senderId === currentUserId && k.status === 'accepted')
+                );
 
-                // Fetch sender profiles for each incoming knock
+                // Fetch user profiles for each knock
                 const knocksWithProfiles = await Promise.all(
-                    incoming.map(async (knock: Knock) => {
+                    relevantKnocks.map(async (knock: Knock) => {
                         try {
-                            const userResponse = await api.get(`/users/${knock.senderId}`);
+                            // If current user is recipient, fetch sender profile
+                            // If current user is sender (accepted knock), fetch recipient profile
+                            const otherUserId = knock.recipientId === currentUserId
+                                ? knock.senderId
+                                : knock.recipientId;
+
+                            const userResponse = await api.get(`/users/${otherUserId}`);
                             return { ...knock, senderProfile: userResponse.data };
                         } catch (error) {
-                            console.error(`Failed to fetch user ${knock.senderId}:`, error);
+                            console.error(`Failed to fetch user:`, error);
                             return knock;
                         }
                     })
@@ -98,12 +109,19 @@ export default function KnockKnockPage() {
             const knocks = knocksResponse.data;
             setAllKnocks(knocks);
 
-            const incoming = knocks.filter((k: Knock) => k.recipientId === currentUserId);
+            // Filter with same logic as initial fetch
+            const relevantKnocks = knocks.filter((k: Knock) =>
+                k.recipientId === currentUserId ||
+                (k.senderId === currentUserId && k.status === 'accepted')
+            );
 
             const knocksWithProfiles = await Promise.all(
-                incoming.map(async (k: Knock) => {
+                relevantKnocks.map(async (k: Knock) => {
                     try {
-                        const userResponse = await api.get(`/users/${k.senderId}`);
+                        const otherUserId = k.recipientId === currentUserId
+                            ? k.senderId
+                            : k.recipientId;
+                        const userResponse = await api.get(`/users/${otherUserId}`);
                         return { ...k, senderProfile: userResponse.data };
                     } catch (error) {
                         return k;
@@ -219,28 +237,42 @@ export default function KnockKnockPage() {
 
                                             {/* Action Buttons */}
                                             <div className="flex gap-2">
-                                                {hasConnection ? (
-                                                    <Button
-                                                        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                                                        onClick={() => navigate(`/connection/${knock.senderId}`)}
-                                                    >
-                                                        View Connection
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                                                        onClick={() => handleKnockBack(knock)}
-                                                        disabled={knockingBack.has(knock.senderId)}
-                                                    >
-                                                        {knockingBack.has(knock.senderId) ? "Sending..." : "Knock Back"}
-                                                    </Button>
-                                                )}
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => navigate(`/roommates/${knock.senderId}`)}
-                                                >
-                                                    View Profile
-                                                </Button>
+                                                {(() => {
+                                                    // Determine the "other user" ID
+                                                    // If current user is recipient, other user is sender
+                                                    // If current user is sender (accepted outgoing), other user is recipient
+                                                    const currentUserId = user?._id || user?.id;
+                                                    const otherUserId = knock.recipientId === currentUserId
+                                                        ? knock.senderId
+                                                        : knock.recipientId;
+
+                                                    return (
+                                                        <>
+                                                            {hasConnection ? (
+                                                                <Button
+                                                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                                                                    onClick={() => navigate(`/connection/${otherUserId}`)}
+                                                                >
+                                                                    View Connection
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                                                                    onClick={() => handleKnockBack(knock)}
+                                                                    disabled={knockingBack.has(knock.senderId)}
+                                                                >
+                                                                    {knockingBack.has(knock.senderId) ? "Sending..." : "Knock Back"}
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => navigate(`/roommates/${otherUserId}`)}
+                                                            >
+                                                                View Profile
+                                                            </Button>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     </CardContent>
