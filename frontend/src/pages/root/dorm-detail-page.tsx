@@ -387,8 +387,8 @@ export default function DormDetail() {
                     <th className="pb-3 font-semibold">Size</th>
                     <th className="pb-3 font-semibold">Price</th>
                     <th className="pb-3 font-semibold">Availability</th>
-                    <th className="pb-3 font-semibold">Total Available</th>
-                    <th className="pb-3 font-semibold">View Available room</th>
+                    <th className="pb-3 font-semibold">Total</th>
+                    <th className="pb-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -414,38 +414,11 @@ export default function DormDetail() {
                             {availability === "Available" ? "Available" : availability === "Limited" ? "Limited" : "Full"}
                           </Badge>
                         </td>
-                        <td className="py-4 text-foreground font-medium">{grp.statusCount.Available}</td>
+                        <td className="py-4 text-foreground font-medium">{grp.count}</td>
                         <td className="py-4">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">
-                                View Available room
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                              <DialogHeader>
-                                <DialogTitle>Available Rooms - {grp.room_type}</DialogTitle>
-                              </DialogHeader>
-                              <div className="grid grid-cols-3 gap-4 py-4">
-                                {grp.rooms
-                                  .filter((r: Room) => r.status === 'Available')
-                                  .map((r: Room) => (
-                                    <Link
-                                      key={r._id}
-                                      to={`/dorms/${id}/rooms/${r._id}`}
-                                      className="flex items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium"
-                                    >
-                                      {r.room_number}
-                                    </Link>
-                                  ))}
-                                {grp.rooms.filter((r: Room) => r.status === 'Available').length === 0 && (
-                                  <div className="col-span-3 text-center text-muted-foreground">
-                                    No available rooms found.
-                                  </div>
-                                )}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Link to={`/dorms/${id}/rooms/${grp.sampleRoomId ?? 'single'}`}>
+                            <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">View Rooms</Button>
+                          </Link>
                         </td>
                       </tr>
                     )
@@ -463,26 +436,9 @@ export default function DormDetail() {
                       </td>
                       <td className="py-4 text-foreground font-medium">1</td>
                       <td className="py-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">
-                              View Available room
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Available Rooms - Single Room</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid grid-cols-3 gap-4 py-4">
-                              <Link
-                                to={`/dorms/${id}/rooms/single`}
-                                className="flex items-center justify-center p-3 rounded-lg border border-border hover:bg-muted transition-colors text-foreground font-medium"
-                              >
-                                101
-                              </Link>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Link to={`/dorms/${id}/rooms/single`}>
+                          <Button className="rounded-full bg-gradient w-fit min-h-[36px] text-white cursor-pointer">View Rooms</Button>
+                        </Link>
                       </td>
                     </tr>
                   )}
