@@ -112,30 +112,46 @@ const LumiqLogoReveal = () => {
   const iconConfigs = [
     {
       Icon: Book,
-      initialPos: { x: -120, y: -80 },
-      driftPos: { x: 15, y: -10, rotate: 10 },
-      finalPos: { finalX: -60, finalY: -60 },
+      initialX: -100,
+      initialY: -70,
+      driftX: 15,
+      driftY: -10,
+      rotate: 10,
+      finalX: -55,
+      finalY: -55,
       color: 'from-pink-500'
     },
     {
       Icon: Lamp,
-      initialPos: { x: -120, y: 80 },
-      driftPos: { x: -15, y: 10, rotate: -8 },
-      finalPos: { finalX: -60, finalY: 60 },
+      initialX: -100,
+      initialY: 70,
+      driftX: -15,
+      driftY: 10,
+      rotate: -8,
+      finalX: -55,
+      finalY: 55,
       color: 'from-pink-400'
     },
     {
       Icon: Headphones,
-      initialPos: { x: 120, y: -80 },
-      driftPos: { x: -10, y: 15, rotate: -12 },
-      finalPos: { finalX: 60, finalY: -60 },
+      initialX: 100,
+      initialY: -70,
+      driftX: -10,
+      driftY: 15,
+      rotate: -12,
+      finalX: 55,
+      finalY: -55,
       color: 'to-purple-500'
     },
     {
       Icon: Laptop,
-      initialPos: { x: 120, y: 80 },
-      driftPos: { x: 10, y: -12, rotate: 8 },
-      finalPos: { finalX: 60, finalY: 60 },
+      initialX: 100,
+      initialY: 70,
+      driftX: 10,
+      driftY: -12,
+      rotate: 8,
+      finalX: 55,
+      finalY: 55,
       color: 'to-purple-600'
     }
   ];
