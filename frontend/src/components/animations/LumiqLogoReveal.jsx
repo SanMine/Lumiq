@@ -227,12 +227,12 @@ const LumiqLogoReveal = () => {
         {/* Floating Icons (Frames 1-5) */}
         <div className="absolute inset-0 flex items-center justify-center">
           {iconConfigs.map((config, index) => {
-            const { Icon, initialPos, driftPos, finalPos, color } = config;
+            const { Icon, color, ...positions } = config;
             
             let animateState = 'initial';
-            if (animationStage >= 1) animateState = 'floating';
+            if (animationStage >= 1 && animationStage < 2) animateState = 'floating';
             if (animationStage === 1) animateState = 'drifting';
-            if (animationStage === 2) animateState = 'morphing';
+            if (animationStage === 2 || animationStage === 3) animateState = 'morphing';
             if (animationStage >= 4) animateState = 'snapping';
 
             return (
@@ -242,17 +242,17 @@ const LumiqLogoReveal = () => {
                 style={{
                   left: '50%',
                   top: '50%',
-                  x: initialPos.x,
-                  y: initialPos.y
+                  marginLeft: '-24px',
+                  marginTop: '-24px'
                 }}
                 variants={iconVariants}
                 initial="initial"
                 animate={animateState}
-                custom={animationStage === 1 ? driftPos : finalPos}
+                custom={positions}
               >
-                <div className={`p-4 rounded-full bg-gradient-to-br ${color} to-transparent backdrop-blur-sm ${animationStage >= 5 ? 'opacity-90' : 'opacity-100'}`}>
+                <div className={`p-3 rounded-full bg-gradient-to-br ${color} via-purple-500/80 to-purple-600/60 backdrop-blur-sm shadow-xl ${animationStage >= 5 ? 'opacity-90' : 'opacity-100'}`}>
                   <Icon 
-                    className="w-8 h-8 text-white drop-shadow-lg" 
+                    className="w-10 h-10 text-white drop-shadow-lg" 
                     strokeWidth={2.5}
                   />
                 </div>
@@ -260,10 +260,10 @@ const LumiqLogoReveal = () => {
                 {/* Icon glow effect */}
                 {animationStage >= 5 && (
                   <motion.div
-                    className={`absolute inset-0 rounded-full bg-gradient-to-br ${color} to-transparent blur-xl`}
+                    className={`absolute inset-0 rounded-full bg-gradient-to-br ${color} via-purple-500 to-purple-600 blur-xl -z-10`}
                     animate={{
                       opacity: [0.3, 0.6, 0.3],
-                      scale: [1, 1.2, 1]
+                      scale: [1, 1.3, 1]
                     }}
                     transition={{
                       duration: 2,
