@@ -47,6 +47,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/demo" element={<LogoDemo />} />
           <Route path="/auth" element={<AuthRootLayout />}>
             <Route path="sign-in" element={<SignIn />} />
             <Route path="sign-up" element={<SignUp />} />
