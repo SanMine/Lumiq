@@ -5,6 +5,7 @@ import axios from "axios";
 import AuthRootLayout from "./pages/auth/AuthRootLayout";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
+import LogoDemo from "./pages/LogoDemo";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
