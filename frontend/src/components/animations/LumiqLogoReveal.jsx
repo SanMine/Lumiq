@@ -24,36 +24,50 @@ const LumiqLogoReveal = () => {
   }, []);
 
   const iconVariants = {
-    initial: { opacity: 0, scale: 0, y: 0, x: 0, rotate: 0 },
-    floating: { 
+    initial: (custom) => ({ 
+      opacity: 0, 
+      scale: 0, 
+      y: custom.initialY, 
+      x: custom.initialX, 
+      rotate: 0 
+    }),
+    floating: (custom) => ({ 
       opacity: 1, 
-      scale: 1, 
+      scale: 1,
+      y: custom.initialY,
+      x: custom.initialX,
       transition: { 
         duration: 0.8, 
         ease: [0.68, -0.55, 0.265, 1.55] // Elastic ease
       } 
-    },
+    }),
     drifting: (custom) => ({
-      x: custom.x,
-      y: custom.y,
+      x: custom.initialX + custom.driftX,
+      y: custom.initialY + custom.driftY,
       rotate: custom.rotate,
+      opacity: 1,
+      scale: 1,
       transition: { 
         duration: 1, 
         ease: 'easeInOut',
-        repeat: animationStage === 1 ? 1 : 0,
+        repeat: 1,
         repeatType: 'reverse'
       }
     }),
-    morphing: {
+    morphing: (custom) => ({
+      x: custom.initialX + custom.driftX,
+      y: custom.initialY + custom.driftY,
       scale: 0.7,
       rotate: 360,
+      opacity: 1,
       transition: { duration: 1, ease: 'easeInOut' }
-    },
+    }),
     snapping: (custom) => ({
       x: custom.finalX,
       y: custom.finalY,
-      scale: 0.8,
+      scale: 1,
       rotate: 0,
+      opacity: 0.9,
       transition: { 
         duration: 0.8, 
         ease: [0.68, -0.55, 0.265, 1.55] // Elastic snap
