@@ -66,8 +66,8 @@ export default function AllDorms() {
   };
 
   const getRating = (dorm: Dorm): number => {
-    const avgRating = typeof dorm.average_rating === 'string' 
-      ? parseFloat(dorm.average_rating) 
+    const avgRating = typeof dorm.average_rating === 'string'
+      ? parseFloat(dorm.average_rating)
       : dorm.average_rating;
     return avgRating || dorm.rating || 0;
   };

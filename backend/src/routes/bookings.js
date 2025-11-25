@@ -147,10 +147,16 @@ bookings.get("/", requireAuth, async (req, res, next) => {
   try {
     // Admins (including dorm_admin) can see all bookings, others see only their own
     if (req.user.role === "admin" || req.user.role === "dorm_admin") {
-      const all = await Booking.find().sort({ _id: -1 });
+      const all = await Booking.find()
+        .populate("userId", "name email")
+        .populate("roomId", "room_number")
+        .sort({ _id: -1 });
       return res.json(all);
     }
-    const mine = await Booking.find({ userId: req.user.id }).sort({ _id: -1 });
+    const mine = await Booking.find({ userId: req.user.id })
+      .populate("userId", "name email")
+      .populate("roomId", "room_number")
+      .sort({ _id: -1 });
     res.json(mine);
   } catch (err) {
     next(err);
@@ -160,10 +166,12 @@ bookings.get("/", requireAuth, async (req, res, next) => {
 // Get single booking (protected) — only owner or admin
 bookings.get("/:id", requireAuth, async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id)
+      .populate("userId", "name email")
+      .populate("roomId", "room_number");
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    const isOwner = String(booking.userId) === String(req.user.id);
+    const isOwner = String(booking.userId?._id || booking.userId) === String(req.user.id);
     // Allow dorm_admins as well as admins
     const isAdmin = req.user.role === "admin" || req.user.role === "dorm_admin";
     if (!isOwner && !isAdmin) {

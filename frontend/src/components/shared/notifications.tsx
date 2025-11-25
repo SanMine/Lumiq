@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import api from "@/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 interface NotificationItem {
     _id: number;
@@ -21,6 +21,13 @@ interface NotificationItem {
     time: string;
     read: boolean;
     type: string;
+    data?: {
+        senderId?: number;
+        conversationId?: number;
+        messageId?: number;
+        knockId?: number;
+        accepterId?: number;
+    };
 }
 
 export default function Notifications() {
@@ -31,14 +38,25 @@ export default function Notifications() {
     const fetchNotifications = async () => {
         try {
             const res = await api.get("/notifications");
-            const data = res.data.map((n: any) => ({
-                _id: n._id,
-                title: n.title,
-                description: n.message,
-                time: new Date(n.createdAt).toLocaleString(),
-                read: n.read,
-                type: n.type,
-            }));
+            console.log("📬 Raw notifications from backend:", res.data);
+            const data = res.data.map((n: any) => {
+                console.log("Mapping notification:", {
+                    _id: n._id,
+                    title: n.title,
+                    type: n.type,
+                    read: n.read
+                });
+                return {
+                    _id: n._id || n.id, // Fallback to id if _id is missing
+                    title: n.title,
+                    description: n.message,
+                    time: new Date(n.createdAt).toLocaleString(),
+                    read: n.read,
+                    type: n.type,
+                    data: n.data, // Include data field for navigation
+                };
+            });
+            console.log("📬 Mapped notifications:", data);
             setNotifications(data);
         } catch (error) {
             console.error("Failed to fetch notifications", error);
@@ -47,45 +65,83 @@ export default function Notifications() {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000);
+        // Poll every 3 seconds for near real-time updates
+        const interval = setInterval(fetchNotifications, 3000);
         return () => clearInterval(interval);
     }, []);
 
     const handleNotificationClick = async (notification: NotificationItem) => {
-        // Mark as read
+        console.log("🔔 Notification clicked:", notification);
+
+        if (!notification._id) {
+            console.error("❌ Notification has no _id:", notification);
+            return;
+        }
+
+        // Mark as read first
         try {
+            console.log(`📝 Marking notification ${notification._id} as read...`);
             await api.put(`/notifications/${notification._id}/read`);
             setNotifications((prev) =>
                 prev.map((n) => (n._id === notification._id ? { ...n, read: true } : n))
             );
+            console.log(`✅ Notification ${notification._id} marked as read`);
         } catch (error) {
             console.error("Failed to mark as read", error);
         }
 
+        // Small delay to ensure UI updates before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Navigate based on notification type
         if (notification.type === "knock") {
             navigate("/knockknock");
+        } else if (notification.type === "message") {
+            // Navigate to connection page with the sender
+            const senderId = notification.data?.senderId;
+            if (senderId) {
+                navigate(`/connection/${senderId}`);
+            }
         }
     };
 
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation(); // Prevent triggering the notification click
+
+        console.log("🗑️ Deleting notification:", id);
+
+        if (!id) {
+            console.error("❌ Cannot delete notification with no ID");
+            return;
+        }
+
         try {
             await api.delete(`/notifications/${id}`);
             setNotifications((prev) => prev.filter((n) => n._id !== id));
+            console.log(`✅ Notification ${id} deleted`);
         } catch (error) {
             console.error("Failed to delete notification", error);
         }
     };
 
-    const markAllAsRead = async () => {
+    const markAllAsRead = async (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent dropdown from closing
+        e.preventDefault();
+
         try {
+            const unreadNotifications = notifications.filter((n) => !n.read);
+
+            if (unreadNotifications.length === 0) return;
+
+            // Mark all as read in parallel
             await Promise.all(
-                notifications
-                    .filter((n) => !n.read)
-                    .map((n) => api.put(`/notifications/${n._id}/read`))
+                unreadNotifications.map((n) => api.put(`/notifications/${n._id}/read`))
             );
+
+            // Update local state
             setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+            console.log(`✅ Marked ${unreadNotifications.length} notifications as read`);
         } catch (error) {
             console.error("Failed to mark all as read", error);
         }

@@ -104,7 +104,13 @@ export default function MyDormPage({ token }: MyDormPageProps) {
           'Content-Type': 'application/json',
         },
       });
-      setDorms(response.data || []);
+      const dormsData = response.data || [];
+      // Map average_rating (string) to rating (number) for display
+      const mappedDorms = dormsData.map((d: any) => ({
+        ...d,
+        rating: d.average_rating ? parseFloat(d.average_rating) : d.rating
+      }));
+      setDorms(mappedDorms);
     } catch (err: any) {
       if (err.response?.status === 404) {
         setDorms([]);
@@ -736,7 +742,15 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground truncate">{dorm.name}</h2>
                         <p className="text-sm sm:text-base text-muted-foreground mt-1 truncate">{dorm.location}</p>
                       </div>
-                      <Badge variant={dorm.availibility ? 'default' : 'secondary'} className="text-xs sm:text-sm px-2 sm:px-3 py-1 flex-shrink-0">
+                      <Badge
+                        variant={dorm.availibility ? 'outline' : 'secondary'}
+                        className={cn(
+                          "text-xs sm:text-sm px-3 py-1 flex-shrink-0 rounded-full",
+                          dorm.availibility
+                            ? "bg-lime-400 hover:bg-lime-500 text-black border-transparent dark:bg-lime-400 dark:text-black dark:hover:bg-white"
+                            : ""
+                        )}
+                      >
                         {dorm.availibility ? 'Available' : 'Unavailable'}
                       </Badge>
                     </div>
@@ -966,7 +980,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4 border-t mt-auto">
                     <Button
                       onClick={() => handleOpenDialog(dorm)}
-                      className="w-full sm:flex-1 text-sm sm:text-base"
+                      className="w-full sm:flex-1 text-sm sm:text-base rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
                     >
                       <Edit2 className="mr-1 sm:mr-2 h-4 w-4" />
                       Edit
@@ -985,7 +999,7 @@ export default function MyDormPage({ token }: MyDormPageProps) {
                             setDeleteTarget(dorm._id);
                             setIsDeleteAlertOpen(true);
                           }}
-                          className="w-full sm:w-auto text-sm sm:text-base"
+                          className="w-full sm:w-auto text-sm sm:text-base rounded-full"
                         >
                           <Trash2 className="mr-1 sm:mr-2 h-4 w-4" />
                           Delete

@@ -24,11 +24,16 @@ import { knocks } from "./routes/knocks.js";
 import { wishlist } from "./routes/wishlist.js";
 import { analytics } from "./routes/analytics.js";
 import { notifications } from "./routes/notifications.js";
+import { conversations } from "./routes/conversations.js";
+import { messages } from "./routes/messages.js";
+import { chatSessions } from "./routes/chatSessions.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
 import "./models/Booking.js";
 import "./models/AiMatchResult.js";
+import "./models/Conversation.js";
+import "./models/Message.js";
 
 const app = express();
 
@@ -75,6 +80,9 @@ app.use("/api/knocks", knocks);
 app.use("/api/notifications", notifications);
 app.use("/api/wishlist", wishlist);
 app.use("/api/analytics", analytics);
+app.use("/api/conversations", conversations);
+app.use("/api/messages", messages);
+app.use("/api/chat-sessions", chatSessions);
 
 // Error handler (last)
 app.use(errorHandler);

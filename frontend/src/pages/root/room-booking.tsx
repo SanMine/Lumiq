@@ -72,12 +72,39 @@ export default function RoomBooking() {
   const [confirming, setConfirming] = useState(false);
 
   // Price data (from backend or room object)
+  // Helper to determine estimated cost based on billing type
+  const getEstimatedWaterFee = () => {
+    if (dorm?.waterBillingType === 'per-unit') return 200;
+    return dorm?.Water_fee || dorm?.WaterFee || dorm?.waterFee || 200;
+  };
+
+  const getEstimatedElectricityFee = () => {
+    if (dorm?.electricityBillingType === 'per-unit') return 500;
+    return dorm?.Electricity_fee || dorm?.ElectricityFee || dorm?.electricityFee || 500;
+  };
+
+  const getWaterFeeLabel = () => {
+    const rate = dorm?.Water_fee || dorm?.WaterFee || dorm?.waterFee || 0;
+    const unit = dorm?.waterBillingType === 'per-unit' ? '/ unit' : '/ month';
+    return `Water Fees (฿${rate.toLocaleString()} ${unit})`;
+  };
+
+  const getElectricityFeeLabel = () => {
+    const rate = dorm?.Electricity_fee || dorm?.ElectricityFee || dorm?.electricityFee || 0;
+    const unit = dorm?.electricityBillingType === 'per-unit' ? '/ unit' : '/ month';
+    return `Electricity Fees (฿${rate.toLocaleString()} ${unit})`;
+  };
+
   const prices = {
     roomPerMonth: room?.price_per_month || dorm?.price || 3000,
     insurance: dorm?.insurance_policy || dorm?.insurance || 6000,
     bookingFee: room?.booking_fees || 0 || 1000,
-    waterFees: dorm?.Water_fee || dorm?.WaterFee || dorm?.waterFee || 200,
-    electricityFees: dorm?.Electricity_fee || dorm?.ElectricityFee || dorm?.electricityFee || 500,
+    waterRate: dorm?.Water_fee || dorm?.WaterFee || dorm?.waterFee || 0,
+    electricityRate: dorm?.Electricity_fee || dorm?.ElectricityFee || dorm?.electricityFee || 0,
+    waterFees: getEstimatedWaterFee(),
+    electricityFees: getEstimatedElectricityFee(),
+    waterLabel: getWaterFeeLabel(),
+    electricityLabel: getElectricityFeeLabel(),
   };
 
   // Calculate totals
@@ -228,8 +255,8 @@ export default function RoomBooking() {
       };
       // Add additional metadata fields that backend also accepts (aliases)
       const now = new Date();
-      const booked_date = now.toISOString().slice(0,10); // YYYY-MM-DD
-      const booked_time = now.toTimeString().slice(0,8); // HH:MM:SS
+      const booked_date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const booked_time = now.toTimeString().slice(0, 8); // HH:MM:SS
       payloadBase.booking_fees = prices.bookingFee || 0;
       payloadBase.booked_date = booked_date;
       payloadBase.booked_time = booked_time;
@@ -261,16 +288,16 @@ export default function RoomBooking() {
   };
 
   const handleDownloadInvoice = () => {
-    const stayDurationText = formData.stayDuration 
-      ? `${formData.stayDuration} ${formData.durationType}` 
+    const stayDurationText = formData.stayDuration
+      ? `${formData.stayDuration} ${formData.durationType}`
       : 'Not specified';
 
     downloadInvoice({
       bookingId,
-      invoiceDate: new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      invoiceDate: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }),
       customerName: formData.name,
       customerEmail: formData.email,
@@ -291,8 +318,8 @@ export default function RoomBooking() {
   };
 
   // Prepare invoice data for rendering inside dialog
-  const stayDurationText = formData.stayDuration 
-    ? `${formData.stayDuration} ${formData.durationType}` 
+  const stayDurationText = formData.stayDuration
+    ? `${formData.stayDuration} ${formData.durationType}`
     : 'Not specified';
 
   const invoiceData = {
@@ -462,7 +489,7 @@ export default function RoomBooking() {
                 >
                   <span className="text-2xl">×</span>
                 </Button>
-                
+
               </div>
             </div>
 
@@ -845,8 +872,7 @@ export default function RoomBooking() {
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-border">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
+                <span className="text-muted-foreground">
                   Dorm Insurance (one-time)
                 </span>
                 <span className="text-xl font-bold text-foreground">
@@ -862,9 +888,8 @@ export default function RoomBooking() {
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-border">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Droplets className="w-4 h-4" />
-                  Water Fees (estimated)
+                <span className="text-muted-foreground">
+                  {prices.waterLabel}
                 </span>
                 <span className="text-lg font-medium">
                   ~฿{prices.waterFees.toLocaleString()}
@@ -872,9 +897,8 @@ export default function RoomBooking() {
               </div>
 
               <div className="flex justify-between items-center py-3">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Electricity Fees (estimated)
+                <span className="text-muted-foreground">
+                  {prices.electricityLabel}
                 </span>
                 <span className="text-lg font-medium">
                   ~฿{prices.electricityFees.toLocaleString()}

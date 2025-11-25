@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { Dorm } from "../models/Dorm.js";
+import { Room } from "../models/Room.js";
 import { Rating } from "../models/Rating.js";
 import { User } from "../models/User.js";
 import { RatingService } from "../services/ratingService.js";
+import { Preferred_roommate } from "../models/Preferred_roommate.js";
 import { requireAuth, requireDormAdmin } from "../middlewares/auth.js";
 import { getNextId } from "../db/counter.js";
 
@@ -27,6 +29,100 @@ dorms.get("/", async (req, res, next) => {
     const dormsWithRatings =
       await RatingService.calculateMultipleDormRatings(allDorms);
     res.json(dormsWithRatings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// NEW: Get shared dorm suggestions based on price preference
+dorms.get("/shared-suggestions", requireAuth, async (req, res, next) => {
+  try {
+    const { userId } = req.query;
+    const currentUserId = req.user.id;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Target userId is required" });
+    }
+
+    // Fetch preferences for both users
+    const [currentUserPref, targetUserPref] = await Promise.all([
+      Preferred_roommate.findOne({ userId: currentUserId }),
+      Preferred_roommate.findOne({ userId: userId }),
+    ]);
+
+    if (!currentUserPref || !targetUserPref) {
+      return res.status(404).json({ error: "Preferences not found for one or both users" });
+    }
+
+    const user1Range = currentUserPref.preferred_price_range;
+    const user2Range = targetUserPref.preferred_price_range;
+
+    // Calculate Intersection
+    let minPrice = Math.max(user1Range.min, user2Range.min);
+    let maxPrice = Math.min(user1Range.max, user2Range.max);
+    let rangeType = "intersection";
+
+    // Check for overlap
+    if (minPrice > maxPrice) {
+      // No overlap - Calculate Average (Compromise)
+      minPrice = (user1Range.min + user2Range.min) / 2;
+      maxPrice = (user1Range.max + user2Range.max) / 2;
+      rangeType = "average";
+    }
+
+    // Query Double Rooms that fit the budget per person
+    // User request: "if the rooms price is less than the users prefer price range it;s oaky"
+    // So we only enforce the MAXIMUM limit.
+    let doubleRooms = await Room.find({
+      room_type: "Double",
+      status: "Available",
+      price_per_month: { $lte: maxPrice * 2 }
+    });
+
+    // Fallback: "never show the empty connection page"
+    // If no rooms fit the budget, just show the cheapest available double rooms
+    if (doubleRooms.length === 0) {
+      doubleRooms = await Room.find({
+        room_type: "Double",
+        status: "Available"
+      }).sort({ price_per_month: 1 }).limit(20); // Fetch top 20 cheapest
+
+      rangeType = "fallback (cheapest available)";
+    }
+
+    // Group by dormId and find the best deal (lowest price) for each dorm
+    const dormDeals = {};
+    doubleRooms.forEach(room => {
+      if (!dormDeals[room.dormId] || room.price_per_month < dormDeals[room.dormId].price) {
+        dormDeals[room.dormId] = {
+          price: room.price_per_month,
+          pricePerPerson: room.price_per_month / 2
+        };
+      }
+    });
+
+    const dormIds = Object.keys(dormDeals);
+
+    // Fetch Dorm details
+    const suggestedDorms = await Dorm.find({
+      _id: { $in: dormIds },
+      isActive: true
+    }).limit(10);
+
+    // Calculate ratings
+    const dormsWithRatings = await RatingService.calculateMultipleDormRatings(suggestedDorms);
+
+    // Attach deal info to each dorm
+    const resultDorms = dormsWithRatings.map(dorm => ({
+      ...dorm,
+      minDoublePrice: dormDeals[dorm._id].price,
+      pricePerPerson: dormDeals[dorm._id].pricePerPerson
+    }));
+
+    res.json({
+      dorms: resultDorms,
+      range: { min: 0, max: maxPrice, type: rangeType } // Min is effectively 0 now
+    });
   } catch (error) {
     next(error);
   }
@@ -96,9 +192,22 @@ dorms.post("/", requireAuth, requireDormAdmin, async (req, res, next) => {
     // Generate next ID
     const dormId = await getNextId('dorms');
 
+    // Handle legacy location field from frontend
+    const dormData = { ...req.body };
+    if (dormData.location && !dormData.address) {
+      dormData.address = {
+        addressLine1: dormData.location,
+        subDistrict: "",
+        district: "",
+        province: "",
+        zipCode: "",
+        country: "Thailand"
+      };
+    }
+
     // Create dorm with admin_id and generated _id
     const dorm = await Dorm.create({
-      ...req.body,
+      ...dormData,
       _id: dormId,
       admin_id: req.user.id,
     });

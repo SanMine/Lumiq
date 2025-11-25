@@ -1,4 +1,4 @@
-import { APP_NAME, footerLinks } from "@/lib/constants";
+import { footerLinks } from "@/lib/constants";
 import { FaFacebookF, FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { Link } from "react-router";
@@ -45,7 +45,7 @@ export default function Footer() {
                 </section>
                 <div className='border-t'>
                     <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-                        <h3 className="mt-8 text-sm text-center ">Copyright © {new Date().getFullYear()} {APP_NAME}. All rights reserved.</h3>
+                        <h3 className="mt-8 text-sm text-center ">Copyright © {new Date().getFullYear()} Lumiq. All rights reserved.</h3>
                     </div>
                 </div>
             </div>

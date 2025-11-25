@@ -1,15 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, User, Mail, MapPin, Phone, Calendar, Coffee, Moon, Book, Sparkles, Wine, Heart, ThermometerSnowflake, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Building2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import api from "@/api";
 import { toast } from "sonner";
 import Loader from "@/components/shared/loader";
-import Chatbot from "@/components/shared/chatbot";
+import FloatingChat from "@/components/shared/floating-chat";
 
 interface UserProfile {
     _id: number;
@@ -49,6 +47,52 @@ interface Knock {
     status: string;
 }
 
+interface Conversation {
+    _id: number;
+    participants: number[];
+    lastMessage: string;
+    lastMessageAt: string;
+}
+
+interface Message {
+    _id: number;
+    conversationId: number;
+    sender: {
+        _id: number;
+        name: string;
+        email: string;
+    };
+    text: string;
+    readBy: number[];
+    createdAt: string;
+}
+
+interface Dorm {
+    _id: number;
+    name: string;
+    price: number;
+    minDoublePrice?: number;
+    pricePerPerson?: number;
+    image_url?: string;
+    images?: string[];
+    address?: {
+        addressLine1: string;
+        subDistrict?: string;
+        district?: string;
+        province?: string;
+        zipCode?: string;
+        country?: string;
+    };
+    location?: string;
+    fullAddress?: string;
+}
+
+interface SharedPriceRange {
+    min: number;
+    max: number;
+    type: 'intersection' | 'average' | 'fallback (cheapest available)';
+}
+
 export default function ConnectionPage() {
     const navigate = useNavigate();
     const { userId } = useParams<{ userId: string }>();
@@ -64,6 +108,15 @@ export default function ConnectionPage() {
     // Connected user data
     const [connectedUserProfile, setConnectedUserProfile] = useState<UserProfile | null>(null);
     const [connectedUserPersonality, setConnectedUserPersonality] = useState<Personality | null>(null);
+
+    // Chat data
+    const [conversation, setConversation] = useState<Conversation | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+    // Shared Suggestions
+    const [suggestedDorms, setSuggestedDorms] = useState<Dorm[]>([]);
+    const [sharedPriceRange, setSharedPriceRange] = useState<SharedPriceRange | null>(null);
 
     useEffect(() => {
         const fetchConnectionData = async () => {
@@ -130,6 +183,30 @@ export default function ConnectionPage() {
                 const connectedPersonalityRes = await api.get(`/personalities?userId=${userId}`);
                 setConnectedUserPersonality(connectedPersonalityRes.data);
 
+                // Create or get conversation
+                try {
+                    const conversationRes = await api.post('/conversations', {
+                        recipientId: Number(userId)
+                    });
+                    setConversation(conversationRes.data);
+
+                    // Fetch messages for this conversation
+                    const messagesRes = await api.get(`/messages/${conversationRes.data._id}`);
+                    setMessages(messagesRes.data);
+                } catch (convError: any) {
+                    console.error("Error with conversation:", convError);
+                    // Don't fail the whole page if conversation fails
+                }
+
+                // Fetch shared dorm suggestions
+                try {
+                    const suggestionsRes = await api.get(`/dorms/shared-suggestions?userId=${userId}`);
+                    setSuggestedDorms(suggestionsRes.data.dorms);
+                    setSharedPriceRange(suggestionsRes.data.range);
+                } catch (suggestionError) {
+                    console.error("Error fetching suggestions:", suggestionError);
+                }
+
             } catch (error: any) {
                 console.error("Error fetching connection data:", error);
                 const errorMessage = error.response?.data?.error || "Failed to load connection data";
@@ -142,6 +219,69 @@ export default function ConnectionPage() {
 
         fetchConnectionData();
     }, [user, userId, navigate]);
+
+    // Track active chat session on connection page
+    useEffect(() => {
+        if (!conversation) return;
+
+        // Mark this conversation as active when on the connection page
+        api.post('/chat-sessions/active', { conversationId: conversation._id })
+            .then(() => {
+                console.log(`✅ Connection page: Chat session activated for conversation ${conversation._id}`);
+            })
+            .catch(error => {
+                console.error('Failed to activate chat session on connection page:', error);
+            });
+
+        // Cleanup: deactivate when leaving the page
+        return () => {
+            if (conversation) {
+                api.delete(`/chat-sessions/active/${conversation._id}`)
+                    .then(() => {
+                        console.log(`🔒 Connection page: Chat session deactivated for conversation ${conversation._id}`);
+                    })
+                    .catch(error => {
+                        console.error('Failed to deactivate chat session on connection page:', error);
+                    });
+            }
+        };
+    }, [conversation]);
+
+    // Poll for new messages every 5 seconds
+    useEffect(() => {
+        if (!conversation) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const messagesRes = await api.get(`/messages/${conversation._id}`);
+                setMessages(messagesRes.data);
+            } catch (error) {
+                console.error("Error fetching messages:", error);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [conversation]);
+
+    const handleSendMessage = async (text: string) => {
+        if (!text.trim() || !conversation || isSendingMessage) return;
+
+        try {
+            setIsSendingMessage(true);
+            const messageRes = await api.post('/messages', {
+                conversationId: conversation._id,
+                text: text.trim()
+            });
+
+            // Add new message to the list
+            setMessages(prev => [...prev, messageRes.data]);
+        } catch (error: any) {
+            console.error("Error sending message:", error);
+            toast.error(error.response?.data?.error || "Failed to send message");
+        } finally {
+            setIsSendingMessage(false);
+        }
+    };
 
     if (authLoading || isLoading) {
         return <Loader />;
@@ -162,245 +302,6 @@ export default function ConnectionPage() {
         );
     }
 
-    const ProfileCard = ({ userProfile, personality, title }: { userProfile: UserProfile, personality: Personality, title: string }) => (
-        <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
-                    <User className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                    <h2 className="text-2xl font-bold text-foreground">{title}</h2>
-                    <p className="text-sm text-muted-foreground">Complete Profile</p>
-                </div>
-            </div>
-
-            {/* Profile Image */}
-            <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-1 shadow-xl">
-                    <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile.name}`}
-                        alt={userProfile.name}
-                        className="w-full h-full rounded-full bg-background"
-                    />
-                </div>
-            </div>
-
-            {/* Basic Information */}
-            <Card className="border-2 border-border bg-card shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            Basic Information
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Name</p>
-                            </div>
-                            <p className="font-semibold text-foreground">{personality.nickname || userProfile.name}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-muted-foreground text-sm font-medium">Age</p>
-                                </div>
-                                <p className="font-semibold text-foreground">{personality.age} years</p>
-                            </div>
-                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-muted-foreground text-sm font-medium">Gender</p>
-                                </div>
-                                <p className="font-semibold text-foreground">{personality.gender}</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Nationality</p>
-                            </div>
-                            <p className="font-semibold text-foreground">{personality.nationality || "Not specified"}</p>
-                        </div>
-
-                        {personality.description && (
-                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-muted-foreground text-sm font-medium">Bio</p>
-                                </div>
-                                <p className="text-sm italic text-muted-foreground">{personality.description}</p>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Lifestyle Preferences */}
-            <Card className="border-2 border-border bg-card shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                            <Coffee className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            Lifestyle
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                                    <Moon className="w-4 h-4" /> Sleep Schedule
-                                </p>
-                                <Badge variant="outline">{personality.sleep_type}</Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Lifestyle</p>
-                                <Badge variant="secondary">{personality.lifestyle[0] || "Moderate"}</Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                                    <Book className="w-4 h-4" /> Study Habits
-                                </p>
-                                <Badge variant="outline">{personality.study_habits}</Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4" /> Cleanliness
-                                </p>
-                                <Badge variant="secondary">{personality.cleanliness}</Badge>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Social Preferences */}
-            <Card className="border-2 border-border bg-card shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                            <Wine className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            Social
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Social Level</p>
-                                <Badge>{personality.social}</Badge>
-                            </div>
-                        </div>
-
-                        {personality.MBTI && (
-                            <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-muted-foreground text-sm font-medium">MBTI</p>
-                                    <Badge variant="outline">{personality.MBTI}</Badge>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Going Out</p>
-                                <Badge variant="secondary">{personality.going_out}</Badge>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Habits */}
-            <Card className="border-2 border-border bg-card shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center">
-                            <Heart className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            Habits
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Smoking</p>
-                                <Badge variant={personality.smoking ? "destructive" : "secondary"}>
-                                    {personality.smoking ? "Yes" : "No"}
-                                </Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                                    <Wine className="w-4 h-4" /> Drinking
-                                </p>
-                                <Badge variant="outline">{personality.drinking}</Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Pets</p>
-                                <Badge variant="secondary">{personality.pets}</Badge>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Environmental Preferences */}
-            <Card className="border-2 border-border bg-card shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center">
-                            <ThermometerSnowflake className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            Environment
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Noise Tolerance</p>
-                                <Badge>{personality.noise_tolerance}</Badge>
-                            </div>
-                        </div>
-
-                        <div className="bg-muted/50 border border-border rounded-lg p-4 hover:bg-muted transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-muted-foreground text-sm font-medium">Temperature</p>
-                                <Badge variant="outline">{personality.temperature}</Badge>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
-
     return (
         <section className="min-h-screen bg-background py-6 px-4 sm:px-6">
             <div className="max-w-7xl mx-auto">
@@ -417,38 +318,141 @@ export default function ConnectionPage() {
 
                     <div className="text-center">
                         <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-                            Roommate Comparison
+                            Connection with {connectedUserProfile.name}
                         </h1>
                         <p className="text-muted-foreground">
-                            Compare your profiles side-by-side
+                            Chat and get to know each other
                         </p>
                     </div>
                 </div>
 
-                {/* Split View - Half and Half */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Side - Current User */}
-                    <div>
-                        <ProfileCard
-                            userProfile={currentUserProfile}
-                            personality={currentUserPersonality}
-                            title="You"
-                        />
-                    </div>
 
-                    {/* Right Side - Matched User */}
-                    <div>
-                        <ProfileCard
-                            userProfile={connectedUserProfile}
-                            personality={connectedUserPersonality}
-                            title={connectedUserProfile.name}
-                        />
+                {/* Shared Dorm Suggestions */}
+                {suggestedDorms.length > 0 && (
+                    <div className="mb-12">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold mb-2">Suggested Dorms</h2>
+                            <p className="text-muted-foreground flex items-center justify-center gap-2">
+                                {sharedPriceRange?.type === 'fallback (cheapest available)' ? (
+                                    <>
+                                        <span>No dorms found in your exact budget. Showing cheapest options:</span>
+                                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full dark:bg-orange-900 dark:text-orange-100 font-medium">
+                                            Best Deals
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Based on your shared price range:
+                                        <span className="font-semibold text-primary">
+                                            {sharedPriceRange?.min === 0
+                                                ? `Up to ฿${sharedPriceRange?.max.toLocaleString()}`
+                                                : `฿${sharedPriceRange?.min.toLocaleString()} - ฿${sharedPriceRange?.max.toLocaleString()}`
+                                            }
+                                        </span>
+                                        {sharedPriceRange?.type === 'average' && (
+                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-100">
+                                                Average Range
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {suggestedDorms.map((dorm) => (
+                                <Card
+                                    key={dorm._id}
+                                    className="group overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer bg-card rounded-2xl h-full flex flex-col p-0 gap-0"
+                                    onClick={() => navigate(`/dorms/${dorm._id}`)}
+                                >
+                                    <div className="h-48 bg-muted relative overflow-hidden shrink-0">
+                                        {/* Image */}
+                                        {dorm.images && dorm.images.length > 0 ? (
+                                            <img
+                                                src={dorm.images[0]}
+                                                alt={dorm.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : dorm.image_url ? (
+                                            <img
+                                                src={dorm.image_url}
+                                                alt={dorm.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-secondary/20">
+                                                <Building2 className="h-12 w-12 text-muted-foreground" />
+                                            </div>
+                                        )}
+
+                                        {/* Gradient Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+
+                                        {/* Hover Overlay with Button */}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                            <Button variant="secondary" className="rounded-full font-semibold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <CardContent className="p-5 flex flex-col flex-grow">
+                                        <div className="mb-4">
+                                            <h3 className="font-bold text-xl mb-1 truncate group-hover:text-primary transition-colors">
+                                                {dorm.name}
+                                            </h3>
+                                            <div className="flex items-start text-sm text-muted-foreground">
+                                                <MapPin className="h-3.5 w-3.5 mr-1 mt-0.5 shrink-0" />
+                                                <span className="line-clamp-2">
+                                                    {dorm.fullAddress || dorm.location || "Location not set"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Shared Room Deal Section */}
+                                        <div className="mt-auto bg-secondary/30 rounded-xl p-3 border border-border/50">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                                Shared Room Deal
+                                            </p>
+
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm text-muted-foreground">Double Room</span>
+                                                <span className="font-medium">฿{dorm.minDoublePrice?.toLocaleString() || dorm.price?.toLocaleString()}</span>
+                                            </div>
+
+                                            <div className="h-px bg-border/50 my-2" />
+
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium text-primary">You pay</span>
+                                                <div className="text-right">
+                                                    <span className="text-lg font-bold text-primary">
+                                                        ฿{(dorm.pricePerPerson || (dorm.price / 2))?.toLocaleString()}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground ml-1">/person</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Floating Chatbot */}
-            <Chatbot />
-        </section>
+            {/* Floating Chat Widget */}
+            {
+                conversation && connectedUserProfile && (
+                    <FloatingChat
+                        conversation={conversation}
+                        connectedUser={connectedUserProfile}
+                        messages={messages}
+                        onSendMessage={handleSendMessage}
+                        isSendingMessage={isSendingMessage}
+                    />
+                )
+            }
+        </section >
     );
 }

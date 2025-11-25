@@ -21,7 +21,8 @@ interface NotificationPreferences {
 interface DormData {
   _id: number;
   name: string;
-  address: string;
+  address?: string | { addressLine1: string };
+  location?: string;
   description?: string;
 }
 
@@ -51,19 +52,20 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
       setLoading(true);
       setError(null);
 
-      // Fetch dorm data if user has a dormId
-      if (user?.dormId) {
-        const dormResponse = await api.get(`/dorms/${user.dormId}`);
-        setDormData(dormResponse.data);
-        setDormName(dormResponse.data.name || '');
-        setDormAddress(dormResponse.data.address || '');
-        setDormDescription(dormResponse.data.description || '');
+      // Fetch admin's dorms
+      const dormResponse = await api.get('/dorms/my');
+
+      if (dormResponse.data && dormResponse.data.length > 0) {
+        const myDorm = dormResponse.data[0];
+        setDormData(myDorm);
+        setDormName(myDorm.name || '');
+        // Use location or address string
+        setDormAddress(myDorm.location || (typeof myDorm.address === 'string' ? myDorm.address : myDorm.address?.addressLine1) || '');
+        setDormDescription(myDorm.description || '');
       }
 
       // Note: /user-settings endpoint doesn't exist yet
       // For now, we'll just use default preferences
-      // In the future, add: const response = await api.get('/user-settings');
-      // setPreferences(response.data.notificationPreferences);
     } catch (err: any) {
       console.error('Error fetching settings:', err);
       setError(err.response?.data?.error || 'Failed to load settings');
@@ -74,8 +76,8 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
 
   const saveDormChanges = async () => {
     try {
-      if (!user?.dormId) {
-        setError('No dorm associated with this account');
+      if (!dormData?._id) {
+        setError('No dorm found to update');
         return;
       }
 
@@ -83,9 +85,9 @@ export default function SettingsPage({ handleLogout }: SettingsPageProps) {
       setError(null);
       setSuccess(null);
 
-      await api.put(`/dorms/${user.dormId}`, {
+      await api.put(`/dorms/${dormData._id}`, {
         name: dormName,
-        address: dormAddress,
+        location: dormAddress, // Send as location for backward compatibility
         description: dormDescription,
       });
 

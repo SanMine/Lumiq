@@ -1,6 +1,15 @@
+import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export default function Loader() {
+interface LoaderProps {
+    className?: string;
+    size?: number;
+}
+
+export default function Loader({ className, size = 24 }: LoaderProps) {
     return (
-        <div>Loader</div>
-    )
+        <div className={cn("flex items-center justify-center", className)}>
+            <Loader2 className="animate-spin text-primary" size={size} />
+        </div>
+    );
 }

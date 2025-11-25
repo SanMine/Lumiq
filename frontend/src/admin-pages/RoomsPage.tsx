@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChipsInput } from '@/components/ui/chips-input';
-import { Building2, Edit2, Trash2, Plus, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { Building2, Plus, Search, Filter, MoreVertical, Edit2, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Loader from '@/components/shared/loader';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -359,7 +361,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
   };
 
   // Update a single room's status
-  const updateRoomStatus = async (roomId: number, status: string) => {
+  const updateRoomStatus = async (roomId: number, status: Room['status']) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
       await axios.put(
@@ -404,9 +406,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
   if (loading && selectedDormId === null) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <Loader className="p-12" size={32} />
     );
   }
 
@@ -437,7 +437,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
           </div>
           <Button
             onClick={() => handleOpenDialog()}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer"
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -534,6 +534,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
               variant={filterStatus === status ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilterStatus(status)}
+              className={filterStatus === status ? "rounded-full bg-gradient w-fit min-h-[40px] text-white cursor-pointer" : "rounded-full"}
             >
               {status}
             </Button>
@@ -543,9 +544,7 @@ export default function RoomsPage({ token }: RoomsPageProps) {
 
       {/* Loading State */}
       {loading && selectedDormId && (
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <Loader className="p-12" size={32} />
       )}
 
       {/* Error Message */}
@@ -576,160 +575,171 @@ export default function RoomsPage({ token }: RoomsPageProps) {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredRooms.map((room) => (
-                <Card key={room._id} className="bg-card text-card-foreground gap-3 rounded-xl border py-3 shadow-sm flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Card Header */}
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <CardTitle className="text-lg sm:text-xl truncate">
-                          Room {room.room_number}
-                        </CardTitle>
-                        <CardDescription className="text-xs sm:text-sm">
-                          {room.room_type} • Floor {room.floor}
-                        </CardDescription>
-                        {room.zone && (
-                          <div className="text-xs sm:text-sm text-muted-foreground truncate">
-                            <span className="font-medium">Building/Zone:</span> {room.zone}
+            <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {filteredRooms.map((room) => (
+                  <motion.div
+                    layout
+                    key={room._id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card className="bg-card text-card-foreground gap-3 rounded-xl border py-3 shadow-sm flex flex-col overflow-hidden hover:shadow-lg transition-shadow h-full">
+                      {/* Card Header */}
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <CardTitle className="text-lg sm:text-xl truncate">
+                              Room {room.room_number}
+                            </CardTitle>
+                            <CardDescription className="text-xs sm:text-sm">
+                              {room.room_type} • Floor {room.floor}
+                            </CardDescription>
+                            {room.zone && (
+                              <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                                <span className="font-medium">Building/Zone:</span> {room.zone}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className={
+                                  `text-xs sm:text-sm whitespace-nowrap border ` +
+                                  (room.status === 'Available'
+                                    ? 'bg-lime-400 hover:bg-lime-500 text-black border-transparent rounded-full dark:bg-lime-400 dark:text-black dark:hover:bg-white'
+                                    : room.status === 'Reserved'
+                                      ? 'bg-amber-400 hover:bg-amber-500 text-black border-transparent rounded-full dark:bg-amber-400 dark:text-black dark:hover:bg-white'
+                                      : room.status === 'Occupied'
+                                        ? 'bg-red-500 hover:bg-red-600 text-white border-transparent rounded-full dark:bg-red-500 dark:text-white dark:hover:bg-white dark:hover:text-black'
+                                        : room.status === 'Maintenance'
+                                          ? 'bg-blue-400 hover:bg-blue-500 text-black border-transparent rounded-full dark:bg-blue-400 dark:text-black dark:hover:bg-white'
+                                          : 'bg-white hover:bg-white border-gray-200 text-gray-900')
+                                }
+                              >
+                                {room.status}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-44">
+                              <DropdownMenuLabel>Status</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuRadioGroup value={room.status} onValueChange={(value) => updateRoomStatus(room._id, value as Room['status'])}>
+                                <DropdownMenuRadioItem value="Available">Available</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="Reserved">Reserved</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="Occupied">Occupied</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="Maintenance">Maintenance</DropdownMenuRadioItem>
+                              </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardHeader>
+
+                      {/* Card Body */}
+                      <CardContent className="flex-1 pt-3 space-y-2 sm:space-y-3">
+                        {/* Capacity and Floor */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Capacity</p>
+                            <p className="text-2xl sm:text-3xl font-bold">{room.capacity}</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Floor</p>
+                            <p className="text-2xl sm:text-3xl font-bold">{room.floor}</p>
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div className="bg-muted rounded-lg p-3 sm:p-4">
+                          <p className="text-xs sm:text-sm text-muted-foreground font-medium mb-1">Price Per Month</p>
+                          <p className="text-2xl sm:text-3xl font-bold break-words">฿{room.price_per_month.toLocaleString()}</p>
+                        </div>
+
+                        {/* Description */}
+                        {room.description && (
+                          <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Description</p>
+                            <p className="text-sm sm:text-base line-clamp-2">
+                              {room.description}
+                            </p>
                           </div>
                         )}
-                      </div>
 
-                      {/* Status dropdown */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={
-                              `text-xs sm:text-sm whitespace-nowrap bg-white border ` +
-                              (room.status === 'Available'
-                                ? 'text-green-600 border-green-200 hover:bg-white'
-                                : room.status === 'Reserved'
-                                ? 'text-amber-600 border-amber-200 hover:bg-white'
-                                : room.status === 'Occupied'
-                                ? 'text-red-600 border-red-200 hover:bg-white'
-                                : room.status === 'Maintenance'
-                                ? 'text-blue-600 border-blue-200 hover:bg-white'
-                                : 'hover:bg-white')
-                            }
-                          >
-                            {room.status}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-44">
-                          <DropdownMenuLabel>Status</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuRadioGroup value={room.status} onValueChange={(value) => updateRoomStatus(room._id, value)}>
-                            <DropdownMenuRadioItem value="Available">Available</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="Reserved">Reserved</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="Occupied">Occupied</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="Maintenance">Maintenance</DropdownMenuRadioItem>
-                          </DropdownMenuRadioGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
+                        {/* Amenities */}
+                        {room.amenities && (
+                          <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Amenities</p>
+                            <p className="text-sm sm:text-base line-clamp-1">
+                              {room.amenities}
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
 
-                  {/* Card Body */}
-                  <CardContent className="flex-1 pt-3 space-y-2 sm:space-y-3">
-                    {/* Capacity and Floor */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
-                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Capacity</p>
-                        <p className="text-2xl sm:text-3xl font-bold">{room.capacity}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-1">
-                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Floor</p>
-                        <p className="text-2xl sm:text-3xl font-bold">{room.floor}</p>
-                      </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="bg-muted rounded-lg p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-muted-foreground font-medium mb-1">Price Per Month</p>
-                      <p className="text-2xl sm:text-3xl font-bold break-words">฿{room.price_per_month.toLocaleString()}</p>
-                    </div>
-
-                    {/* Description */}
-                    {room.description && (
-                      <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
-                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Description</p>
-                        <p className="text-sm sm:text-base line-clamp-2">
-                          {room.description}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Amenities */}
-                    {room.amenities && (
-                      <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-1">
-                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">Amenities</p>
-                        <p className="text-sm sm:text-base line-clamp-1">
-                          {room.amenities}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-
-                  {/* Card Footer */}
-                  <div className="px-6 py-3 border-t flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 text-xs sm:text-sm"
-                      onClick={() => handleOpenDialog(room)}
-                    >
-                      <Edit2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      Edit
-                    </Button>
-                    <AlertDialog
-                      open={isAlertOpen && deleteTarget === room._id}
-                      onOpenChange={(open) => {
-                        setIsAlertOpen(open);
-                        if (!open) setDeleteTarget(null);
-                      }}
-                    >
-                      <AlertDialogTrigger asChild>
+                      {/* Card Footer */}
+                      <div className="px-6 py-3 border-t flex gap-2">
                         <Button
-                          variant="destructive"
                           size="sm"
-                          className="flex-1 text-xs sm:text-sm"
-                          onClick={() => setDeleteTarget(room._id)}
+                          className="flex-1 text-xs sm:text-sm rounded-full bg-gradient text-white cursor-pointer"
+                          onClick={() => handleOpenDialog(room)}
                         >
-                          <Trash2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          Delete
+                          <Edit2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          Edit
                         </Button>
-                      </AlertDialogTrigger>
+                        <AlertDialog
+                          open={isAlertOpen && deleteTarget === room._id}
+                          onOpenChange={(open) => {
+                            setIsAlertOpen(open);
+                            if (!open) setDeleteTarget(null);
+                          }}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="flex-1 text-xs sm:text-sm rounded-full"
+                              onClick={() => setDeleteTarget(room._id)}
+                            >
+                              <Trash2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
 
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Room {room.room_number}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this room? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div />
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => { setIsAlertOpen(false); setDeleteTarget(null); }}>
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={async () => {
-                            setDeleteLoading(true);
-                            await handleDelete(room._id);
-                            setDeleteLoading(false);
-                            setIsAlertOpen(false);
-                            setDeleteTarget(null);
-                          }}>
-                            {deleteLoading ? 'Processing...' : 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Room {room.room_number}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this room? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div />
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => { setIsAlertOpen(false); setDeleteTarget(null); }}>
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={async () => {
+                                setDeleteLoading(true);
+                                await handleDelete(room._id);
+                                setDeleteLoading(false);
+                                setIsAlertOpen(false);
+                                setDeleteTarget(null);
+                              }}>
+                                {deleteLoading ? 'Processing...' : 'Delete'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </>
       )}

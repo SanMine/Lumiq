@@ -11,6 +11,11 @@ const DormSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // Legacy location field - kept for backward compatibility
+    location: {
+      type: String,
+      default: null,
+    },
     // NEW: Detailed address breakdown - this replaces location eventually
     address: {
       addressLine1: {
@@ -153,7 +158,7 @@ DormSchema.index({ admin_id: 1 });
 DormSchema.index({ availibility: 1, isActive: 1 });
 
 // Virtual property to get address as a single string
-DormSchema.virtual('fullAddress').get(function() {
+DormSchema.virtual('fullAddress').get(function () {
   // If new address object exists, use it
   if (this.address?.addressLine1) {
     const parts = [
@@ -166,36 +171,36 @@ DormSchema.virtual('fullAddress').get(function() {
     ].filter(Boolean);
     return parts.join(', ');
   }
-  
+
   // Fallback to old location field
   return this.location || 'Address not set';
 });
 
 // Method: Calculate distance from coordinates (in kilometers)
-DormSchema.methods.getDistanceFrom = function(lat, lng) {
+DormSchema.methods.getDistanceFrom = function (lat, lng) {
   if (!this.latitude || !this.longitude) {
     return null;
   }
-  
+
   const R = 6371; // Earth's radius in km
   const dLat = (lat - this.latitude) * Math.PI / 180;
   const dLon = (lng - this.longitude) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(this.latitude * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
 
 // Method: Check if dorm has map coordinates
-DormSchema.methods.hasCoordinates = function() {
+DormSchema.methods.hasCoordinates = function () {
   return this.latitude !== null && this.longitude !== null;
 };
 
 // Static method: Find dorms near a location
-DormSchema.statics.findNearby = async function(latitude, longitude, radiusInKm = 5) {
-  const dorms = await this.find({ 
+DormSchema.statics.findNearby = async function (latitude, longitude, radiusInKm = 5) {
+  const dorms = await this.find({
     isActive: true,
     availibility: true,
     latitude: { $ne: null },
@@ -214,7 +219,7 @@ DormSchema.statics.findNearby = async function(latitude, longitude, radiusInKm =
 };
 
 // Pre-save middleware: Sync old location field with new address
-DormSchema.pre('save', function(next) {
+DormSchema.pre('save', function (next) {
   // If address exists, update the old location field for backwards compatibility
   if (this.address?.addressLine1) {
     this.location = this.fullAddress;

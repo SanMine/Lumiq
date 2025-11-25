@@ -265,7 +265,7 @@ Preferences:
 - Additional Preferences: ${user2.preferences.additionalPreferences || "None"}
 
 Provide a JSON response with:
-1. compatibilityScore: Number (0-100) - Overall compatibility percentage
+1. compatibilityScore: Number (0-100) - CALCULATE this score based strictly on the analysis of the data provided. Do not use the example value.
 2. bottom_line: String - A friendly, honest one-sentence summary using "You both" or "You"
 3. spark: String - The ONE specific thing you both will bond over
 4. friction: String - The ONE specific thing you might clash about
@@ -273,21 +273,19 @@ Provide a JSON response with:
 6. concerns: Array of {category, explanation} - Top 2-3 things to watch out for (use "You" language)
 7. summary: String - A warm, direct 2-3 sentence overview using "You both"
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format. The values below are for FORMAT REFERENCE ONLY. Do not copy them.
 {
-  "compatibilityScore": 85,
-  "bottom_line": "You both will thrive together once you set some ground rules about cleanliness.",
-  "spark": "You're both night owls who prefer a relaxed lifestyle - perfect for late-night movie marathons.",
-  "friction": "You're neat and organized, but they're more relaxed about mess. This could cause tension.",
+  "compatibilityScore": 0,
+  "bottom_line": "Example bottom line.",
+  "spark": "Example spark.",
+  "friction": "Example friction.",
   "strengths": [
-    {"category": "Sleep Schedule", "explanation": "You're both night owls, so you won't wake each other up."},
-    {"category": "Temperature", "explanation": "You both prefer cool temperatures, making thermostat wars unlikely."}
+    {"category": "Example Category", "explanation": "Example explanation."}
   ],
   "concerns": [
-    {"category": "Cleanliness", "explanation": "You prefer a tidy space, but they're more relaxed. Set clear expectations about shared areas."},
-    {"category": "Smoking", "explanation": "You don't smoke, but they do. Ask them to smoke outside to avoid any issues."}
+    {"category": "Example Category", "explanation": "Example explanation."}
   ],
-  "summary": "You both share great compatibility in lifestyle and sleep schedules. The main thing to address upfront is cleanliness expectations and smoking boundaries to avoid future conflicts."
+  "summary": "Example summary."
 }`;
     }
 

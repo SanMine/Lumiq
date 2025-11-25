@@ -55,6 +55,8 @@ export default function RoommateMatchingPage() {
     const [preferredData, setPreferredData] = useState({
         ageMin: 18,
         ageMax: 30,
+        priceMin: 0 as number | string,
+        priceMax: 10000 as number | string,
         gender: "Any" as string,
         nationality: "",
         sleepType: "Any" as string,
@@ -119,6 +121,8 @@ export default function RoommateMatchingPage() {
                     setPreferredData({
                         ageMin: pref.preferred_age_range?.min || 18,
                         ageMax: pref.preferred_age_range?.max || 30,
+                        priceMin: pref.preferred_price_range?.min || 0,
+                        priceMax: pref.preferred_price_range?.max || 10000,
                         gender: pref.preferred_gender || "Any",
                         nationality: pref.preferred_nationality || "",
                         sleepType: pref.preferred_sleep_type || "Any",
@@ -207,6 +211,10 @@ export default function RoommateMatchingPage() {
                 preferred_age_range: {
                     min: preferredData.ageMin,
                     max: preferredData.ageMax,
+                },
+                preferred_price_range: {
+                    min: preferredData.priceMin === "" ? 0 : Number(preferredData.priceMin),
+                    max: preferredData.priceMax === "" ? 10000 : Number(preferredData.priceMax),
                 },
                 preferred_gender: preferredData.gender,
                 preferred_nationality: preferredData.nationality || null,
@@ -734,6 +742,42 @@ export default function RoommateMatchingPage() {
                                                 className="bg-muted/50"
                                                 min="16"
                                                 max="100"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Preferred Price Range */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-foreground">Preferred Price Range (Monthly)</h3>
+                                    <Separator />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="priceMin">Minimum Price (฿)</Label>
+                                            <Input
+                                                id="priceMin"
+                                                type="number"
+                                                value={preferredData.priceMin}
+                                                onChange={(e) => setPreferredData({ ...preferredData, priceMin: e.target.value === "" ? "" : parseInt(e.target.value) })}
+                                                disabled={!isEditingPreferred}
+                                                className="bg-muted/50"
+                                                min="0"
+                                                step="100"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="priceMax">Maximum Price (฿)</Label>
+                                            <Input
+                                                id="priceMax"
+                                                type="number"
+                                                value={preferredData.priceMax}
+                                                onChange={(e) => setPreferredData({ ...preferredData, priceMax: e.target.value === "" ? "" : parseInt(e.target.value) })}
+                                                disabled={!isEditingPreferred}
+                                                className="bg-muted/50"
+                                                min="0"
+                                                step="100"
+                                                placeholder="10000"
                                             />
                                         </div>
                                     </div>

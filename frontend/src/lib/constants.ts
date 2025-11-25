@@ -2,7 +2,7 @@ import dorm1 from '@/assets/dorm-1.jpg'
 import dorm2 from '@/assets/dorm-2.jpg'
 import dorm3 from '@/assets/dorm-3.jpg'
 
-export const APP_NAME = "Lumiq";
+
 export const SIGNIN = "Sign In";
 export const SIGNIN_TITLE = "Welcome Back! 💫";
 export const SIGNIN_SUBTITLE = "The faster you fill up, the faster you get your match.";

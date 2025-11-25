@@ -1,4 +1,4 @@
-import { APP_NAME, NAVLINKS, STUDENT_NAVLINKS, DORM_ADMIN_NAVLINKS } from '@/lib/constants'
+import { NAVLINKS, STUDENT_NAVLINKS, DORM_ADMIN_NAVLINKS } from '@/lib/constants'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router'
@@ -7,7 +7,7 @@ import { Button } from '../ui/button'
 import { Dialog, DialogTrigger } from '../ui/dialog'
 import AuthDropdown from './auth-drop-down'
 import { ModeToggle } from './mode-toggle'
-import { SiLogseq } from "react-icons/si";
+import icon from "@/images/icon.png";
 
 import Notifications from './notifications'
 
@@ -46,10 +46,7 @@ export default function Navbar() {
                 <div className="w-full flex justify-between items-center max-w-[1400px] px-4 mx-auto md:h-20 h-16">
                     {/* Logo & Links */}
                     <div className="flex items-center cursor-pointer gap-4" onClick={() => navigate('/')}>
-                        <SiLogseq className='size-5' />
-                        <h1 className="text-lg font-bold tracking-wider dark:bg-gradient-to-r dark:from-purple-400 dark:via-pink-500 dark:to-blue-500 dark:bg-clip-text dark:text-transparent">
-                            {APP_NAME}
-                        </h1>
+                        <img src={icon} alt="Lumiq Logo" className="w-20 h-auto object-contain" />
                     </div>
 
                     {/* Desktop Right Side */}

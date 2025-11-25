@@ -19,6 +19,13 @@ const PreferredRoommateSchema = new mongoose.Schema(
       },
       default: { min: 18, max: 30 },
     },
+    preferred_price_range: {
+      type: {
+        min: { type: Number, default: 0 },
+        max: { type: Number, default: 10000 },
+      },
+      default: { min: 0, max: 10000 },
+    },
     preferred_gender: {
       type: String,
       enum: [
