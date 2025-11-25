@@ -45,8 +45,10 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<AuthRootLayout />}>
+            <Route path="sign-in" element={<SignIn />} />
+            <Route path="sign-up" element={<SignUp />} />
           </Route>
         </Routes>
       </BrowserRouter>
