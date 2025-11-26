@@ -145,14 +145,32 @@ bookings.post("/", requireStudent, upload.single("paymentSlip"), async (req, res
 // Get list of bookings
 bookings.get("/", requireAuth, async (req, res, next) => {
   try {
-    // Admins (including dorm_admin) can see all bookings, others see only their own
-    if (req.user.role === "admin" || req.user.role === "dorm_admin") {
+    // System admins can see all bookings
+    if (req.user.role === "admin") {
       const all = await Booking.find()
         .populate("userId", "name email")
         .populate("roomId", "room_number")
         .sort({ _id: -1 });
       return res.json(all);
     }
+
+    // Dorm admins can only see bookings for their own dorms
+    if (req.user.role === "dorm_admin") {
+      const { Dorm } = await import("../models/Dorm.js");
+
+      // Find all dorms owned by this admin
+      const adminDorms = await Dorm.find({ admin_id: req.user.id }).select("_id");
+      const dormIds = adminDorms.map(d => d._id);
+
+      // Find bookings for those dorms
+      const adminBookings = await Booking.find({ dormId: { $in: dormIds } })
+        .populate("userId", "name email")
+        .populate("roomId", "room_number")
+        .sort({ _id: -1 });
+      return res.json(adminBookings);
+    }
+
+    // Students see only their own bookings
     const mine = await Booking.find({ userId: req.user.id })
       .populate("userId", "name email")
       .populate("roomId", "room_number")
@@ -172,9 +190,17 @@ bookings.get("/:id", requireAuth, async (req, res, next) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     const isOwner = String(booking.userId?._id || booking.userId) === String(req.user.id);
-    // Allow dorm_admins as well as admins
-    const isAdmin = req.user.role === "admin" || req.user.role === "dorm_admin";
-    if (!isOwner && !isAdmin) {
+    const isSystemAdmin = req.user.role === "admin";
+
+    // Check if dorm_admin owns this booking's dorm
+    let isDormAdmin = false;
+    if (req.user.role === "dorm_admin") {
+      const { Dorm } = await import("../models/Dorm.js");
+      const dorm = await Dorm.findOne({ _id: booking.dormId, admin_id: req.user.id });
+      isDormAdmin = !!dorm;
+    }
+
+    if (!isOwner && !isSystemAdmin && !isDormAdmin) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -191,8 +217,17 @@ bookings.put("/:id", requireAuth, async (req, res, next) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     const isOwner = String(booking.userId) === String(req.user.id);
-    const isAdmin = req.user.role === "admin" || req.user.role === "dorm_admin";
-    if (!isOwner && !isAdmin) {
+    const isSystemAdmin = req.user.role === "admin";
+
+    // Check if dorm_admin owns this booking's dorm
+    let isDormAdmin = false;
+    if (req.user.role === "dorm_admin") {
+      const { Dorm } = await import("../models/Dorm.js");
+      const dorm = await Dorm.findOne({ _id: booking.dormId, admin_id: req.user.id });
+      isDormAdmin = !!dorm;
+    }
+
+    if (!isOwner && !isSystemAdmin && !isDormAdmin) {
       return res.status(403).json({ error: "Access denied" });
     }
 
