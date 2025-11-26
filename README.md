@@ -2,22 +2,17 @@
 
 ## Executive Summary
 
-The search for suitable accommodation and compatible roommates often presents significant challenges, particularly for students and individuals relocating to new areas. Traditional methods for finding dormitories and roommates are frequently inefficient, time-consuming, and lack the necessary tools for informed decision-making. These methods typically involve manual searches, word-of-mouth recommendations, or generic online listings that do not adequately address the nuanced requirements of tenants, especially regarding roommate compatibility. The lack of structured information and personalized matching services often leads to dissatisfaction and conflicts among co-habitants, impacting their academic performance or overall well-being.
-
-In response to these challenges, the Lumiq project proposes a comprehensive digital solution. Lumiq is a web application designed to revolutionize dormitory search and roommate matching experience. It integrates advanced search functionalities for dormitories with a sophisticated, AI-powered personality-based roommate matching system. The platform is structured with distinct client-side and administration-side functionalities to cater to the diverse needs of its users.
+LUMIQ is a comprehensive web application that revolutionizes the dormitory search and roommate matching experience for students and young professionals. It combines advanced dorm search functionalities with AI-powered personality-based roommate matching, real-time chat, price calculation tools, and comprehensive admin management capabilities.
 
 ## Table of Contents
 
 - [Project Overview](#project-overview)
-- [Key Features](#key-features)
+- [Comprehensive Feature List](#comprehensive-feature-list)
 - [Technology Stack](#technology-stack)
 - [System Architecture](#system-architecture)
-- [Installation & Setup](#installation--setup)
+- [Installation \u0026 Setup](#installation--setup)
 - [API Documentation](#api-documentation)
-- [Database Schema](#database-schema)
-- [Security & RBAC](#security--rbac)
-- [Testing](#testing)
-- [Deployment](#deployment)
+- [Security \u0026 RBAC](#security--rbac)
 
 ---
 
@@ -25,580 +20,677 @@ In response to these challenges, the Lumiq project proposes a comprehensive digi
 
 ### Problem Statement
 
-Students and young professionals face significant challenges when searching for accommodation:
-- **Time-consuming manual searches** across multiple platforms
-- **Lack of roommate compatibility information** leading to conflicts
-- **Insufficient dormitory details** making informed decisions difficult
-- **No centralized platform** for both dorm search and roommate matching
+Students face challenges finding compatible roommates and suitable dormitories:
+- **Time-consuming searches** across fragmented platforms
+- **Roommate incompatibility** leading to conflicts
+- **Unclear pricing** and hidden costs
+- **No communication** before room commitment
+- **Poor property management** tools for dorm administrators
 
-### Solution
+### Our Solution
 
-LUMIQ provides a unified platform that combines:
-1. **Comprehensive Dorm Search** - Detailed listings with photos, amenities, and pricing
-2. **AI-Powered Roommate Matching** - Personality-based compatibility assessment
-3. **Knock-Knock System** - Social connection feature for potential roommates
-4. **Real-time Notifications** - Instant updates on bookings, knocks, and matches
-5. **Admin Dashboard** - Complete dorm management for property owners
+LUMIQ provides an all-in-one platform with:
+1. Advanced dorm search with comprehensive filters
+2. AI-powered roommate compatibility matching
+3. Real-time chat between matched users
+4. Transparent price calculations and breakdowns
+5. Professional admin dashboard for property management
+6. Secure RBAC (Role-Based Access Control)
 
 ---
 
-## Key Features
+## Comprehensive Feature List
 
-### For Students
+### 🎯 For Students / Tenants
 
-#### 🏠 Dorm Search
-- Advanced filtering (price, location, amenities)
-- Detailed dorm profiles with images
-- Room availability tracking
-- Wishlist functionality
-- Rating and review system
+#### 1. 🏠 Dorm Discovery \u0026 Search
 
-#### 👥 Roommate Matching
-- **Personality Profile System**
+**Dorm Browsing**
+- Browse all available dorms with card-based layout
+- High-quality image galleries for each property
+- Real-time availability status
+- Rating and review system with star ratings
+- Location-based browsing
+
+**Advanced Search \u0026 Filtering**
+- Search by dorm name or location
+- Price range slider filters
+- Amenities/facilities filter
+- Sort by: Price, Rating, Availability
+- Real-time search results
+
+**Dorm Details Page**
+- Comprehensive dorm information
+  - Name, location (full address with district, province)
+  - Multiple property images
+  - Amenity list (WiFi, AC, Parking, etc.)
+  - Contact information (Email, Phone, LINE ID, Facebook)
+  - Operating hours
+- **Room Listings**
+  - Available rooms by floor and type (Single, Double, Suite)
+  - Room-specific pricing
+  - Room amenities
+  - Availability status
+- **Location Services**
+  - Interactive map integration
+  - Geographic coordinates
+  - Distance calculation from landmarks
+- **Reviews \u0026 Ratings**
+  - Aggregate rating display
+  - Individual user reviews
+  - Comment section
+
+#### 2. 💰 Pricing \u0026 Booking Features
+
+**Transparent Price Breakdown**
+- Room price per month (clearly displayed)
+- **Utility Fee Transparency**
+  - Water fees with billing type indicator (฿X / month or ฿X / unit)
+  - Electricity fees with billing type (฿X / month or ฿X / unit)
+  - Smart estimation: Fixed estimates for per-unit billing (฿200 for water, ฿500 for electricity)
+- Insurance policy (one-time deposit)
+- Booking fee (reservation cost)
+
+**Automated Price Calculation**
+- **First Month Total Calculation**
+  - Room price
+  - Insurance (one-time)
+  - Estimated utilities (water + electricity)
+  - Minus: Booking fee (already paid)
+  - **Auto-calculated total**
+- **Following Months Calculation**
+  - Room price + utilities
+  - Clear monthly cost projection
+
+**Room Booking System**
+- Real-time booking form
+- Auto-populated user information
+- Move-in date selector
+- Stay duration configuration (months/years)
+- **Multiple Payment Methods**
+  - Credit/Debit card
+  - QR PromptPay with auto-generated QR code
+  - Bank slip upload
+- **Booking Confirmation**
+  - Instant booking confirmation dialog
+  - Unique booking ID generation
+  - PDF invoice generation and download
+  - Email confirmation (planned)
+
+**Invoice System**
+- Professional PDF invoice template
+- Complete pricing breakdown
+- Dorm and room details
+- Contact information
+- Booking date and ID
+- Download functionality
+
+#### 3. 👥 Roommate Matching System
+
+**Personality Profile Creation**
+- **Detailed personality questionnaire**:
+  - Nickname \u0026 basic info (age, gender, nationality)
   - MBTI personality type
-  - Sleep schedule preferences
-  - Cleanliness habits
-  - Social preferences
-  - Study habits
-  - Lifestyle choices (smoking, drinking, pets)
-- **AI-Powered Matching Algorithm**
-  - GROQ-based personality analysis
-  - Compatibility scoring
-  - Detailed comparison view
+  - Sleep schedule (Early Bird, Night Owl, Flexible)
+  - Study habits (Library, Dorm, Coffee Shop, Group Study)
+  - Cleanliness level (Very Clean, Moderate, Relaxed)
+  - Social preference (Introvert, Extrovert, Ambivert)
+  - Going out frequency
+  - Lifestyle choices (Smoking: Yes/No)
+  - Drinking habits (Never, Occasionally, Socially, Regularly)
+  - Pet preferences
+  - Noise tolerance (Low, Medium, High)
+  - Room temperature preference (Cool, Warm, No Preference)
 
-#### 🚪 Knock-Knock Feature
-- Send connection requests to potential roommates
+**Compatibility Matching Algorithm**
+- **Multi-factor scoring system** (0-100% compatibility)
+  - Sleep schedule compatibility (20 points)
+  - Study habits alignment (15 points)
+  - Cleanliness match (15 points)
+  - Social preference compatibility (15 points)
+  - Lifestyle compatibility (smoking, drinking, pets) (20 points)
+  - Noise tolerance (10 points)
+  - Temperature preference (5 points)
+- **Weighted scoring** based on importance
+- Top matches sorted by score
+
+**AI-Powered Analysis**
+- **GROQ AI Integration** (Llama 3.3 70B)
+- Deep personality analysis
+- Natural language compatibility report
+- Detailed reasoning for matches
+- Potential conflict identification
+- Conversation starter suggestions
+
+**Match Discovery UI**
+- Card-based match display
+- **Compatibility percentage badge**
+- User profile preview
+- Quick "Knock" action button
+- Match reasons visualization
+
+#### 4. 🚪 Knock-Knock Connection System
+
+**Connect with Matches**
+- Send "Knock" requests to potential roommates
+- Personalized knock notification
 - Accept/Reject incoming knocks
-- View accepted connections
-- Profile comparison for matches
+- Status tracking (Pending, Accepted, Rejected)
 
-#### 🔔 Real-time Notifications
-- New knock notifications
-- Knock acceptance alerts
-- Booking confirmations
-- 30-second auto-refresh
+**Connection Management**
+- View all sent knocks
+- View received knocks
+- Accept matches easily
+- Navigate to connection page after acceptance
 
-### For Dorm Administrators
+#### 5. 💬 Real-Time Chat System
 
-#### 📊 Admin Dashboard
-- **Overview Analytics**
-  - Total revenue
-  - Booking statistics
-  - Occupancy rates
-  - Revenue trends
+**Connection Page Features**
+- **Floating chat widget**
+  - Modern pill-shaped input field
+  - Gradient send button with hover effects
+  - Minimized/Maximized states
+  - Unread message badge
+  - Auto scrolling
+- **Chat functionality**
+  - Real-time messaging
+  - Message timestamps
+  - Sender name display
+  - Read status tracking
+  - Message history
+- **Chat UI/UX**
+  - Bubble-style messages with tail
+  - Different colors for sent/received (gradient for sent, white for received)
+  - Compact spacing
+  - Keyboard shortcuts (Enter to send)
+  - Empty state with friendly message
+  - Active chat session tracking
 
-#### 🏢 Dorm Management
-- Create and edit dorm listings
-- Upload multiple images
-- Manage amenities and facilities
-- Set pricing and policies
+**Shared Dorm Suggestions**
+- **Price-based room suggestions** for connected users
+  - Analyzes both users' price preferences
+  - Finds price range intersection or average
+  - **Never empty**: Falls back to cheapest Double rooms
+- **Double room focus**
+  - Only shows rooms for 2 people
+  - Calculates per-person split price
+  - Shows total room price + individual share
+- **Smart pricing display**
+  - "Based on shared price range: ฿X - ฿Y"
+  - "Up to ฿X" for flexible budget
+  - "Best Deals" badge for fallback results
+  - "Average Range" indicator
+- **Detailed dorm cards**
+  - Dorm image with hover effects
+  - Full address display (up to 2 lines)
+  - "Shared Room Deal" pricing section
+  - Double room total price
+  - Per-person calculated cost (₿{total}/2)
+- **Visual enhancements**
+  - Glassmorphism effects
+  - Hover animations
+  - Click to view dorm details
 
-#### 🛏️ Room Management
-- Add/edit/delete rooms
-- Track room availability
-- Manage reservations
-- Move-in/move-out tracking
+#### 6. 🔔 Notification System
 
-#### 📈 Analytics & Reporting
-- Revenue trend analysis
-- Booking trends
-- Room occupancy stats
-- Recent booking overview
+**Real-Time Alerts**
+- **Notification types**:
+  - New knock requests
+  - Knock acceptances
+  - Booking confirmations
+  - Chat messages
+  - System announcements
+- **Notification bell** in navbar
+  - Unread count badge
+  - Animated pulse for new notifications
+- **Notification panel**
+  - Dropdown list with recent notifications
+  - Mark as read functionality
+  - Delete notifications
+  - Navigate to related pages
+- **Auto-refresh** every 30 seconds
 
-#### 🔔 Notifications
-- New booking alerts with student details
-- Real-time notification system
+#### 7. 📱 User Account Management
+
+**My Account Page**
+- **Profile Information**
+  - Name, email, phone
+  - Date of birth
+  - Address
+  - Bio/description
+- **Booking History**
+  - All past and current bookings
+  - Booking status (Pending, Confirmed, Cancelled)
+  - Booking details and amounts
+- **Personality Profile Viewer**
+  - View/Edit personality information
+  - Update preferences anytime
+- **Wishlist** (planned)
+
+**Theme Support**
+- Light/Dark mode toggle
+- Automatic system theme detection
+- Persistent theme preference
+- Smooth theme transitions
+
+### 🛠️ For Dorm Administrators
+
+#### 1. 📊 Admin Dashboard Overview
+
+**Analytics Dashboard**
+- **Key Metrics Cards**
+  - Total Revenue (฿)
+  - Total Bookings (count)
+  - Average Occupancy Rate (%)
+  - Monthly Revenue Growth (%)
+- **Interactive Charts**
+  - Revenue Trend Graph (line chart)
+  - Booking Trends (bar chart)
+  - Occupancy by room type
+- **Recent Activity Feed**
+  - Latest bookings with student details
+  - Recent room reservations
+  - Quick action buttons
+
+#### 2. 🏢 Dorm Management
+
+**My Dorms Page**
+- View all owned properties
+- **Create new dorm**
+  - Multi-step form wizard
+  - Property details
+  - Location (full address with Thai administrative divisions)
+  - Geographic coordinates for map
+  - Pricing and policies
+  - Insurance policy amount
+  - Contact information (email, phone, LINE, Facebook)
+  - Operating hours
+- **Edit existing dorms**
+  - Update any property information
+  - Soft delete (isActive flag)
+- **Image Management**
+  - Multiple image upload
+  - Drag-and-drop support
+  - Image preview
+  - Set primary image
+- **Amenities Management**
+  - Add/remove facilities
+  - Predefined amenities list (WiFi, Parking, Laundry, etc.)
+  - Custom amenities support
+
+**Utility Fee Configuration**
+- **Water billing setup**
+  - Per-month flat rate
+  - Per-unit metered billing
+  - Rate amount configuration
+- **Electricity billing setup**
+  - Per-month flat rate
+  - Per-unit metered billing
+  - Rate amount configuration
+
+#### 3. 🛏️ Room Management
+
+**Rooms Page**
+- View all rooms across all owned dorms
+- Filter by dorm, floor, type, status
+- **Add new rooms**
+  - Room number
+  - Floor designation
+  - Room type (Single, Double, Suite)
+  - Capacity (number of occupants)
+  - Monthly price
+  - Booking fee
+  - Zone/Building
+  - Bed type
+  - Size (sqm)
+  - Amenities
+  - Room description
+- **Edit rooms**
+  - Update pricing
+  - Change availability status
+  - Modify amenities
+- **Delete rooms**
+  - Soft delete with confirmation
+- **Bulk actions** (planned)
+
+**Availability Management**
+- Real-time room status
+  - Available (green)
+  - Occupied (gray)
+  - Reserved (yellow)
+  - Maintenance (red)
+- Move-in date tracking
+- Move-out date tracking
+- Automatic status updates
+
+#### 4. 📋 Bookings Management
+
+**Bookings Page with RBAC**
+- **View bookings** (only for own dorms)
+  - Filtered by admin's property ownership
+  - Cannot see other admins' bookings
+  - Secure endpoint filtering
+- **Booking table** with sortable columns
+  - Guest name with avatar
+  - Room number
+  - Move-in date
+  - Booking amount
+  - Payment status
+  - Actions column
+- **Booking details modal**
+  - Complete booking information
+  - Student contact details
+  - Payment method
+  - Booking fee paid amount
+  - Stay duration
+  - Creation timestamp
+- **Status management**
+  - Update booking status (Pending → Confirmed → Cancelled)
+  - Instant status change
+  - Automatic user notifications
+- **Refresh functionality**
+  - Manual refresh button for latest data
+
+#### 5. 📈 Analytics \u0026 Reporting
+
+**AnalyticsPage**
+- **Revenue Analytics**
+  - Total revenue calculation
+  - Month-over-month growth
+  - Revenue by room type
+  - Revenue trends chart
+- **Booking Analytics**
+  - Total bookings count
+  - Booking conversion rate
+  - Booking trends over time
+- **Occupancy Analytics**
+  - Current occupancy percentage
+  - Available vs occupied rooms
+  - Occupancy by floor
+  - Seasonal trends
+- **Performance Metrics**
+  - Average booking value
+  - Days to book (average)
+  - Cancellation rate
+
+#### 6. ⚙️ Settings
+
+**SettingsPage**
+- **Admin profile management**
+  - Update contact information
+  - Change password
+  - Email notifications preferences
+- **Dorm settings**
+  - Default booking policies
+  - Cancellation policies
+  - Payment methods accepted
+- **Notification preferences**
+  - Email alerts for new bookings
+  - SMS notifications (planned)
+
+### 🔐 Security \u0026 Access Control
+
+#### Role-Based Access Control (RBAC)
+
+**Three User Roles**
+
+1. **Student Role**
+   - Browse dorms and rooms
+   - Create personality profile
+   - Find roommate matches
+   - Send/receive knocks
+   - Book rooms
+   - View own bookings
+   - Chat with connections
+   - Receive notifications
+
+2. **Dorm Admin Role**
+   - All student permissions +
+   - Create and manage own dorms only
+   - Add/edit/delete rooms for own dorms
+   - View bookings for own properties only (RBAC implemented)
+   - Update booking status for own properties
+   - View analytics for own dorms
+   - Receive booking notifications for own properties
+   - **Cannot access other admins' data**
+
+3. **System Admin Role**
+   - Full system access
+   - Manage all users
+   - View all dorms and rooms
+   - Access all bookings
+   - System-wide analytics
+   - User management
+
+**Security Implementation**
+- **JWT Authentication**
+  - Secure token-based auth
+  - Token expiration
+  - Bearer token in headers
+- **Password Security**
+  - bcrypt hashing (10 rounds)
+  - Salted passwords
+  - Password strength validation
+- **RBAC Middleware**
+  - `requireAuth`: Verify logged-in user
+  - `requireStudent`: Student-only routes
+  - `requireDormAdmin`: Admin-only routes
+- **Resource Ownership Verification**
+  - Bookings filtered by dorm ownership
+  - Dorms filtered by admin_id
+  - Notifications filtered by recipient
+- **Data Privacy**
+  - Users can only update own profile
+  - Admins see only own property data
+  - Chat messages encrypted (planned)
+
+### 🎨 UI/UX Features
+
+**Design System**
+- **Theme Support**
+  - Light mode with warm tones
+  - Dark mode with cool backgrounds
+  - System preference detection
+  - Smooth theme transitions
+- **Color Palette**
+  - Primary gradient: Pink (500) → Purple (600)
+  - Lime accent for ratings and success states
+  - Muted backgrounds for cards
+  - High contrast text
+- **Typography**
+  - Clear hierarchy with bold headers
+  - Readable body text
+  - Icon-text combinations
+  - Responsive font sizing
+
+**Component Library**
+- **shadcn/ui components**
+  - Cards with borders and shadows
+  - Buttons with hover states
+  - Input fields with focus rings
+  - Badges for status display
+  - Dropdowns and modals
+  - Toast notifications (sonner)
+- **Custom Components**
+  - Navbar with notifications
+  - Footer with links
+  - Loader with spinning animation
+  - Floating chat widget
+  - Dorm cards with hover effects
+  - Match cards with compatibility scores
+
+**Responsive Design**
+- Mobile-first approach
+- Tablet breakpoints (md, lg)
+- Desktop optimized layouts
+- Touch-friendly buttons
+- Collapsible sidebars
+- Adaptive grids (1/2/3 columns)
+
+**Animations \u0026 Transitions**
+- Smooth page transitions
+- Hover scale effects on cards
+- Fade-in animations for modals
+- Slide-in notifications
+- Loading skeletons
+- Bounce animation for chat button
+- Pulse for unread notifications
+
+**Accessibility**
+- Semantic HTML
+- ARIA labels
+- Keyboard navigation support
+- Focus indicators
+- Screen reader friendly
+- High contrast mode compatible
+
+### 🚀 Performance Features
+
+**Optimization**
+- Code splitting with React Router
+- Lazy loading for images
+- Debounced search inputs
+- Memoized calculations
+- Efficient re-renders with Context API
+
+**Data Management**
+- Efficient MongoDB queries with indexes
+- Pagination (planned)
+- Caching strategies (planned)
+- Image optimization with CDN (planned)
+
+### 🔧 Developer Features
+
+**Code Quality**
+- TypeScript for type safety (frontend)
+- ESModules throughout
+- Consistent file structure
+- Modular architecture
+- Reusable components
+
+**Development Tools**
+- Vite for fast HMR (frontend)
+- Nodemon for auto-restart (backend)
+- Environment variables (.env)
+- CORS configuration
+- Morgan logger for API requests
 
 ---
 
 ## Technology Stack
 
 ### Frontend
-```json
-{
-  "framework": "React 18 + TypeScript",
-  "routing": "React Router v7",
-  "styling": "Tailwind CSS",
-  "ui-components": "shadcn/ui + Radix UI",
-  "state": "React Context API",
-  "http-client": "Axios",
-  "build": "Vite",
-  "package-manager": "pnpm"
-}
+```
+Framework: React 18 + TypeScript
+Routing: React Router v7
+Styling: Tailwind CSS
+UI Library: shadcn/ui (built on Radix UI)
+State: React Context API
+HTTP Client: Axios
+Build Tool: Vite
+Package Manager: pnpm
+Toast Notifications: sonner
 ```
 
 ### Backend
-```json
-{
-  "runtime": "Node.js 18+",
-  "framework": "Express.js 5",
-  "database": "MongoDB + Mongoose",
-  "auth": "JWT + bcryptjs",
-  "ai": "GROQ SDK (Llama 3.3 70B)",
-  "file-upload": "Multer",
-  "cors": "CORS middleware"
-}
 ```
+Runtime: Node.js 18+
+Framework: Express.js 5
+Database: MongoDB + Mongoose
+Auth: JWT + bcryptjs
+AI Service: GROQ SDK (Llama 3.3 70B Versatile)
+File Upload: Multer
+CORS: cors middleware
+Logging: morgan
+```
+
+### External Services
+- **GROQ AI** - Personality analysis \u0026 compatibility assessment
+- **MongoDB Atlas** - Cloud database (production)
+- **Dicebear API** - Avatar generation
+- **QR Server API** - PromptPay QR code generation
 
 ---
 
 ## System Architecture
 
-### Visual Architecture Diagram
-
-![LUMIQ Architecture - 7-Layer Overview](architecture-diagram.png)
-
-*Figure 1: Complete system architecture showing all 7 layers from client to database with data flow*
-
-### High-Level Architecture Overview (Text Format)
+### High-Level Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT LAYER                                   │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Web Browser (Chrome, Firefox, Safari, Edge)                      │  │
-│  │  Port: 5173 (Development) / 80, 443 (Production)                  │  │
-│  └───────────────────────────┬──────────────────────────────────────┘  │
-└────────────────────────────────┼────────────────────────────────────────┘
-                                 │
-                          HTTPS/REST API
-                          (JSON Payload)
-                                 │
-┌────────────────────────────────▼────────────────────────────────────────┐
-│                        PRESENTATION LAYER                                │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │              React 18 + TypeScript Frontend                       │  │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌───────────┐  │  │
-│  │  │   Pages    │  │ Components │  │  Contexts  │  │   Hooks   │  │  │
-│  │  │            │  │            │  │            │  │           │  │  │
-│  │  │ • Home     │  │ • Navbar   │  │ • Auth     │  │ • useAuth │  │  │
-│  │  │ • Dorms    │  │ • Cards    │  │ • Theme    │  │ • useData │  │  │
-│  │  │ • Rooms    │  │ • Forms    │  │            │  │           │  │  │
-│  │  │ • Profile  │  │ • Modals   │  │            │  │           │  │  │
-│  │  │ • Admin    │  │ • Notify   │  │            │  │           │  │  │
-│  │  └────────────┘  └────────────┘  └────────────┘  └───────────┘  │  │
-│  │                                                                    │  │
-│  │  Routing: React Router v7 | State: Context API | Styling: Tailwind│  │
-│  └────────────────────────────┬───────────────────────────────────────┘  │
-└─────────────────────────────────┼────────────────────────────────────────┘
-                                  │
-                        Axios HTTP Client
-                        (JWT Token Headers)
-                                  │
-┌─────────────────────────────────▼────────────────────────────────────────┐
-│                         APPLICATION LAYER                                 │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │              Express.js Backend Server (Port 5001)                │   │
-│  │                                                                    │   │
-│  │  ┌──────────────────────────────────────────────────────────┐   │   │
-│  │  │                    Middleware Stack                       │   │   │
-│  │  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌──────────────┐  │   │   │
-│  │  │  │  CORS  │→ │ Morgan │→ │  JSON  │→ │ Auth (JWT)   │  │   │   │
-│  │  │  │        │  │ Logger │  │ Parser │  │ & RBAC       │  │   │   │
-│  │  │  └────────┘  └────────┘  └────────┘  └──────────────┘  │   │   │
-│  │  └──────────────────────────────────────────────────────────┘   │   │
-│  │                                                                    │   │
-│  │  ┌──────────────────────────────────────────────────────────┐   │   │
-│  │  │                    API Routes (13 files)                  │   │   │
-│  │  │                                                            │   │   │
-│  │  │  ┌─────────────┬─────────────┬──────────────────────┐   │   │   │
-│  │  │  │   PUBLIC    │  PROTECTED  │   ADMIN ONLY         │   │   │   │
-│  │  │  │             │             │                      │   │   │   │
-│  │  │  │ /auth       │ /users      │ /dorms (CUD)        │   │   │   │
-│  │  │  │ • signup    │ • profile   │ /rooms (CUD)        │   │   │   │
-│  │  │  │ • signin    │ • update    │ /analytics          │   │   │   │
-│  │  │  │             │             │                      │   │   │   │
-│  │  │  │ /dorms (R)  │ /bookings   │                      │   │   │   │
-│  │  │  │ /health     │ /knocks     │                      │   │   │   │
-│  │  │  │             │ /match      │                      │   │   │   │
-│  │  │  │             │ /notify     │                      │   │   │   │
-│  │  │  │             │ /wishlist   │                      │   │   │   │
-│  │  │  │             │ /personal   │                      │   │   │   │
-│  │  │  └─────────────┴─────────────┴──────────────────────┘   │   │   │
-│  │  └──────────────────────────────────────────────────────────┘   │   │
-│  └────────────────────────────┬──────────────────────────────────┘   │
-└─────────────────────────────────┼──────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────▼────────────────────────────────────────┐
-│                         BUSINESS LOGIC LAYER                              │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                      Service Layer (3 files)                      │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │   │
-│  │  │ AI Matching  │  │   Counter    │  │   Room Service       │  │   │
-│  │  │   Service    │  │   Service    │  │                      │  │   │
-│  │  │              │  │              │  │   • Reserve          │  │   │
-│  │  │ • GROQ API   │  │ • Auto-Inc   │  │   • Move-in/out     │  │   │
-│  │  │ • Llama 3.3  │  │ • ID Gen     │  │   • Availability    │  │   │
-│  │  │ • Analysis   │  │              │  │                      │  │   │
-│  │  └──────┬───────┘  └──────────────┘  └──────────────────────┘  │   │
-│  └─────────┼──────────────────────────────────────────────────────┘   │
-└────────────┼───────────────────────────────────────────────────────────┘
-             │
-┌────────────▼───────────────────────────────────────────────────────────┐
-│                           DATA ACCESS LAYER                             │
-│  ┌──────────────────────────────────────────────────────────────────┐ │
-│  │              Mongoose ODM (11 Models)                             │ │
-│  │  ┌────────────┬────────────┬──────────────┬─────────────────┐   │ │
-│  │  │    User    │    Dorm    │Personality   │   Knock         │   │ │
-│  │  ├────────────┼────────────┼──────────────┼─────────────────┤   │ │
-│  │  │    Room    │  Booking   │ Notification │   Wishlist      │   │ │
-│  │  ├────────────┼────────────┼──────────────┼─────────────────┤   │ │
-│  │  │   Counter  │ AiMatchRes │ PreferredRM  │                 │   │ │
-│  │  └────────────┴────────────┴──────────────┴─────────────────┘   │ │
-│  └────────────────────────────┬───────────────────────────────────┘ │
-└─────────────────────────────────┼─────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────▼─────────────────────────────────────┐
-│                          DATABASE LAYER                                │
-│  ┌──────────────────────────────────────────────────────────────────┐│
-│  │                  MongoDB (NoSQL Database)                         ││
-│  │                                                                    ││
-│  │  Collections:                                                      ││
-│  │  • users          • dorms         • rooms        • bookings       ││
-│  │  • personalities  • knocks        • notifications• wishlists      ││
-│  │  • aimatchresults • preferredroommates          • counters        ││
-│  │                                                                    ││
-│  │  Indexes: _id (primary), userId, dormId, email (unique)          ││
-│  └──────────────────────────────────────────────────────────────────┘│
-└────────────────────────────────────────────────────────────────────────┘
-
-┌────────────────────────────────────────────────────────────────────────┐
-│                        EXTERNAL SERVICES                                │
-│  ┌──────────────────────────────────────────────────────────────────┐ │
-│  │                  GROQ AI API (Llama 3.3 70B)                      │ │
-│  │                  • Personality Analysis                           │ │
-│  │                  • Compatibility Scoring                          │ │
-│  │                  • Natural Language Processing                    │ │
-│  └──────────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────┐
+│   Client     │ (React + TypeScript)
+│  Port: 5173  │
+└──────┬───────┘
+       │ HTTPS/REST
+       │
+┌──────▼───────┐
+│   Express    │ (Node.js + Express)
+│   Backend    │
+│  Port: 5001  │
+└──────┬───────┘
+       │
+       ├─────→ MongoDB (Data)
+       │
+       └─────→ GROQ AI (Matching)
 ```
 
-### Component Interaction Flow
+### Request Flow
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                      DATA FLOW ARCHITECTURE                             │
-└────────────────────────────────────────────────────────────────────────┘
+1. **User Authentication**
+   - Client sends credentials → Backend validates → JWT issued
+   - Token stored in localStorage
+   - Token sent in Authorization header for protected routes
 
-1. AUTHENTICATION FLOW
-   ┌─────────┐    signup/signin    ┌──────────┐    validate    ┌────────┐
-   │ Client  │ ──────────────────→ │ /auth    │ ─────────────→ │  User  │
-   │ (React) │                      │  Route   │                 │  Model │
-   └─────────┘                      └──────────┘                 └────────┘
-        │                                │                            │
-        │         ← JWT Token ←──────────┘                            │
-        │                                                              │
-        │         Store in LocalStorage & Axios Headers              │
-        │                                                              │
-        └──────────────── All Future Requests with JWT ──────────────┘
+2. **Dorm Booking**
+   - Browse dorms → Select room → Fill booking form
+   - Payment method selection → Submit
+   - Backend creates booking → Reserves room → Notifies admin
+   - Returns booking confirmation + PDF invoice
 
-2. DORM SEARCH & BOOKING FLOW
-   ┌─────────┐   GET /dorms   ┌──────────┐   Query   ┌──────┐
-   │ Client  │ ──────────────→│  Dorms   │──────────→│Dorm  │
-   │         │                 │  Route   │           │Model │
-   └─────────┘                 └──────────┘           └──────┘
-        │                           │                     │
-        │                           │  Filter, Sort       │
-        │         ← Dorm List ←─────┴─────────────────────┘
-        │
-        ▼
-   Select Dorm → View Rooms → Book Room
-        │                           │
-        ▼                           ▼
-   POST /bookings          Creates Booking
-        │                           │
-        ├──────────────────────────→│ Booking Model
-        │                           │
-        │                           ├→ Update Room Status
-        │                           ├→ Update User.dormId
-        │                           └→ Send Admin Notification
-        │
-        └────────← Booking Confirmed ←────────
+3. **Roommate Matching**
+   - Create personality profile → Submit to backend
+   - Client requests matches → Backend calculates compatibility
+   - Optional AI analysis via GROQ
+   - Returns sorted matches with scores
 
-3. ROOMMATE MATCHING FLOW
-   ┌─────────┐  Create Profile  ┌──────────┐   Save   ┌────────────┐
-   │ Client  │ ────────────────→│Personality│─────────→│Personality │
-   │         │                   │  Route    │          │   Model    │
-   └─────────┘                   └──────────┘          └────────────┘
-        │
-        ▼
-   GET /matching/find-match/:userId
-        │
-        ▼
-   ┌──────────┐     Fetch All      ┌────────────┐
-   │ Matching │ ──────────────────→│Personality │
-   │  Route   │     Personalities   │   Model    │
-   └──────────┘                     └────────────┘
-        │
-        ▼
-   Calculate Compatibility Score (0-100)
-   Based on: Sleep, Study, Cleanliness, Social, etc.
-        │
-        ├──────────────────→ AI Analysis (Optional)
-        │                    GROQ API Call
-        │                    GET /matching/ai-analysis/:id1/:id2
-        │
-        ▼
-   Return Sorted Matches
-        │
-        └────────→ Client Displays Match Cards
-
-4. KNOCK-KNOCK CONNECTION FLOW
-   User A                    Backend                   User B
-   ┌─────┐                  ┌────────┐               ┌─────┐
-   │  A  │ ─── Knock ─────→│ Knock  │               │  B  │
-   │     │     POST /knocks │ Model  │               │     │
-   └─────┘                  └────┬───┘               └─────┘
-                                 │
-                                 ├─→ Create Knock (status: pending)
-                                 ├─→ Create Notification for B
-                                 │
-                                 ▼
-                            User B sees knock
-                                 │
-                            ┌────┴────┐
-                            │ Accept? │
-                            └────┬────┘
-                                 │
-                      ┌──────────┴──────────┐
-                      │                     │
-                   Accept               Reject
-                      │                     │
-                      ▼                     ▼
-              PUT /knocks/:id/accept   (Status: rejected)
-                      │
-                      ├─→ Update status: accepted
-                      ├─→ Notify User A (accepted)
-                      │
-                      ▼
-              Both users can view connection
-              GET /connection/:userId
-
-5. NOTIFICATION SYSTEM FLOW
-   ┌──────────────┐
-   │ Event Occurs │ (Knock, Booking, Match)
-   └──────┬───────┘
-          │
-          ▼
-   ┌────────────────┐
-   │ Create         │ POST Internal
-   │ Notification   │──────────────────┐
-   └────────────────┘                  │
-                                       ▼
-                              ┌─────────────────┐
-                              │  Notification   │
-                              │     Model       │
-                              └────────┬────────┘
-                                       │
-   ┌───────────────────────────────────┘
-   │
-   │  Client Polls (Every 30s)
-   │  GET /notifications
-   │
-   ▼
-┌─────────┐     ┌──────────────┐
-│ Client  │←────│ Unread Count │
-│ Updates │     │ + Messages   │
-└─────────┘     └──────────────┘
-
-6. ADMIN DASHBOARD FLOW
-   ┌──────────┐   Login as Admin   ┌────────────┐
-   │  Admin   │ ──────────────────→│ Auth       │
-   │  Client  │                     │ Middleware │
-   └──────────┘                     └─────┬──────┘
-        │                                  │
-        │                            Verify Role
-        │                                  │
-        │         ← JWT with admin role ←──┘
-        │
-        ▼
-   Access Admin Routes
-        │
-        ├──→ GET /dorms/my          (My Dorms)
-        ├──→ GET /rooms             (All Rooms)
-        ├──→ GET /bookings          (All Bookings)
-        ├──→ GET /analytics/*       (Dashboard Stats)
-        │
-        ▼
-   Real-time Updates
-        │
-        └──→ GET /notifications (Booking Alerts)
-```
-
-### Security Architecture
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                    SECURITY LAYERS                                  │
-└────────────────────────────────────────────────────────────────────┘
-
-Layer 1: Transport Security
-┌────────────────────────────────────────────────────────────────┐
-│  • HTTPS (TLS 1.2+) in production                              │
-│  • CORS configured with whitelist                              │
-│  • Rate limiting (optional, recommended for production)        │
-└────────────────────────────────────────────────────────────────┘
-
-Layer 2: Authentication
-┌────────────────────────────────────────────────────────────────┐
-│  ┌───────────────┐       ┌──────────────┐                     │
-│  │  JWT Tokens   │──────→│ Verification │                     │
-│  │  (Bearer)     │       │  Middleware  │                     │
-│  └───────────────┘       └──────────────┘                     │
-│                                                                 │
-│  • Token in Authorization: Bearer <token>                     │
-│  • Secret key for signing                                     │
-│  • Token expiration (configurable)                            │
-└────────────────────────────────────────────────────────────────┘
-
-Layer 3: Authorization (RBAC)
-┌────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  ┌─────────────┐    ┌──────────────┐    ┌────────────────┐   │
-│  │  Student    │    │  Dorm Admin  │    │  System Admin  │   │
-│  │             │    │              │    │                │   │
-│  │ • View      │    │ All Student  │    │ All Permissions│   │
-│  │ • Book      │    │   +          │    │                │   │
-│  │ • Match     │    │ • Manage Own │    │ • Manage All   │   │
-│  │ • Knock     │    │   Dorms      │    │ • Analytics    │   │
-│  │             │    │ • Analytics  │    │ • User Mgmt    │   │
-│  └─────────────┘    └──────────────┘    └────────────────┘   │
-│                                                                 │
-│  Middleware: requireAuth, requireStudent, requireDormAdmin    │
-└────────────────────────────────────────────────────────────────┘
-
-Layer 4: Data Security
-┌────────────────────────────────────────────────────────────────┐
-│  • Password Hashing (bcrypt, salt rounds: 10)                 │
-│  • Input Sanitization (Mongoose validators)                   │
-│  • SQL Injection Prevention (NoSQL, Mongoose)                 │
-│  • XSS Prevention (React auto-escaping)                       │
-└────────────────────────────────────────────────────────────────┘
-
-Layer 5: Resource Access Control
-┌────────────────────────────────────────────────────────────────┐
-│  Check Ownership Before Modification:                          │
-│  • User can update own profile only                           │
-│  • Admin can manage own dorms only                            │
-│  • Notifications belong to recipient                          │
-│  • Bookings verified by user or admin                         │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
-
-```
-LUMIQ_Test/
-├── frontend/
-│   ├── src/
-│   │   ├── admin-pages/      # Admin dashboard pages
-│   │   │   ├── OverviewPage.tsx
-│   │   │   ├── MyDormPage.tsx
-│   │   │   ├── RoomsPage.tsx
-│   │   │   ├── BookingsPage.tsx
-│   │   │   ├── AnalyticsPage.tsx
-│   │   │   └── SettingsPage.tsx
-│   │   ├── components/       # Reusable components
-│   │   │   ├── shared/       # Navbar, Footer, Notifications
-│   │   │   └── ui/           # shadcn/ui components
-│   │   ├── contexts/         # React contexts
-│   │   │   └── AuthContext.tsx
-│   │   ├── pages/           # Main application pages
-│   │   │   ├── root/        # Student pages
-│   │   │   │   ├── home-page.tsx
-│   │   │   │   ├── all-dorms-page.tsx
-│   │   │   │   ├── dorm-detail-page.tsx
-│   │   │   │   ├── roommates-page.tsx
-│   │   │   │   ├── knockknock-page.tsx
-│   │   │   │   ├── connection-page.tsx
-│   │   │   │   └── my-account-page.tsx
-│   │   │   └── auth/        # Auth pages
-│   │   ├── api/             # API client configuration
-│   │   └── routes.tsx       # Route definitions
-│   ├── package.json
-│   └── pnpm-lock.yaml
-│
-├── backend/
-│   ├── src/
-│   │   ├── models/          # Mongoose models (11 files)
-│   │   │   ├── User.js
-│   │   │   ├── Dorm.js
-│   │   │   ├── Room.js
-│   │   │   ├── Booking.js
-│   │   │   ├── Personality.js
-│   │   │   ├── Knock.js
-│   │   │   ├── Notification.js
-│   │   │   ├── Wishlist.js
-│   │   │   ├── AiMatchResult.js
-│   │   │   ├── PreferredRoommate.js
-│   │   │   └── Counter.js
-│   │   ├── routes/          # API route controllers (13 files)
-│   │   │   ├── auth.js
-│   │   │   ├── users.js
-│   │   │   ├── dorms.js
-│   │   │   ├── rooms.js
-│   │   │   ├── bookings.js
-│   │   │   ├── personalities.js
-│   │   │   ├── matching.js
-│   │   │   ├── knocks.js
-│   │   │   ├── notifications.js
-│   │   │   ├── wishlist.js
-│   │   │   ├── analytics.js
-│   │   │   ├── preferred_roommate.js
-│   │   │   └── health.js
-│   │   ├── middlewares/     # Auth & validation
-│   │   │   └── auth.js      # JWT + RBAC
-│   │   ├── services/        # Business logic (3 files)
-│   │   │   ├── aiMatchingService.js
-│   │   │   ├── counterService.js
-│   │   │   └── roomService.js
-│   │   └── index.js         # Server entry point
-│   ├── uploads/            # File upload storage
-│   ├── package.json
-│   └── package-lock.json
-│
-└── README.md
-```
+4. **Chat System**
+   - Users connect → Chat widget opens
+   - Messages sent via REST API → Stored in DB
+   - Auto-refresh keeps messages in sync
+   - Active session tracking
 
 ---
 
-## Installation & Setup
+## Installation \u0026 Setup
 
 ### Prerequisites
-
 - Node.js 18+ and npm/pnpm
-- MongoDB instance
-- GROQ API key (for AI matching)
+- MongoDB (local or Atlas)
+- GROQ API key ([groq.com](https://groq.com))
 
 ### Backend Setup
 
 ```bash
-# Navigate to backend directory
 cd backend
-
-# Install dependencies
 npm install
 
 # Create .env file
 cat > .env << EOF
 PORT=5001
 MONGODB_URI=mongodb://localhost:27017/lumiq
-JWT_SECRET=your_secure_jwt_secret_here_change_this
+JWT_SECRET=your_super_secret_jwt_key_change_this
 CORS_ORIGIN=http://localhost:5173
 GROQ_API_KEY=your_groq_api_key_here
 EOF
 
-# Start development server
+# Start server
 npm run dev
 ```
 
 ### Frontend Setup
 
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
 pnpm install
 
 # Create .env file
@@ -606,45 +698,36 @@ cat > .env << EOF
 VITE_API_URL=http://localhost:5001/api
 EOF
 
-# Start development server
+# Start dev server
 pnpm run dev
 ```
 
-### Access the Application
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5001/api
-- **Health Check**: http://localhost:5001/api/health
+### Access Application
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5001/api
+- Health Check: http://localhost:5001/api/health
 
 ---
 
 ## API Documentation
 
-### Authentication Endpoints
+### Authentication
 
 #### POST /api/auth/signup
-Register a new user
+Register new user
 
-**Request Body:**
+**Request:**
 ```json
 {
   "email": "user@example.com",
-  "password": "securePassword123",
+  "password": "password123",
   "name": "John Doe",
-  "role": "student"  // or "dorm_admin"
+  "role": "student"
 }
 ```
 
 #### POST /api/auth/signin
-Authenticate user
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "securePassword123"
-}
-```
+Login user
 
 **Response:**
 ```json
@@ -659,449 +742,189 @@ Authenticate user
 }
 ```
 
-### Dorm Endpoints
+### Dorms
 
 #### GET /api/dorms
 Get all dorms (public)
-
-**Query Parameters:**
-- `search`: Search by name
-- `minPrice`, `maxPrice`: Price range
-- `facilities`: Filter by amenities
 
 #### GET /api/dorms/:id
 Get dorm details
 
 #### POST /api/dorms
-Create new dorm (Admin only)
+Create dorm (admin only, requires JWT)
 
-**Requires**: `requireAuth`, `requireDormAdmin`
+#### GET /api/dorms/shared-suggestions?userId=X
+Get suggested dorms for connected users based on price preferences
 
-#### PUT /api/dorms/:id
-Update dorm (Admin only)
-
-#### DELETE /api/dorms/:id
-Delete dorm (Admin only)
-
-#### POST /api/dorms/:id/rate
-Rate a dorm (Students only)
-
-**Request Body:**
-```json
-{
-  "rating": 4.5,
-  "comment": "Great amenities!"
-}
-```
-
-### Room Endpoints
+### Rooms
 
 #### GET /api/rooms
 Get all rooms
 
 #### POST /api/rooms
-Create room (Admin only)
+Create room (admin only)
 
 #### PUT /api/rooms/:id
-Update room (Admin only)
+Update room (admin only)
 
-#### POST /api/rooms/:id/reserve
-Reserve room (Admin only)
+### Bookings
 
-### Personality Endpoints
+#### GET /api/bookings
+Get bookings (RBAC: admin sees own dorms, students see own bookings)
 
-#### GET /api/personalities?userId=:userId
-Get user personality profile
+#### POST /api/bookings
+Create booking (student only)
 
-#### POST /api/personalities
-Create personality profile
-
-**Request Body:**
+**Request:**
 ```json
 {
-  "nickname": "John",
-  "age": 22,
-  "gender": "Male",
-  "nationality": "Thai",
-  "sleep_type": "Early Bird",
-  "lifestyle": ["Active", "Social"],
-  "study_habits": "Quiet Library",
-  "cleanliness": "Very Clean",
-  "social": "Extrovert",
-  "MBTI": "ENFP",
-  "going_out": "Frequently",
-  "smoking": false,
-  "drinking": "Occasionally",
-  "pets": "Dogs",
-  "noise_tolerance": "Medium",
-  "temperature": "Cool"
+  "dormId": 1,
+  "roomId": "ABC123",
+  "moveInDate": "2024-01-15",
+  "stayDuration": 12,
+  "durationType": "months",
+  "paymentMethod": "card"
 }
 ```
 
-### Matching Endpoints
+#### PUT /api/bookings/:id
+Update booking status (admin or owner)
+
+### Matching
 
 #### GET /api/matching/find-match/:userId
 Find compatible roommates
 
-**Response:**
-```json
-{
-  "matches": [
-    {
-      "user": { "_id": 2, "name": "Jane" },
-      "compatibility": 85.5,
-      "reasons": ["Similar sleep schedule", "Both prefer quiet study"]
-    }
-  ]
-}
-```
-
 #### GET /api/matching/ai-analysis/:userId1/:userId2
 Get AI-powered compatibility analysis
 
-### Knock Endpoints
+### Chat
 
-#### GET /api/knocks?userId=:userId
-Get knocks for user
+#### GET /api/conversations
+Get user's conversations
 
-#### POST /api/knocks
-Send a knock
+#### POST /api/conversations
+Create new conversation
 
-**Request Body:**
+#### GET /api/messages?conversationId=X
+Get messages for conversation
+
+#### POST /api/messages
+Send message
+
+**Request:**
 ```json
 {
-  "recipientId": 2
+  "conversationId": 123,
+  "text": "Hey! Want to be roommates?"
 }
 ```
 
-#### PUT /api/knocks/:id/accept
-Accept a knock
-
-### Notification Endpoints
+### Notifications
 
 #### GET /api/notifications
-Get user notifications
+Get notifications for current user
 
 #### PUT /api/notifications/:id/read
-Mark notification as read
+Mark as read
 
 #### DELETE /api/notifications/:id
 Delete notification
 
-### Booking Endpoints
+---
 
-#### GET /api/bookings
-Get bookings (All for admin, own for students)
+## Security \u0026 RBAC
 
-#### POST /api/bookings
-Create booking
+### Authentication Flow
+1. User signs up/signs in → Receives JWT
+2. JWT stored in localStorage
+3. Axios interceptor adds "Authorization: Bearer \u003ctoken\u003e" to all requests
+4. Backend middleware verifies token
+5. User role checked for protected routes
 
-**Request Body:**
-```json
-{
-  "dormId": 1,
-  "roomId": 101,
-  "moveInDate": "2024-01-15",
-  "stayDuration": 6,
-  "durationType": "months",
-  "paymentMethod": "card",
-  "bookingFeePaid": 5000,
-  "totalAmount": 30000
-}
+### RBAC Implementation
+
+**Middleware Chain:**
 ```
+Request → requireAuth → requireStudent/requireDormAdmin → Route Handler
+```
+
+**Permission Matrix:**
+| Endpoint | Student | Dorm Admin | System Admin |
+|----------|---------|------------|--------------|
+| GET /dorms | ✅ | ✅ | ✅ |
+| POST /dorms | ❌ | ✅ | ✅ |
+| GET /bookings | Own only | Own dorms | All |
+| PUT /bookings/:id | Own only | Own dorms | All |
+| POST /rooms | ❌ | ✅ | ✅ |
+| GET /analytics | ❌ | Own dorms | All |
 
 ---
 
 ## Database Schema
 
-### User Model
-```javascript
-{
-  _id: Number (auto-increment),
-  email: String (unique),
-  password: String (hashed),
-  name: String,
-  role: String (enum: ["student", "dorm_admin", "admin"]),
-  phone: String,
-  dateOfBirth: Date,
-  address: String,
-  dormId: Number (ref to Dorm),
-  createdAt: Date,
-  updatedAt: Date
-}
-```
+### Key Collections
 
-### Dorm Model
-```javascript
-{
-  _id: Number,
-  name: String,
-  address: {
-    addressLine1: String,
-    subDistrict: String,
-    district: String,
-    province: String,
-    zipCode: String,
-    country: String
-  },
-  latitude: Number,
-  longitude: Number,
-  rating: Number (0-5),
-  images: [String],
-  description: String,
-  facilities: [String],
-  price: Number,
-  admin_id: Number (ref to User),
-  contact_gmail: String,
-  contact_phone: String,
-  Water_fee: Number,
-  Electricity_fee: Number,
-  isActive: Boolean
-}
-```
+**users**
+- _id, email, password (hashed), name, role, dormId, phone, dateOfBirth
 
-### Personality Model
-```javascript
-{
-  _id: Number,
-  userId: Number (ref to User),
-  nickname: String,
-  age: Number,
-  gender: String,
-  nationality: String,
-  sleep_type: String,
-  lifestyle: [String],
-  study_habits: String,
-  cleanliness: String,
-  social: String,
-  MBTI: String,
-  going_out: String,
-  smoking: Boolean,
-  drinking: String,
-  pets: String,
-  noise_tolerance: String,
-  temperature: String
-}
-```
+**dorms**
+- _id, name, location, address{}, latitude, longitude, price, facilities[], images[], admin_id, Water_fee, Electricity_fee, waterBillingType, electricityBillingType, insurance_policy, isActive
 
-### Knock Model
-```javascript
-{
-  _id: Number,
-  senderId: Number (ref to User),
-  recipientId: Number (ref to User),
-  status: String (enum: ["pending", "accepted", "rejected"]),
-  createdAt: Date,
-  updatedAt: Date
-}
-```
+**rooms**
+- _id, dormId, room_number, floor, room_type, capacity, price_per_month, status, amenities[], moveInDate, moveOutDate
 
-### Notification Model
-```javascript
-{
-  _id: Number,
-  recipientId: Number (ref to User),
-  type: String (enum: ["knock", "match", "system", "message", "alert"]),
-  title: String,
-  message: String,
-  read: Boolean,
-  data: Mixed (additional context),
-  createdAt: Date
-}
-```
+**bookings**
+- _id, userId, dormId, roomId, moveInDate, stayDuration, bookingFeePaid, totalAmount, status, paymentMethod, createdAt
 
----
+**personalities**
+- _id, userId, nickname, age, gender, sleep_type, study_habits, cleanliness, social, MBTI, lifestyle[], smoking, drinking, pets, noise_tolerance, temperature
 
-## Security & RBAC
+**knocks**
+- _id, senderId, recipientId, status (pending/accepted/rejected), createdAt
 
-### Role-Based Access Control
+**conversations**
+- _id, participants[], lastMessage, lastMessageAt
 
-The application implements comprehensive RBAC with three roles:
+**messages**
+- _id, conversationId, sender{}, text, readBy[], createdAt
 
-#### Student Role
-- View dorms and rooms
-- Create personality profile
-- Send/receive knocks
-- Book rooms
-- Rate dorms
-- Receive notifications
-
-#### Dorm Admin Role
-- All student permissions
-- Create/edit/delete own dorms
-- Manage rooms in own dorms
-- View bookings for own dorms
-- Access analytics dashboard
-- Receive booking notifications
-
-#### Admin Role (System Admin)
-- Full access to all resources
-- Manage all users
-- System-wide analytics
-
-### Authentication Middleware
-
-```javascript
-// requireAuth - Validates JWT token
-// requireStudent - Ensures user is a student
-// requireDormAdmin - Ensures user is a dorm admin
-```
-
-### Security Best Practices Implemented
-
-1. **Password Security**
-   - Bcrypt hashing with salt rounds
-   - Minimum password requirements enforced
-
-2. **JWT Authentication**
-   - Secure token generation
-   - Token expiration
-   - HTTP-only cookies (recommended for production)
-
-3. **CORS Configuration**
-   - Whitelist specific origins
-   - Credentials support
-
-4. **Input Validation**
-   - Mongoose schema validation
-   - Required field enforcement
-   - Type checking
-
-5. **Authorization Checks**
-   - Route-level RBAC
-   - Resource ownership validation
-   - Permission-based access
-
----
-
-## Testing
-
-### Manual Testing Checklist
-
-#### Authentication
-- [ ] User registration
-- [ ] User login
-- [ ] Token validation
-- [ ] Logout functionality
-
-#### Dorm Management
-- [ ] View dorms list
-- [ ] View dorm details
-- [ ] Create dorm (admin)
-- [ ] Update dorm (admin)
-- [ ] Delete dorm (admin)
-- [ ] Rate dorm (student)
-
-#### Roommate Matching
-- [ ] Create personality profile
-- [ ] View matches
-- [ ] AI compatibility analysis
-
-#### Knock System
-- [ ] Send knock
-- [ ] Accept knock
-- [ ] View knock list
-- [ ] View connection
-
-#### Notifications
-- [ ] Receive knock notification
-- [ ] Receive booking notification
-- [ ] Mark as read
-- [ ] Delete notification
-
-#### Bookings
-- [ ] Create booking
-- [ ] View bookings
-- [ ] Admin booking notification
-
----
-
-## Deployment
-
-### Production Checklist
-
-#### Environment Variables
-```bash
-# Backend
-PORT=5001
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lumiq
-JWT_SECRET=very_secure_random_string_change_in_production
-CORS_ORIGIN=https://yourdomain.com
-GROQ_API_KEY=your_production_groq_key
-
-# Frontend
-VITE_API_URL=https://api.yourdomain.com
-```
-
-#### Build for Production
-
-**Frontend:**
-```bash
-cd frontend
-pnpm run build
-# Output in: dist/
-```
-
-**Backend:**
-```bash
-cd backend
-npm run start
-```
-
-#### Deployment Platforms
-
-**Recommended Options:**
-- **Frontend**: Vercel, Netlify, Cloudflare Pages
-- **Backend**: Render, Railway, AWS EC2, DigitalOcean
-- **Database**: MongoDB Atlas
-
----
-
-## Project Statistics
-
-- **Total Routes**: 13 route files
-- **Backend Models**: 11 models
-- **Frontend Pages**: 20+ pages
-- **API Endpoints**: 50+ endpoints
-- **Dependencies**: 
-  - Backend: 8 production, 1 dev
-  - Frontend: 25+ production dependencies
+**notifications**
+- _id, recipientId, type, title, message, read, data{}, createdAt
 
 ---
 
 ## Future Enhancements
 
-1. **Real-time Chat** - WebSocket-based messaging between matched roommates
-2. **Payment Integration** - Stripe/PayPal for online bookings
-3. **Mobile App** - React Native version
-4. **Enhanced AI** - More sophisticated matching algorithms
-5. **Virtual Tours** - 360° dorm views
-6. **Review Verification** - Verified resident reviews only
-7. **Calendar Integration** - Move-in scheduling
-8. **Multi-language Support** - Thai and English interfaces
+- [ ] Email notifications for bookings
+- [ ] SMS notifications
+- [ ] Payment gateway integration (Stripe, Omise)
+- [ ] Advanced analytics dashboard
+- [ ] Mobile app (React Native)
+- [ ] Virtual dorm tours (360° photos)
+- [ ] Review moderation system
+- [ ] Multi-language support (Thai/English)
+- [ ] Social media integration
+- [ ] Referral program
 
 ---
 
 ## Contributors
 
-This project was developed as part of an academic initiative to solve real-world accommodation challenges.
-
----
+- SanMine - Full Stack Developer
 
 ## License
 
-This project is proprietary software developed for academic purposes.
+This project is proprietary and confidential.
 
 ---
 
 ## Support
 
-For issues and questions:
-- Create an issue in the repository
-- Contact the development team
+For issues or questions:
+- Email: support@lumiq.com
+- Issues: GitHub Issues (if applicable)
 
 ---
 
-**Last Updated**: November 25, 2024  
-**Version**: 1.0.0  
-**Status**: Production Ready
+**Built with ❤️ using React, Express, MongoDB, and GROQ AI**
