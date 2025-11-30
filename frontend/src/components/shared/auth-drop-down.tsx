@@ -72,13 +72,22 @@ export default function AuthDropdown() {
                             </DropdownMenuItem>
                         )}
                         {user?.role !== 'dorm_admin' && (
-                            <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link to='/roommate-match' className="whitespace-nowrap">
-                                    <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
-                                    Roommates Matching
-                                    <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
-                                </Link>
-                            </DropdownMenuItem>
+                            <>
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                    <Link to='/roommate-match' className="whitespace-nowrap">
+                                        <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                        Roommates Matching
+                                        <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                    <Link to='/knockknock' className="whitespace-nowrap">
+                                        <LiaUsersSolid className="size-4 text-black mr-1 dark:text-white" aria-hidden="true" />
+                                        My Roommates
+                                        <DropdownMenuShortcut>⇧⌘M</DropdownMenuShortcut>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </>
                         )}
                         <DropdownMenuItem asChild className="cursor-pointer">
                             <Link to='/dorms' className="whitespace-nowrap">

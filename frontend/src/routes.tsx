@@ -172,6 +172,13 @@ export default function Router() {
       ]
     },
     {
+      path: '/forgot-password',
+      lazy: async () => {
+        const { default: ForgotPasswordPage } = await import('@/pages/auth/forgot-password-page')
+        return { Component: ForgotPasswordPage }
+      },
+    },
+    {
       path: '*',
       Component: NotFoundPage
     }

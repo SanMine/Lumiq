@@ -29,14 +29,18 @@ export const SignUPFormSchema = z
         confirmPassword: z
             .string()
             .min(6, { message: "Confirm Password must be at least 6 characters long." }),
-        role: z.enum(["student", "dorm_admin"], {
-            required_error: "Please select a role",
-        }),
+        role: z.enum(["student", "dorm_admin"]),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match.",
         path: ["confirmPassword"],
     });
+
+export const ForgotPasswordFormSchema = z.object({
+    email: z.string().email({
+        message: "Please enter a valid email address",
+    })
+})
 
 export const RoommateMatchingFormSchema = z.object({
     //* Basic Info
