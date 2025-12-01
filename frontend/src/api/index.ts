@@ -46,17 +46,17 @@ export const authService = {
         const response = await authApi.post('/auth/login', { email, password })
         return response.data
     },
-    
+
     register: async (name: string, email: string, password: string, role: string = 'student') => {
-        const response = await authApi.post('/auth/register', { 
-            name, 
-            email, 
+        const response = await authApi.post('/auth/register', {
+            name,
+            email,
             password,
             role
         })
         return response.data
     },
-    
+
     getCurrentUser: async (token: string) => {
         const response = await authApi.get('/auth/me', {
             headers: {
@@ -65,6 +65,12 @@ export const authService = {
         })
         return response.data
     }
+}
+
+// Helper function to get Google OAuth URL
+export const getGoogleOAuthUrl = () => {
+    const apiUrl = import.meta.env.VITE_API_URL
+    return `${apiUrl}/auth/google`
 }
 
 export default api

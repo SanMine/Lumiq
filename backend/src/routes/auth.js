@@ -1,5 +1,6 @@
 // 🏢 AUTHENTICATION FRONT DESK - Where people register and login
 import { Router } from "express";
+import passport from "passport";
 import { User } from "../models/User.js";
 import { generateToken } from "../utils/auth.js";
 import { requireAuth } from "../middlewares/auth.js";

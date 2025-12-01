@@ -77,6 +77,11 @@ UserSchema.pre("save", async function (next) {
     return next();
   }
 
+  // Skip hashing if passwordHash is null (for Google OAuth users)
+  if (this.passwordHash === null) {
+    return next();
+  }
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);

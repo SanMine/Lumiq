@@ -9,6 +9,8 @@ config({ path: join(__dirname, "../.env") });
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import session from "express-session";
+import passport from "passport";
 import { connectDatabase } from "./db/connection.js";
 import { health } from "./routes/health.js";
 import { users } from "./routes/users.js";
@@ -27,6 +29,8 @@ import { notifications } from "./routes/notifications.js";
 import { conversations } from "./routes/conversations.js";
 import { messages } from "./routes/messages.js";
 import { chatSessions } from "./routes/chatSessions.js";
+import { googleAuth } from "./routes/google-auth.js";
+import configureGoogleOAuth from "./config/passport-config.js";
 
 // Import models to ensure they are registered with Mongoose
 import "./models/Association.js";
@@ -52,6 +56,22 @@ const corsOptions = {
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors(corsOptions));
+
+// Session configuration (required for Passport)
+app.use(session({
+  secret: process.env.JWT_SECRET || 'lumiq-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport and configure Google OAuth
+app.use(passport.initialize());
+app.use(passport.session());
+configureGoogleOAuth();
 
 // Serve uploaded files (payment slips, images, etc.)
 app.use('/uploads', express.static(join(__dirname, '../uploads')));
@@ -83,6 +103,9 @@ app.use("/api/analytics", analytics);
 app.use("/api/conversations", conversations);
 app.use("/api/messages", messages);
 app.use("/api/chat-sessions", chatSessions);
+
+// Google OAuth routes (mounted at /auth to match Google Console redirect URIs)
+app.use("/auth", googleAuth);
 
 // Error handler (last)
 app.use(errorHandler);

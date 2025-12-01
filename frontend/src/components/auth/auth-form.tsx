@@ -172,8 +172,18 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                                         Or continue with
                                     </span>
                                 </div>
-                                <Button type="button" disabled={isWorking} variant="outline" className="w-full min-h-[48px] cursor-pointer" asChild>
-                                    <Link to='/' className="flex items-center gap-4">
+                                <Button
+                                    type="button"
+                                    disabled={isWorking}
+                                    variant="outline"
+                                    className="w-full min-h-[48px] cursor-pointer"
+                                    onClick={() => {
+                                        // Remove /api from the URL since Google OAuth routes are mounted at /auth
+                                        const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '')
+                                        window.location.href = `${baseUrl}/auth/google`
+                                    }}
+                                >
+                                    <div className="flex items-center gap-4">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" width="24" height="24" aria-hidden="true" role="img">
                                             <path d="M533.5 278.4c0-17.4-1.6-34.1-4.6-50.3H272v95h147.4c-6.4 34.7-25.9 64.1-55.4 83.7v69.3h89.3c52.2-48 82.2-118.9 82.2-197.7z" fill="#4285F4" />
                                             <path d="M272 544.3c73.6 0 135.5-24.4 180.6-66.2l-89.3-69.3c-24.8 16.6-56.6 26.6-91.3 26.6-70.3 0-130-47.5-151.3-111.3H30.4v69.9C75.6 480.7 167.5 544.3 272 544.3z" fill="#34A853" />
@@ -181,7 +191,7 @@ export default function AuthForm<T extends z.ZodType<any, any, any>>({
                                             <path d="M272 107.7c38.8 0 73.8 13.4 101.3 39.7l76-76C407.2 24.8 344.9 0 272 0 167.5 0 75.6 63.6 30.4 156.3l90.3 69.9C142 155.2 201.7 107.7 272 107.7z" fill="#EA4335" />
                                         </svg>
                                         Continue with Google
-                                    </Link>
+                                    </div>
                                 </Button>
                             </>
                         }

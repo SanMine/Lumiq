@@ -176,6 +176,13 @@ export default function Router() {
           path: 'sign-up',
           Component: SignUpPage,
         },
+        {
+          path: 'google/callback',
+          lazy: async () => {
+            const { default: GoogleCallbackPage } = await import('@/pages/auth/google-callback-page')
+            return { Component: GoogleCallbackPage }
+          }
+        },
       ]
     },
     {
