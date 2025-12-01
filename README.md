@@ -2,6 +2,8 @@
 
 ## Executive Summary
 
+**Live Demo:** [https://www.lumiq-thailand.com/](https://www.lumiq-thailand.com/)
+
 LUMIQ is a comprehensive web application that revolutionizes the dormitory search and roommate matching experience for students and young professionals. It combines advanced dorm search functionalities with AI-powered personality-based roommate matching, real-time chat, price calculation tools, and comprehensive admin management capabilities.
 
 ## Table of Contents
@@ -703,8 +705,9 @@ pnpm run dev
 ```
 
 ### Access Application
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5001/api
+- **Live Production:** [https://www.lumiq-thailand.com/](https://www.lumiq-thailand.com/)
+- Frontend (Local): http://localhost:5173
+- Backend API (Local): http://localhost:5001/api
 - Health Check: http://localhost:5001/api/health
 
 ---

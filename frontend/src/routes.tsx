@@ -136,6 +136,13 @@ export default function Router() {
           }
         },
         {
+          path: "/privacy-policy",
+          lazy: async () => {
+            const { default: PrivacyPolicyPage } = await import('@/pages/root/privacy-policy-page')
+            return { Component: PrivacyPolicyPage }
+          }
+        },
+        {
           path: "/admin-dashboard",
           lazy: async () => {
             const { default: AdminDashboard } = await import('@/pages/root/admin-dashboard')

@@ -96,7 +96,7 @@ export const footerLinks = [
         items: [
             {
                 title: "Privacy Policy",
-                href: "/about",
+                href: "/privacy-policy",
             },
             {
                 title: "Terms of Service",
